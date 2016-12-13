@@ -1,0 +1,100 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2015 Altera Corporation. All rights reserved.
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, the Altera Quartus Prime License Agreement,
+the Altera MegaCore Function License Agreement, or other 
+applicable license agreement, including, without limitation, 
+that your use is for the sole purpose of programming logic 
+devices manufactured by Altera and sold by Altera or its 
+authorized distributors.  Please refer to the applicable 
+agreement for further details.
+*/
+(header "symbol" (version "1.2"))
+(symbol
+	(rect 16 16 520 176)
+	(text "RxTx_3Gbps_schematic" (rect 5 0 193 16)(font "Arial" (font_size 8)))
+	(text "inst" (rect 8 142 41 156)(font "Arial" ))
+	(port
+		(pt 0 32)
+		(input)
+		(text "pll_ref_clk" (rect 0 0 103 16)(font "Arial" (font_size 8)))
+		(text "pll_ref_clk" (rect 21 27 124 43)(font "Arial" (font_size 8)))
+		(line (pt 0 32)(pt 16 32))
+	)
+	(port
+		(pt 0 48)
+		(input)
+		(text "rx_serial_data[10..0]" (rect 0 0 198 16)(font "Arial" (font_size 8)))
+		(text "rx_serial_data[10..0]" (rect 21 43 219 59)(font "Arial" (font_size 8)))
+		(line (pt 0 48)(pt 16 48)(line_width 3))
+	)
+	(port
+		(pt 0 64)
+		(input)
+		(text "tx_parallel_data[351..0]" (rect 0 0 226 16)(font "Arial" (font_size 8)))
+		(text "tx_parallel_data[351..0]" (rect 21 59 247 75)(font "Arial" (font_size 8)))
+		(line (pt 0 64)(pt 16 64)(line_width 3))
+	)
+	(port
+		(pt 0 80)
+		(input)
+		(text "phy_mgmt_clk" (rect 0 0 113 16)(font "Arial" (font_size 8)))
+		(text "phy_mgmt_clk" (rect 21 75 134 91)(font "Arial" (font_size 8)))
+		(line (pt 0 80)(pt 16 80))
+	)
+	(port
+		(pt 0 96)
+		(input)
+		(text "phy_mgmt_clk_reset" (rect 0 0 169 16)(font "Arial" (font_size 8)))
+		(text "phy_mgmt_clk_reset" (rect 21 91 190 107)(font "Arial" (font_size 8)))
+		(line (pt 0 96)(pt 16 96))
+	)
+	(port
+		(pt 0 112)
+		(input)
+		(text "phy_mgmt_read" (rect 0 0 122 16)(font "Arial" (font_size 8)))
+		(text "phy_mgmt_read" (rect 21 107 143 123)(font "Arial" (font_size 8)))
+		(line (pt 0 112)(pt 16 112))
+	)
+	(port
+		(pt 0 128)
+		(input)
+		(text "phy_mgmt_write" (rect 0 0 132 16)(font "Arial" (font_size 8)))
+		(text "phy_mgmt_write" (rect 21 123 153 139)(font "Arial" (font_size 8)))
+		(line (pt 0 128)(pt 16 128))
+	)
+	(port
+		(pt 504 32)
+		(output)
+		(text "tx_serial_data[10..0]" (rect 0 0 198 16)(font "Arial" (font_size 8)))
+		(text "tx_serial_data[10..0]" (rect 285 27 483 43)(font "Arial" (font_size 8)))
+		(line (pt 504 32)(pt 488 32)(line_width 3))
+	)
+	(port
+		(pt 504 48)
+		(output)
+		(text "rx_clkout[10..0]" (rect 0 0 151 16)(font "Arial" (font_size 8)))
+		(text "rx_clkout[10..0]" (rect 332 43 483 59)(font "Arial" (font_size 8)))
+		(line (pt 504 48)(pt 488 48)(line_width 3))
+	)
+	(port
+		(pt 504 64)
+		(output)
+		(text "rx_parallel_data[351..0]" (rect 0 0 226 16)(font "Arial" (font_size 8)))
+		(text "rx_parallel_data[351..0]" (rect 257 59 483 75)(font "Arial" (font_size 8)))
+		(line (pt 504 64)(pt 488 64)(line_width 3))
+	)
+	(drawing
+		(rectangle (rect 16 16 488 144))
+	)
+)
