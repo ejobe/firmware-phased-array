@@ -23,7 +23,8 @@ entity Clock_Manager is
 		CLK1_i			:  in		std_logic;
 		PLL_reset_i		:  in		std_logic;
 		
-		CLK_93750kHz_o	:  out	std_logic;  
+		CLK_187p5MHz_o :  out	std_logic;
+		CLK_75MHz_o		:  out	std_logic;  
 		CLK_15MHz_o		:  out	std_logic;
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
@@ -42,7 +43,14 @@ architecture Structural of Clock_Manager is
 	component pll_block
 		port( refclk, rst			: in 	std_logic;
 				outclk_0, outclk_1, 
-				outclk_2, locked	: out	std_logic);
+				outclk_2,
+				locked				: out	std_logic);
+	end component;
+	
+	component pll_block_2
+		port( refclk, rst			: in 	std_logic;
+				outclk_0, 
+				locked				: out	std_logic);
 	end component;
 	
 	component Slow_Clocks
@@ -55,9 +63,12 @@ begin
 	CLK_1MHz_o	<=	clk_1MHz_sig;
 
 	xPLL_BLOCK : pll_block
-		port map(CLK0_i, PLL_reset_i, CLK_93750kHz_o, CLK_15MHz_o, 
+		port map(CLK0_i, PLL_reset_i, CLK_75MHz_o, CLK_15MHz_o, 
 					clk_1MHz_sig, fpga_pllLock_o);
-	
+					
+	xPLL_BLOCK_2 : pll_block_2
+		port map(CLK1_i, PLL_reset_i, CLK_187p5MHz_o, open);
+					
 	xCLK_GEN_100kHz : Slow_Clocks
 		generic map(clk_divide_by => 5)
 		port map(clk_1MHz_sig, Reset_i, CLK_100kHz_o);

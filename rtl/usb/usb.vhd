@@ -21,6 +21,7 @@ entity usb_32bit is
 	generic(
 			data_width		: integer := 32;
 			timeout_write  : integer := 10000000);
+												 
    port ( 
 			USB_IFCLK		: in		std_logic;   	--//usb clock 48 Mhz
 			USB_RESET    	: in  	std_logic;	   --//reset signal to usb block 
@@ -82,7 +83,7 @@ architecture Behavioral of usb_32bit is
 	signal	SLOE			: std_logic;
 	signal 	RBUSY			: std_logic;
 	signal 	FIFOADR    	: std_logic_vector (1 downto 0);
-	constant delay_inst	: integer := 6;  --//clock cycles instruction is asserted
+	constant delay_inst	: integer := 4;  --//clock cycles instruction is asserted
 	
 	signal	USB_DATA		: std_logic_vector(15 downto 0);
 	signal   instruction	: std_logic_vector(data_width-1 downto 0);
@@ -166,11 +167,16 @@ proc_usb_write : process(USB_IFCLK, USB_RESET, STARTSNC, STARTRD)
 					end if;
 --------------------------------------------------------------------------------										
 				when STATE1 =>										-- Check Full flag	
-					WBUSY <= '0';
+					--WBUSY <= '0';
 					if USB_FLAGC = '1' and RBUSY = '0' then	 	-- 1 = Empty
 						timeout := 0;
 						WBUSY <= '1';
 						write_state <= STATE2;
+--					else
+--						WBUSY <= '0';
+--						write_state <= IDLE;
+--					end if;
+		
 					elsif timeout = timeout_write-2 then
 						DONE <= '1';
 					elsif timeout = timeout_write then
@@ -180,6 +186,13 @@ proc_usb_write : process(USB_IFCLK, USB_RESET, STARTSNC, STARTRD)
 					else
 						timeout := timeout+1;
 					end if;
+					
+--					elsif timeout > (timeout_write-2) then
+--						write_state <= RD_DONE;
+--					else
+--						timeout := timeout+1;
+--						write_state <= STATE1;
+--					end if;
 --------------------------------------------------------------------------------
 				when STATE2 =>				
 					j := j + 1;					
@@ -194,7 +207,8 @@ proc_usb_write : process(USB_IFCLK, USB_RESET, STARTSNC, STARTRD)
 					end if;
 --------------------------------------------------------------------------------
 				when STATE3 =>									  	
-					if column >= USB_NUM_WORDS-1 then 
+					--if column >= USB_NUM_WORDS then 
+					if (column = USB_NUM_WORDS) or STARTRD = '0' then
 						column 	<= (others=>'0');
 						LRAD	 	<= (others=>'0');
 						DONE 		<= '1';
@@ -206,12 +220,13 @@ proc_usb_write : process(USB_IFCLK, USB_RESET, STARTSNC, STARTRD)
 					end if;
 --------------------------------------------------------------------------------
 				when RD_DONE =>	
-					DONE 		<= '1';
 					if j = 4 then
 						j := 0;
+						DONE <= '0';
 						write_state 	<= SYNC3;
 						NEXT_STATE <= IDLE;
 					else
+						DONE 		<= '1';
 						j:= j + 1;
 					end if;	
 --------------------------------------------------------------------------------
@@ -296,7 +311,7 @@ proc_usb_write : process(USB_IFCLK, USB_RESET, STARTSNC, STARTRD)
 --USB read from PC
 ---------------------------------------------------------------------------------
 proc_usb_read : process(USB_IFCLK, USB_RESET)
-	variable delay : integer range 0 to 50;
+	variable delay : integer range 0 to 50 := 0;
 	begin
 		if USB_RESET = '1' then
 			--SYNC_USB		<= '0';
@@ -397,16 +412,21 @@ proc_usb_read : process(USB_IFCLK, USB_RESET)
 --------------------------------------------------------------------------------	
 				when st1_TARGET =>
 					instruction <= Hicmd & Locmd; --the usb word from PC
-					instruct_rdy<= '1';
+					--instruct_rdy<= '1';
 					if delay > delay_inst then
 						RBUSY <= '0';
 						delay := 0;
+						instruct_rdy <= '0';
 						read_state <= st1_WAIT;
+					elsif delay > 2 then
+						instruct_rdy <= '1';
+						delay := delay + 1;	
 					else
+						instruct_rdy <= '0';
 						RBUSY <= '1';
-						delay := delay + 1;
+						delay := delay + 1;		
 					end if;		
-						
+					
 --------------------------------------------------------------------------------	
 				when ENDDELAY =>	
 					FIFOADR <= "00"; 

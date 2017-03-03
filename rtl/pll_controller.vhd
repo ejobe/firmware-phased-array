@@ -10,7 +10,7 @@
 --
 -- DESCRIPTION:  control block for LMK04808 clock generator
 ---------------------------------------------------------------------------------
-
+--//
 library IEEE; 
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -26,7 +26,9 @@ entity pll_controller is
 		
 		lmk_sdata_o	:	out	std_logic;
 		lmk_sclk_o	:	out	std_logic;
-		lmk_le_o		: 	out	std_logic);
+		lmk_le_o		: 	out	std_logic;
+		
+		pll_sync_o	:	out	std_logic); --//sync pll outputs, active low
 		
 end pll_controller;
 
@@ -37,7 +39,7 @@ type lmk_reg_type is array(31 downto 0) of std_logic_vector(31 downto 0);
 signal lmk_reg  :	lmk_reg_type;
 signal lmk_reg_init : std_logic_vector(31 downto 0);
 
-signal current_reg 	: std_logic_vector(31 downto 0);
+signal current_reg 				: std_logic_vector(31 downto 0);
 signal single_done_strobe 		: std_logic;
 signal single_write_strobe 	: std_logic;
 signal internal_spi_write 		: std_logic;
@@ -45,8 +47,50 @@ signal internal_spi_write 		: std_logic;
 type lmk_write_state_type is (idle_st, write_st, wait_for_ack_st, done_st);
 signal lmk_write_state : lmk_write_state_type;
 
+type lmk_sync_state_type is (idle_st, sync_st, done_st);
+signal lmk_sync_state : lmk_sync_state_type;
+
 begin
 
+--//process to sync clock outputs of lmk pll chip
+--//toggles the sync pulse (active low) after spi programming is completed.
+proc_pll_sync : process(rst_i, clk_i, lmk_write_state)
+	variable j : integer range 0 to 10 := 0;
+begin
+	if rst_i = '1' then
+		pll_sync_o <= '1';
+		j := 0;
+		lmk_sync_state <= idle_st;
+	elsif rising_edge(clk_i) then 
+		case lmk_sync_state is
+			
+			when idle_st =>
+				pll_sync_o <= '1'; 
+				if lmk_write_state = done_st then
+					lmk_sync_state <= sync_st;
+				end if;
+			
+			when sync_st =>
+				j := j + 1;
+				
+				if j >= 9 then
+					pll_sync_o <= '1';
+					j := 0;
+					lmk_sync_state <= done_st;
+					
+				elsif j > 4 then
+					pll_sync_o <= '0';
+					lmk_sync_state <= sync_st;
+				end if;
+				
+			when done_st => 
+				j := 0;
+				pll_sync_o <= '1';
+		end case;
+	end if;
+end process;
+
+--//lmk serial programming:
 proc_set_reg : process(rst_i, clk_i)
 begin
 	if rst_i = '1' then

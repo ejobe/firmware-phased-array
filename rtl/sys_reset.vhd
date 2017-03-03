@@ -9,7 +9,7 @@
 -- DATE:         1/2016
 --
 -- DESCRIPTION:  global resets
---               a numver of typical firmware 'good design techniques' are 
+--               a number of typical firmware 'good design techniques' are 
 --               abandoned here due to the nature of asynch resets
 ---------------------------------------------------------------------------------
 
@@ -18,20 +18,24 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
+use work.defs.all;
+
 entity sys_reset is
 	Port(
 		clk_i				:	in		std_logic;  --//1 MHz from FPGA PLL
 		clk_rdy_i		:	in		std_logic;
+		reg_i				:  in 	register_array_type;
 		user_wakeup_i	:	in		std_logic;	--//user input, rising edge
 		reset_o			:	out	std_logic;	--//active hi
 		--//start-up signals for external circuits, only toggled on power-up
 		pll_strtup_o	:  out	std_logic; 
 		dsa_strtup_o	:	out	std_logic;
-		adc_strtup_o	:	out	std_logic);
+		adc_strtup_o	:	out	std_logic;
+		adc_reset_o		:	out	std_logic);
 		
 end sys_reset;
 
-architecture Behavioral of sys_reset is
+architecture rtl of sys_reset is
 
 	type 		power_on_reset_state_type is (CLEAR, READY);
 	signal	power_on_reset_state	:	power_on_reset_state_type := CLEAR;
@@ -42,15 +46,17 @@ architecture Behavioral of sys_reset is
 	signal	fpga_reset_count	:	std_logic_vector(31 downto 0) := (others=>'0');
 	signal	fpga_reset_pwr		:	std_logic := '1';
 	signal	fpga_reset_usr		:	std_logic;
+	signal 	adc_reset_usr		:	std_logic;
 	
 	signal	power_seq_count	:	std_logic_vector(31 downto 0);
-	signal 	adc_strtup	: 	std_logic;
-	signal 	dsa_strtup	:	std_logic;
-	signal	pll_strtup	:	std_logic;
+	signal 	adc_strtup			: 	std_logic;
+	signal 	dsa_strtup			:	std_logic;
+	signal	pll_strtup			:	std_logic;
 	
 begin
 
-reset_o	<= fpga_reset_pwr or fpga_reset_usr; 
+reset_o	<= fpga_reset_pwr or fpga_reset_usr;
+
 --//
 proc_reset_powerup : process(clk_i, fpga_reset_count)
 begin
@@ -80,8 +86,16 @@ generic map(stretch => 2000000) --//2 second reset
 port map(
 	rst_i		=> fpga_reset_pwr,
 	clk_i		=> clk_i,
-	pulse_i	=> user_wakeup_i,
+	pulse_i	=> reg_i(127)(0), --//reset bit in reset register
 	pulse_o	=> fpga_reset_usr);
+
+xADC_RESET : entity work.pulse_stretcher(rtl)
+generic map(stretch => 100000) --//0.1 second reset
+port map(
+	rst_i		=> fpga_reset_pwr or fpga_reset_usr,
+	clk_i		=> clk_i,
+	pulse_i	=> reg_i(127)(1), --//adc reset bit in reset register
+	pulse_o	=> adc_reset_usr);
 
 --//simple power-up sequence
 --//start PLL before ADC to make sure ADC has correct clock
@@ -121,6 +135,7 @@ port map(
 	pulse_o	=> dsa_strtup_o);
 
 adc_strtup_o <= adc_strtup;
+adc_reset_o <=  adc_reset_usr;
 --xADC_RESET : entity work.pulse_stretcher(rtl)
 --generic map(stretch => to_integer(x"F"))
 --port map(
@@ -129,5 +144,5 @@ adc_strtup_o <= adc_strtup;
 --	pulse_i	=> adc_strtup,
 --	pulse_o	=> adc_strtup_o);
 	
-end Behavioral;
+end rtl;
 

@@ -72,6 +72,10 @@ derive_clock_uncertainty -add
 set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|fpga_reset_pwr} 
 set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|pulse_stretcher:xUSER_RESET|pulse[2]} 
 
+#set_false_path -from [get_clocks {top_level:inst4|Clock_Manager:xCLOCKS|pll_block:xPLL_BLOCK|pll_block_0002:pll_block_inst|altera_pll:altera_pll_i|outclk_wire[1]}] -to [get_clocks {USB_IFCLK}] 
+#set_multicycle_path 4 -setup -end -from [get_clocks {top_level:inst4|Clock_Manager:xCLOCKS|pll_block:xPLL_BLOCK|pll_block_0002:pll_block_inst|altera_pll:altera_pll_i|outclk_wire[1]}] -to [get_clocks {USB_IFCLK}] 
+
+
 #Clock Generation for PLL clocks
 
 #create_generated_clock -name The_clock  -source [get_nets {inst134|pll_new_inst|altera_pll_i|arriav_pll|divclk[0]}] -divide_by 1 -multiply_by 1 -duty_cycle 50 -phase 0 -offset 0 
@@ -88,27 +92,7 @@ create_clock -name master_clock1 -period 100.000MHz 	[get_ports {master_clock1}]
 create_clock -name USB_IFCLK		-period 48.0MHz 		[get_ports {USB_IFCLK}]
 create_clock -name GXB_ref_clk_0	-period 100.0MHz 		[get_ports {GXB_ref_clk_0}]
 
-#create_clock -name ADC_CLK_0		-period 187.5MHz 	[get_ports {ADCclk0}]
-#create_clock -name ADC_CLK_1		-period 187.5MHz 	[get_ports {ADCclk1}]
-#create_clock -name ADC_CLK_2		-period 187.5MHz 	[get_ports {ADCclk2}]
-#create_clock -name ADC_CLK_3		-period 187.5MHz 	[get_ports {ADCclk3}]
+set_net_delay -from [get_ports {ADC_PIN15_PIN14_RST[0]}] -to [get_ports {ADC_PIN15_PIN14_RST[1]}] -max 0.05
+set_net_delay -from [get_ports {ADC_PIN15_PIN14_RST[0]}] -to [get_ports {ADC_PIN15_PIN14_RST[2]}] -max 0.05
+set_net_delay -from [get_ports {ADC_PIN15_PIN14_RST[0]}] -to [get_ports {ADC_PIN15_PIN14_RST[3]}] -max 0.05
 
-#create_clock -name _as -period 16.000 [get_ports {_as}]
-
-#create_clock -name SPIclock1 -period 100.000 [get_registers {SPI_Interface:inst37|SPI_counter_5:inst27|lpm_counter:lpm_counter_component|cntr_aei:auto_generated|counter_reg_bit[3]}]
-#create_clock -name SPIclock2 -period 100.000 [get_registers {SPI_Interface:inst47|SPI_counter_5:inst27|lpm_counter:lpm_counter_component|cntr_aei:auto_generated|counter_reg_bit[3]}]
-#create_clock -name SPIclock3 -period 100.000 [get_registers {SPI_Interface:inst49|SPI_counter_5:inst27|lpm_counter:lpm_counter_component|cntr_aei:auto_generated|counter_reg_bit[3]}]
-#create_clock -name SPIclock4 -period 100.000 [get_registers {SPI_Interface:inst56|SPI_counter_5:inst27|lpm_counter:lpm_counter_component|cntr_aei:auto_generated|counter_reg_bit[3]}]
-
-
-#VME Interface    Asynchronous Interface I/O timing
-#create_clock -period 40 -name vme_virtual_clock
-#create_clock -period 40 -name _ds             -waveform { 0 20 } [get_ports {_ds[*]}]
-#create_clock -period 40 -name _as              -waveform { 0 20 } [get_ports {_as}]
-
-
-#set_input_delay  -clock { vme_virtual_clock } -max 10 [get_ports {address* am* _as _iack _ga* _lword _vme_write vme_data* _ds*}]
-#set_input_delay  -clock { vme_virtual_clock } -min  1 [get_ports {address* am* _as _iack _ga* _lword _vme_write vme_data* _ds*}]
-
-#set_input_delay  -clock { The_clock } -max  0 [get_ports {DigIn[*] CRC_ERROR_IN}]
-#set_input_delay  -clock { The_clock } -min  0 [get_ports {DigIn[*] CRC_ERROR_IN}]

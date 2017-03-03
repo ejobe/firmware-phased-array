@@ -65,7 +65,7 @@ begin
 		case spi_state is
 			
 			when idle_st =>
-				le_o 	<='0';
+				le_o 	<= le_init_lev;
 				sclk_o <= '0';
 				sdata_o <= '0';
 				spi_state <= write_st;
