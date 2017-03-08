@@ -71,6 +71,10 @@ derive_clock_uncertainty -add
 ##false paths for global resets
 set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|fpga_reset_pwr} 
 set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|pulse_stretcher:xUSER_RESET|pulse[2]} 
+set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|pulse_stretcher:xADC_RESET|pulse[2]} 
+set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|adc_startup}
+set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|pll_startup}
+set_false_path -from {top_level:inst4|sys_reset:xGLOBAL_RESET|dsa_startup}
 
 #set_false_path -from [get_clocks {top_level:inst4|Clock_Manager:xCLOCKS|pll_block:xPLL_BLOCK|pll_block_0002:pll_block_inst|altera_pll:altera_pll_i|outclk_wire[1]}] -to [get_clocks {USB_IFCLK}] 
 #set_multicycle_path 4 -setup -end -from [get_clocks {top_level:inst4|Clock_Manager:xCLOCKS|pll_block:xPLL_BLOCK|pll_block_0002:pll_block_inst|altera_pll:altera_pll_i|outclk_wire[1]}] -to [get_clocks {USB_IFCLK}] 

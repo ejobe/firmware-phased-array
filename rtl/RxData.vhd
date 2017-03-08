@@ -144,19 +144,7 @@ end process;
 				data_two_chan_p(i)(47 downto 32) 	<= data_two_chan(i)(95 downto 80);
 				data_two_chan_p(i)(31 downto 16) 	<= data_two_chan(i)(111 downto 96);
 				data_two_chan_p(i)(15 downto 0) 		<= data_two_chan(i)(127 downto 112);
-
-				--//weird data ordering
---				data_two_chan_p(i)(127 downto 112) 	<= data_two_chan(i)(31 downto 16);
---				data_two_chan_p(i)(111 downto 96) 	<= data_two_chan(i)(47 downto 32);
---				data_two_chan_p(i)(95 downto 80) 	<= data_two_chan(i)(63 downto 48);
---				data_two_chan_p(i)(79 downto 64) 	<= data_two_chan(i)(79 downto 64);
---				data_two_chan_p(i)(63 downto 48) 	<= data_two_chan(i)(95 downto 80);
---				data_two_chan_p(i)(47 downto 32) 	<= data_two_chan(i)(111 downto 96);
---				data_two_chan_p(i)(31 downto 16) 	<= data_two_chan(i)(127 downto 112);
---				data_two_chan_p(i)(15 downto 0) 		<= data_two_chan(i)(15 downto 0);
-				
-				--data_two_chan_p(i) <= data_two_chan(i);
-				
+								
 				--//uncomment to test RAM read/write:
 --				data_two_chan_p(i)(127 downto 112) 	<= x"0202";
 --				data_two_chan_p(i)(111 downto 96) 	<= x"0202";
@@ -170,6 +158,9 @@ end process;
 
 				for j in 0 to define_serdes_factor-1 loop
 
+				--/////////////////////////////////////////////////////////
+				--//this is for the full 7 bits, 8-bit word size:
+				--/////////////////////////////////////////////////////////
 					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
 												'0'  & data_p(define_serdes_factor*6+j+iq_split*i) & 
 												data_p(define_serdes_factor*5+j+iq_split*i) & data_p(define_serdes_factor*4+j+iq_split*i) & 
@@ -179,6 +170,18 @@ end process;
 												data_p(define_serdes_factor*12+j+iq_split*i) & data_p(define_serdes_factor*11+j+iq_split*i) & 
 												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
 												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
+
+				--/////////////////////////////////////////////////////////
+				--//this is for 4-bit operation (8-bit word size):
+				--/////////////////////////////////////////////////////////
+--					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
+--												"0000" & 
+--												data_p(define_serdes_factor*3+j+iq_split*i) & data_p(define_serdes_factor*2+j+iq_split*i) & 
+--												data_p(define_serdes_factor*1 +j+iq_split*i) & data_p(0+j+iq_split*i) &
+--												"0000" & 
+--												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
+--												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
+
 				end loop;		
 			end loop;
 			

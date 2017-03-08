@@ -1089,7 +1089,6 @@ set_global_assignment -name USE_SIGNALTAP_FILE ../sig_tap/tapRx.stp
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/pll_block_2/pll_block_2_0002.v
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/pll_block_2.vhd
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/DataRAM.vhd
@@ -1121,4 +1120,9 @@ set_global_assignment -name VHDL_FILE ../rtl/Clock_Manager.vhd
 set_global_assignment -name VHDL_FILE ../rtl/atten_controller.vhd
 set_global_assignment -name VHDL_FILE ../rtl/adc_controller.vhd
 set_global_assignment -name VERILOG_FILE ../rtl/verilog_lib/flag_sync.v
-set_global_assignment -name VHDL_FILE ../rtl/trigger/trigger_top.vhd
+set_global_assignment -name VHDL_FILE ../rtl/beamform.vhd
+set_global_assignment -name VHDL_FILE ../rtl/data_manager.vhd
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name VHDL_FILE ../rtl/power_detector.vhd

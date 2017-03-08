@@ -118,6 +118,7 @@ begin
 		registers_io(0) <= x"000001";
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
+		registers_io(base_adrs_rdout_cntrl+2) <= x"000001"; --//data readout mode- pick between wfms, beams, etc(66) 
 		registers_io(base_adrs_rdout_cntrl+3) <= x"000001"; --//start readout address (67)
 		registers_io(base_adrs_rdout_cntrl+4) <= x"000100"; --x"000600"; --//stop readout address (68)
 		registers_io(base_adrs_rdout_cntrl+6) <= x"000000"; --//initiate write to PC adr pulse (write 'read' register) (70) 

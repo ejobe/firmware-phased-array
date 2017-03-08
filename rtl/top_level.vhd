@@ -139,6 +139,7 @@ architecture rtl of top_level is
 	signal adc_pd_sig				:	std_logic_vector(3 downto 0);
 	signal adc_rx_lvds_locked	:	std_logic_vector(3 downto 0);
 	--//fpga RAM data
+	signal beam_ram_data			:  array_of_beams_type;
 	signal ram_data				:	full_data_type;
 	signal ram_read_address		:  std_logic_vector(define_data_ram_depth-1 downto 0);
 	--//signal to/from rx RAM
@@ -153,6 +154,7 @@ architecture rtl of top_level is
 	signal rdout_data_16bit		:	std_logic_vector(15 downto 0);
 	signal rdout_start_flag		:	std_logic;
 	signal rdout_ram_rd_en		:	std_logic_vector(7 downto 0);
+	signal rdout_beam_rd_en		:	std_logic_vector(define_num_beams-1 downto 0);
 	--//register stuff
 	signal register_to_read		:	std_logic_vector(define_register_size-1 downto 0);
 	signal registers				:	register_array_type;
@@ -165,6 +167,9 @@ architecture rtl of top_level is
 	signal aux1_link_tx_data	:	aux_data_link_type;
 	--//unused vme pins (used to simply set to Hi-Z):
 	signal vme_unused_pins		: 	std_logic_vector(79 downto 0);
+	--//data
+	signal wfm_data				: full_data_type; --//registered on core clk
+	signal beam_data				: array_of_beams_type; --//registered on core clk
 
 begin
 	--//pin to signal assignments
@@ -224,17 +229,19 @@ begin
 		reg_addr_i		=> register_adr,
 		reg_i				=> registers,
 		
-		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger
 		rx_adc_data_i			=> rx_ram_data,
 		rx_ram_rd_adr_o 		=> rx_ram_read_address,
 		rx_ram_rd_en_o 		=> rx_ram_rd_en,
-		data_ram_read_adrs_i	=> ram_read_address,
-		data_ram_read_clk_i 	=> usb_slwr, --//usb read
-		data_ram_read_en_i   => rdout_ram_rd_en,
-		data_ram_o				=> ram_data,
-		
-		timestream_data_o		=> open,
+		timestream_data_o		=> wfm_data,
 		dat_valid_o				=> adc_data_valid);
+		
+	xBEAMFORMER : entity work.beamform(rtl)
+	port map(
+		rst_i			=> reset_global,
+		clk_i			=>	clock_75MHz,		
+		reg_i			=> registers,
+		data_i		=>	wfm_data,
+		beams_8_o	=> beam_data);
 		
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller(rtl)
@@ -296,7 +303,7 @@ begin
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
 			adc_ovrange_i	 	=> ADC_OvRange(i),
-			ram_read_Clk_i		=> clock_75MHz,    --//USB readout clock, for now
+			ram_read_Clk_i		=> clock_75MHz,   
 			ram_read_Adrs_i	=> rx_ram_read_address, 
 			ram_read_en_i		=> rx_ram_rd_en,
 			ram_wr_adr_rst_i	=> '0', --usb_done_write, --/restart ram write address
@@ -329,6 +336,20 @@ begin
 --			ram_write_adrs_o	=> ram_write_address(3),
 --			data_ram_ch0_o		=> ram_data(6), 
 --			data_ram_ch1_o		=> ram_data(7));
+
+	xDATA_MANAGER : entity work.data_manager(rtl)
+	port map(
+		rst_i						=> reset_global,
+		clk_i						=> clock_75MHz,
+		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger
+		read_clk_i 				=> usb_slwr, --//usb read
+		read_ram_adr_i			=> ram_read_address,
+		wfm_data_i				=> wfm_data,
+		data_ram_read_en_i	=> rdout_ram_rd_en,
+		data_ram_o				=> ram_data,
+		beam_data_i				=> beam_data,
+		beam_ram_read_en_i	=> rdout_beam_rd_en,
+		beam_ram_o				=> beam_ram_data);
 	
 	xREADOUT_CONTROLLER : entity work.rdout_controller(rtl)
 	port map(
@@ -339,8 +360,10 @@ begin
 		reg_adr_i			=> register_adr,
 		registers_i			=> registers,         
 		ram_data_i			=> ram_data,
+		ram_beam_i			=> beam_ram_data,
 		rdout_start_o		=> rdout_start_flag,
 		rdout_ram_rd_en_o => rdout_ram_rd_en,
+		rdout_beam_rd_en_o=> rdout_beam_rd_en,
 		rdout_pckt_size_o	=> rdout_pckt_size,
 		rdout_adr_o			=> ram_read_address,
 		rdout_fpga_data_o	=> rdout_data_16bit);
