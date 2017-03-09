@@ -37,7 +37,13 @@ entity data_manager is
 		--//beamforming data
 		beam_data_i				:	in	 	array_of_beams_type;
 		beam_ram_read_en_i	:	in		std_logic_vector(define_num_beams-1 downto 0);
-		beam_ram_o				:  out	array_of_beams_type);
+		beam_ram_o				:  out	array_of_beams_type;
+		
+		--//power data
+		powsum_data_i			:	in	 	sum_power_type;
+		powsum_ram_read_en_i	:	in		std_logic_vector(define_num_beams-1 downto 0);
+		powsum_ram_o			:  out	sum_power_type);
+	
 	end data_manager;
 
 architecture rtl of data_manager is
@@ -105,6 +111,20 @@ BeamRamBlock : for i in 0 to define_num_beams-1 generate
 		wren			=>	internal_data_ram_write_en,
 		q				=>	beam_ram_o(i));
 end generate BeamRamBlock;
+
+PowRamBlock : for i in 0 to define_num_beams-1 generate
+	xPowRAM 	:	entity work.DataRAM(syn)
+	port map(
+		data			=> powsum_data_i(i), 
+		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
+		rdaddress	=> read_ram_adr_i,
+		rdclock		=> read_clk_i,
+		rden			=> powsum_ram_read_en_i(i),
+		wraddress	=> internal_ram_write_adrs, 
+		wrclock		=> clk_i,
+		wren			=>	internal_data_ram_write_en,
+		q				=>	powsum_ram_o(i));
+end generate PowRamBlock;
 --////////////////////////////////////////////////////////////////////////////
 
 

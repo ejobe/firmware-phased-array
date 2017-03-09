@@ -32,10 +32,14 @@ entity rdout_controller is
 		registers_i			:	in		register_array_type;         
 		ram_data_i			:	in		full_data_type; --//data stored in fpga ram
 		ram_beam_i			:	in		array_of_beams_type; --//data stored in fpga ram
+		ram_powsum_i		:  in		sum_power_type;
 		
 		rdout_start_o		:	out	std_logic;
-		rdout_ram_rd_en_o	:	out	std_logic_vector(7 downto 0);
-		rdout_beam_rd_en_o:  out	std_logic_vector(define_num_beams-1 downto 0);
+		
+		rdout_ram_rd_en_o		:	out	std_logic_vector(7 downto 0);
+		rdout_beam_rd_en_o	:  out	std_logic_vector(define_num_beams-1 downto 0);
+		rdout_powsum_rd_en_o : 	out   std_logic_vector(define_num_beams-1 downto 0);
+		
 		rdout_pckt_size_o	:	out	std_logic_vector(15 downto 0); --//length of readout
 		rdout_adr_o			:	inout	std_logic_vector(define_data_ram_depth-1 downto 0);
 		rdout_fpga_data_o	:	out	std_logic_vector(15 downto 0));
@@ -49,6 +53,7 @@ signal readout_data_state : readout_state_type;
 
 signal data_mask			: std_logic_vector(15 downto 0); 
 signal beam_mask			: std_logic_vector(15 downto 0); 
+signal pow_mask			: std_logic_vector(15 downto 0);
 
 signal start_reg_write : std_logic_vector(1 downto 0);
 signal start_dat_write : std_logic_vector(1 downto 0);
@@ -121,6 +126,7 @@ begin
 		
 		data_mask 		<= (others=>'0');
 		beam_mask 		<= (others=>'0');
+		pow_mask 		<= (others=>'0');
 
 	elsif rising_edge(clk_interface_i) then
 		start_reg_write(1) <= start_reg_write(0);
@@ -128,6 +134,7 @@ begin
 		
 		data_mask         <= (others=> registers_i(base_adrs_rdout_cntrl+2)(0)); --//picks between data ram
 		beam_mask         <= (others=> registers_i(base_adrs_rdout_cntrl+2)(1)); --//picks between beam ram
+		pow_mask          <= (others=> registers_i(base_adrs_rdout_cntrl+2)(2)); --//picks between power ram
 
 		--//this nested 'if' loop is bad vhdl, but clk_interface_i should be relatively slow
 --		if readout_register_state = done_st then
@@ -213,6 +220,7 @@ begin
 				--//enable ram read enable on specified data (or beam) RAM channel:
 				rdout_ram_rd_en_o  <= registers_i(base_adrs_rdout_cntrl+1)(7 downto 0) and data_mask(7 downto 0);
 				rdout_beam_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and beam_mask(define_num_beams-1 downto 0);
+				rdout_powsum_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and beam_mask(define_num_beams-1 downto 0);
 
 				if j = 1 then
 					j := -1;
@@ -231,36 +239,44 @@ begin
 				j := j + 1;
 				if j = 0 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(15 downto 0) and data_mask) or 
-												(ram_beam_i(beam_ch)(15 downto 0) and beam_mask);
+												(ram_beam_i(beam_ch)(15 downto 0) and beam_mask) or
+												(ram_powsum_i(beam_ch)(15 downto 0) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = 1 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(31 downto 16) and data_mask) or 
-												(ram_beam_i(beam_ch)(31 downto 16) and beam_mask);
+												(ram_beam_i(beam_ch)(31 downto 16) and beam_mask) or
+												(ram_powsum_i(beam_ch)(31 downto 16) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = 2 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(47 downto 32) and data_mask) or 
-												(ram_beam_i(beam_ch)(47 downto 32) and beam_mask);
+												(ram_beam_i(beam_ch)(47 downto 32) and beam_mask) or
+												(ram_powsum_i(beam_ch)(47 downto 32) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = 3 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(63 downto 48) and data_mask) or 
-												(ram_beam_i(beam_ch)(63 downto 48) and beam_mask);
+												(ram_beam_i(beam_ch)(63 downto 48) and beam_mask) or
+												(ram_powsum_i(beam_ch)(63 downto 48) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = 4 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(79 downto 64) and data_mask) or 
-												(ram_beam_i(beam_ch)(79 downto 64) and beam_mask);
+												(ram_beam_i(beam_ch)(79 downto 64) and beam_mask) or
+												(ram_powsum_i(beam_ch)(79 downto 64) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = 5 then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(95 downto 80) and data_mask) or 
-												(ram_beam_i(beam_ch)(95 downto 80) and beam_mask);
+												(ram_beam_i(beam_ch)(95 downto 80) and beam_mask) or
+												(ram_powsum_i(beam_ch)(95 downto 80) and pow_mask);
 					readout_data_state <= read_st;
 				elsif j = (define_serdes_factor-2) then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(111 downto 96) and data_mask) or 
-												(ram_beam_i(beam_ch)(111 downto 96) and beam_mask);
+												(ram_beam_i(beam_ch)(111 downto 96) and beam_mask) or
+												(ram_powsum_i(beam_ch)(111 downto 96) and pow_mask);
 					rdout_adr_o <= rdout_adr_o + 1; --//toggle next ram adr
 					readout_data_state <= read_st;
 				elsif j = (define_serdes_factor-1) then
 					rdout_fpga_data_o <= (ram_data_i(read_ch)(127 downto 112) and data_mask) or 
-												(ram_beam_i(beam_ch)(127 downto 112) and beam_mask);
+												(ram_beam_i(beam_ch)(127 downto 112) and beam_mask) or
+												(ram_powsum_i(beam_ch)(127 downto 112) and pow_mask);
 					
 					if rdout_adr_o >= registers_i(base_adrs_rdout_cntrl+4)(define_data_ram_depth-1 downto 0) then
 						j := 0;

@@ -139,6 +139,7 @@ architecture rtl of top_level is
 	signal adc_pd_sig				:	std_logic_vector(3 downto 0);
 	signal adc_rx_lvds_locked	:	std_logic_vector(3 downto 0);
 	--//fpga RAM data
+	signal powsum_ram_data		:  sum_power_type;
 	signal beam_ram_data			:  array_of_beams_type;
 	signal ram_data				:	full_data_type;
 	signal ram_read_address		:  std_logic_vector(define_data_ram_depth-1 downto 0);
@@ -155,6 +156,7 @@ architecture rtl of top_level is
 	signal rdout_start_flag		:	std_logic;
 	signal rdout_ram_rd_en		:	std_logic_vector(7 downto 0);
 	signal rdout_beam_rd_en		:	std_logic_vector(define_num_beams-1 downto 0);
+	signal rdout_powsum_rd_en	:	std_logic_vector(define_num_beams-1 downto 0);
 	--//register stuff
 	signal register_to_read		:	std_logic_vector(define_register_size-1 downto 0);
 	signal registers				:	register_array_type;
@@ -170,6 +172,7 @@ architecture rtl of top_level is
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
 	signal beam_data				: array_of_beams_type; --//registered on core clk
+	signal powsum_4				: sum_power_type;
 
 begin
 	--//pin to signal assignments
@@ -242,6 +245,14 @@ begin
 		reg_i			=> registers,
 		data_i		=>	wfm_data,
 		beams_8_o	=> beam_data);
+		
+	xPOWER_DETECTOR : entity work.power_detector(rtl)
+	port map(
+		rst_i  	=> reset_global,
+		clk_i	 	=> clock_75MHz,
+		reg_i		=> registers,
+		beams_i	=> beam_data,
+		sum_pow_o=> powsum_4);
 		
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller(rtl)
@@ -349,7 +360,10 @@ begin
 		data_ram_o				=> ram_data,
 		beam_data_i				=> beam_data,
 		beam_ram_read_en_i	=> rdout_beam_rd_en,
-		beam_ram_o				=> beam_ram_data);
+		beam_ram_o				=> beam_ram_data,
+		powsum_data_i			=> powsum_4,
+		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
+		powsum_ram_o			=> powsum_ram_data);
 	
 	xREADOUT_CONTROLLER : entity work.rdout_controller(rtl)
 	port map(
@@ -359,11 +373,13 @@ begin
 		rdout_reg_i			=> register_to_read,
 		reg_adr_i			=> register_adr,
 		registers_i			=> registers,         
-		ram_data_i			=> ram_data,
-		ram_beam_i			=> beam_ram_data,
+		ram_data_i			=> ram_data, 
+		ram_beam_i			=> beam_ram_data, 
+		ram_powsum_i		=> powsum_ram_data, 
 		rdout_start_o		=> rdout_start_flag,
-		rdout_ram_rd_en_o => rdout_ram_rd_en,
-		rdout_beam_rd_en_o=> rdout_beam_rd_en,
+		rdout_ram_rd_en_o => rdout_ram_rd_en, 
+		rdout_beam_rd_en_o=> rdout_beam_rd_en, 
+		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
 		rdout_pckt_size_o	=> rdout_pckt_size,
 		rdout_adr_o			=> ram_read_address,
 		rdout_fpga_data_o	=> rdout_data_16bit);
