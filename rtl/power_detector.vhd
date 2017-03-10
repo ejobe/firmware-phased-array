@@ -58,10 +58,10 @@ begin
 			for j in 0 to define_num_power_sums-1 loop
 				
 				sum_power(i)((j+1)*define_pow_sum_range-1 downto j*define_pow_sum_range) <=
-					instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref + (2*j)*define_pow_sum_range   ) + 
-					instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref + (2*j+1)*define_pow_sum_range ) + 
-					instantaneous_power(i)( ref+(2*j+3)*define_pow_sum_range-1 downto ref + (2*j+2)*define_pow_sum_range ) + 
-					instantaneous_power(i)( ref+(2*j+4)*define_pow_sum_range-1 downto ref + (2*j+3)*define_pow_sum_range ); 
+		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref+(2*j)*define_pow_sum_range) ), define_pow_sum_range)) + 
+		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref+(2*j+1)*define_pow_sum_range)), define_pow_sum_range)); 
+					--instantaneous_power(i)( ref+(2*j+3)*define_pow_sum_range-1 downto ref + (2*j+2)*define_pow_sum_range ) + 
+					--instantaneous_power(i)( ref+(2*j+4)*define_pow_sum_range-1 downto ref + (2*j+3)*define_pow_sum_range ); 
 			end loop;
 		end if;
 	end loop;
@@ -105,31 +105,27 @@ begin
 			
 				--//////////////////////
 				--//check sign bit
-				case internal_beams(i)(define_sign_bit+j*define_beam_bits-1) is
-					
-					when '1'=>
-						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
-							lut_power_neg(to_integer(unsigned(
-								internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
-							define_pow_sum_range));
-							
-					when '0'=>
-						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
-							lut_power_pos(to_integer(unsigned(
-								internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
-							define_pow_sum_range));
-				end case;
+--				case internal_beams(i)(define_sign_bit+j*define_beam_bits-1) is
+--					
+--					when '1'=>
+--						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
+--							lut_power_neg(to_integer(unsigned(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
+--							define_pow_sum_range));
+--							
+--					when '0'=>
+--						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
+--							lut_power_pos(to_integer(unsigned(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
+--							define_pow_sum_range));
+--				end case;
+
+					internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
+						lut_power(to_integer(signed(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
+						define_pow_sum_range));
 								
 			end if;
 		end loop;
 	end loop;
 end process;
 				
-
-		
-	
-
-
-
 
 end rtl;

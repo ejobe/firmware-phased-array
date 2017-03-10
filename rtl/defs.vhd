@@ -79,21 +79,17 @@ type array_of_beams_type is array (define_num_beams-1 downto 0)
 --////////////////////////////////
 --//stuff for power detection 
 constant pow_lut_size 	: integer := 2**(define_beam_bits-1);
-constant pow_lut_range 	: integer := pow_lut_size * pow_lut_size;
 constant define_pow_sum_range  : integer := 16; --//allow 16 bits
 
---type inst_power_array_type is array(2*define_serdes_factor-1 downto 0) of integer range 0 to pow_lut_range;
---type full_inst_power_array_type is array(define_num_beams-1 downto 0) of inst_power_array_type;
 type inst_power_array_type is array(2*define_serdes_factor-1 downto 0) of std_logic_vector(define_pow_sum_range-1 downto 0);
 type full_inst_power_array_type is array(define_num_beams-1 downto 0) of inst_power_array_type;
 
 type pipe_full_inst_power_array_type is array(define_num_beams-1 downto 0) of 
 	std_logic_vector(4*define_serdes_factor*define_pow_sum_range-1 downto 0);
 
-constant define_pow_sum_length : integer := 4;
-constant define_num_power_sums : integer := 8; --//number of sums with parallel data
+constant define_num_power_sums : integer := 8; --//number of sums within parallel data clock
 type sum_power_type is array(define_num_beams-1 downto 0) of 
-	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0);
+	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0); --//currently matches 128 width of data
 
 end defs;
 

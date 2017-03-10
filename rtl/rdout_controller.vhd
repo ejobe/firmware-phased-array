@@ -220,7 +220,7 @@ begin
 				--//enable ram read enable on specified data (or beam) RAM channel:
 				rdout_ram_rd_en_o  <= registers_i(base_adrs_rdout_cntrl+1)(7 downto 0) and data_mask(7 downto 0);
 				rdout_beam_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and beam_mask(define_num_beams-1 downto 0);
-				rdout_powsum_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and beam_mask(define_num_beams-1 downto 0);
+				rdout_powsum_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and pow_mask(define_num_beams-1 downto 0);
 
 				if j = 1 then
 					j := -1;

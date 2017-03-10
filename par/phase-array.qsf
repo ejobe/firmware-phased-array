@@ -1085,7 +1085,7 @@ set_location_assignment PIN_R27 -to "GXB_ref_clk_0(n)"
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to ADCclk0
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to ADCclk1
 set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE ../sig_tap/tapRx.stp
+set_global_assignment -name USE_SIGNALTAP_FILE ../sig_tap/tapPower.stp
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
@@ -1126,4 +1126,5 @@ set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name VHDL_FILE ../rtl/power_detector.vhd
 set_global_assignment -name VHDL_FILE ../rtl/pow_lut.vhd
+set_global_assignment -name SIGNALTAP_FILE ../sig_tap/tapPower.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
