@@ -102,21 +102,6 @@ begin
 				internal_instant_power(i)(j) <= (others=>'0');
 			
 			elsif rising_edge(clk_i) then
-			
-				--//////////////////////
-				--//check sign bit
---				case internal_beams(i)(define_sign_bit+j*define_beam_bits-1) is
---					
---					when '1'=>
---						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
---							lut_power_neg(to_integer(unsigned(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
---							define_pow_sum_range));
---							
---					when '0'=>
---						internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
---							lut_power_pos(to_integer(unsigned(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
---							define_pow_sum_range));
---				end case;
 
 					internal_instant_power(i)(j) <= std_logic_vector(to_unsigned(
 						lut_power(to_integer(signed(internal_beams(i)((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
@@ -127,5 +112,4 @@ begin
 	end loop;
 end process;
 				
-
 end rtl;
