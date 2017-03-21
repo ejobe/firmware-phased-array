@@ -135,15 +135,21 @@ begin
 
 		elsif rising_edge(clk_i) then
 		
-			internal_beams(0)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m4(i);
-			internal_beams(1)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m3(i);
-			internal_beams(2)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m2(i);
-			internal_beams(3)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m1(i);
-			internal_beams(4)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_0(i);
-			internal_beams(5)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p1(i);
-			internal_beams(6)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p2(i);
-			internal_beams(7)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p3(i);
-			internal_beams(8)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p4(i);
+			internal_beams(0)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m7(i);
+			internal_beams(1)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m6(i);
+			internal_beams(2)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m5(i);
+			internal_beams(3)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m4(i);
+			internal_beams(4)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m3(i);
+			internal_beams(5)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m2(i);
+			internal_beams(6)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m1(i);
+			internal_beams(7)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_0(i);
+			internal_beams(8)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p1(i);
+			internal_beams(9)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p2(i);
+			internal_beams(10)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p3(i);
+			internal_beams(11)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p4(i);
+			internal_beams(12)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p5(i);
+			internal_beams(13)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p6(i);
+			internal_beams(14)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_p7(i);
 
 			--/////////////////////////////////////
 			--// Delay-and-Sum here:
@@ -280,7 +286,26 @@ begin
 				std_logic_vector(resize(signed(dat(5)((i-6)*define_word_size+slice_hi-1 downto (i-6)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(6)((i-12)*define_word_size+slice_hi-1 downto (i-12)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(7)((i-18)*define_word_size+slice_hi-1 downto (i-18)*define_word_size+slice_lo )),define_beam_bits));		
-										
+
+			beam_8_m7(i) <= --//8 antenna, -7 delay
+				std_logic_vector(resize(signed(dat(0)((i-28)*define_word_size+slice_hi-1 downto (i-28)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i-21)*define_word_size+slice_hi-1 downto (i-21)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i-14)*define_word_size+slice_hi-1 downto (i-14)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i-7)*define_word_size+slice_hi-1 downto (i-7)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i+7)*define_word_size+slice_hi-1 downto (i+7)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i+14)*define_word_size+slice_hi-1 downto (i+14)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i+21)*define_word_size+slice_hi-1 downto (i+21)*define_word_size+slice_lo )),define_beam_bits));		
+
+			beam_8_p7(i) <= --//8 antenna, +7 delay
+				std_logic_vector(resize(signed(dat(0)((i+28)*define_word_size+slice_hi-1 downto (i+28)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i+21)*define_word_size+slice_hi-1 downto (i+21)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i+14)*define_word_size+slice_hi-1 downto (i+14)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i+7)*define_word_size+slice_hi-1 downto (i+7)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i-7)*define_word_size+slice_hi-1 downto (i-7)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i-14)*define_word_size+slice_hi-1 downto (i-14)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i-21)*define_word_size+slice_hi-1 downto (i-21)*define_word_size+slice_lo )),define_beam_bits));					
 		end if;
 	end loop;
 end process;

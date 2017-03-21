@@ -29,7 +29,7 @@ constant define_word_size					:	integer := 8; --//no. bits, size of each sample 
 constant define_serdes_factor 			: 	integer := 8;
 constant define_adc_data_width			: 	integer := 28; 
 constant define_deser_data_width			: 	integer := define_serdes_factor*define_adc_data_width;
-constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; 
+constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; --//parallel data chunk size
 
 --//waveform acq RAM:
 constant define_ram_width  				: 	integer := 128;
