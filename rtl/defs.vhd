@@ -72,7 +72,7 @@ constant define_sign_bit			: integer := define_beam_bits;
 type beam_data_type is array (2*define_serdes_factor*define_word_size-1 downto 0) of 
 	std_logic_vector(define_beam_bits-1 downto 0);		
 
-constant define_num_beams : integer := 9;
+constant define_num_beams : integer := 15;
 type array_of_beams_type is array (define_num_beams-1 downto 0) 
 	of std_logic_vector(2*define_serdes_factor*define_word_size-1 downto 0);
 	

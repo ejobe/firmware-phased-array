@@ -50,6 +50,9 @@ constant slice_hi   : integer := define_wave2beam_hi_bit+slice_base;
 
 constant zpad	: std_logic := '0';
 
+signal beam_8_m7	:	beam_data_type; --//-7 sample delay beam
+signal beam_8_m6	:	beam_data_type; --//-6 sample delay beam
+signal beam_8_m5	:	beam_data_type; --//-5 sample delay beam
 signal beam_8_m4	:	beam_data_type; --//-4 sample delay beam
 signal beam_8_m3	:	beam_data_type; --//-3 sample delay beam
 signal beam_8_m2	:	beam_data_type; --//-2 sample delay beam
@@ -59,6 +62,9 @@ signal beam_8_p1	:	beam_data_type; --//+1 sample delay beam
 signal beam_8_p2	:	beam_data_type; --//+2 sample delay beam
 signal beam_8_p3	:	beam_data_type; --//+3 sample delay beam
 signal beam_8_p4	:	beam_data_type; --//+4 sample delay beam
+signal beam_8_p5	:	beam_data_type; --//+5 sample delay beam
+signal beam_8_p6	:	beam_data_type; --//+6 sample delay beam
+signal beam_8_p7	:	beam_data_type; --//+7 sample delay beam
 
 signal internal_beams 		: array_of_beams_type;
 signal internal_beams_pipe	: array_of_beams_type;
@@ -235,7 +241,46 @@ begin
 				std_logic_vector(resize(signed(dat(6)((i-8)*define_word_size+slice_hi-1 downto (i-8)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(7)((i-12)*define_word_size+slice_hi-1 downto (i-12)*define_word_size+slice_lo )),define_beam_bits));		
 					
-								
+			beam_8_m5(i) <= --//8 antenna, -5 delay
+				std_logic_vector(resize(signed(dat(0)((i-20)*define_word_size+slice_hi-1 downto (i-20)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i-15)*define_word_size+slice_hi-1 downto (i-15)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i-10)*define_word_size+slice_hi-1 downto (i-10)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i-5)*define_word_size+slice_hi-1 downto (i-5)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i+5)*define_word_size+slice_hi-1 downto (i+5)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i+10)*define_word_size+slice_hi-1 downto (i+10)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i+15)*define_word_size+slice_hi-1 downto (i+15)*define_word_size+slice_lo )),define_beam_bits));		
+
+			beam_8_p5(i) <= --//8 antenna, +5 delay
+				std_logic_vector(resize(signed(dat(0)((i+20)*define_word_size+slice_hi-1 downto (i+20)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i+15)*define_word_size+slice_hi-1 downto (i+15)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i+10)*define_word_size+slice_hi-1 downto (i+10)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i+5)*define_word_size+slice_hi-1 downto (i+5)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i-5)*define_word_size+slice_hi-1 downto (i-5)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i-10)*define_word_size+slice_hi-1 downto (i-10)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i-15)*define_word_size+slice_hi-1 downto (i-15)*define_word_size+slice_lo )),define_beam_bits));		
+			
+			beam_8_m6(i) <= --//8 antenna, -6 delay
+				std_logic_vector(resize(signed(dat(0)((i-24)*define_word_size+slice_hi-1 downto (i-24)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i-18)*define_word_size+slice_hi-1 downto (i-18)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i-12)*define_word_size+slice_hi-1 downto (i-12)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i-6)*define_word_size+slice_hi-1 downto (i-6)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i+6)*define_word_size+slice_hi-1 downto (i+6)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i+12)*define_word_size+slice_hi-1 downto (i+12)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i+18)*define_word_size+slice_hi-1 downto (i+18)*define_word_size+slice_lo )),define_beam_bits));		
+
+			beam_8_p6(i) <= --//8 antenna, +6 delay
+				std_logic_vector(resize(signed(dat(0)((i+24)*define_word_size+slice_hi-1 downto (i+24)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(1)((i+18)*define_word_size+slice_hi-1 downto (i+18)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(2)((i+12)*define_word_size+slice_hi-1 downto (i+12)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i+6)*define_word_size+slice_hi-1 downto (i+6)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i-6)*define_word_size+slice_hi-1 downto (i-6)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(6)((i-12)*define_word_size+slice_hi-1 downto (i-12)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i-18)*define_word_size+slice_hi-1 downto (i-18)*define_word_size+slice_lo )),define_beam_bits));		
+										
 		end if;
 	end loop;
 end process;
