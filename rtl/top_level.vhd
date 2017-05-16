@@ -108,13 +108,14 @@ architecture rtl of top_level is
 	
 	--//system resets/startup
 	signal reset_global			:	std_logic;	--//system-wide reset signal
+	signal reset_global_except_registers : std_logic  --//system-wide reset signal EXCEPT register values
 	signal startup_adc			: 	std_logic;  --//startup adc circuit after reset
 	signal startup_pll			: 	std_logic;  --//startup pll circuit after reset
 	signal startup_dsa			: 	std_logic;  --//startup dsa circuit after reset
 	signal reset_adc				:	std_logic;  --//signal to reset just the ADC firmware blocks
 	--//the following signals to/from Clock_Manager--
 	signal clock_187p5MHz		:	std_logic;		
-	signal clock_75MHz			:	std_logic;		
+	signal clock_93MHz			:	std_logic;		
 	signal clock_15MHz			:	std_logic;  
 	signal clock_1MHz				:	std_logic;		
 	signal clock_1Hz				:	std_logic;		
@@ -185,19 +186,33 @@ begin
 	adc_data(2)			<= ADC_Dat_2;
 	adc_data(3)			<= ADC_Dat_3;	
 	
-	--//default constant clock mux selection
-	CLK_select(0) <= '1'; --// board block selection: 1= use local oscillator
-	CLK_select(1) <= '0'; --// PLL clock selection: 0= one PLL mode, use ref clock 
+	--///////////////////////////////////////
+	--//master 100 MHz clock input
+	--///////////////////////////////////////
+	--// hardcode default constant clock mux selection:
+	--CLK_select(0) <= '1'; --// board block selection: 1= use local oscillator
+	--CLK_select(1) <= '0'; --// PLL clock selection: 0= one PLL mode, use ref clock 
+	--///////////////////////////////////////
+	--//allow clock selection to be programmable:
+	proc_set_clock_ref : process(reset_global)
+	begin
+		if reset_global = '1' or reset_global_except_registers = '1' then
+			CLK_select(0) <= registers(16)(0);
+			CLK_select(1) <= not registers(16)(0);
+		end if;
+	end process;
+	--///////////////////////////////////////
 
+	
 	--//system-wide clocks
 	xCLOCKS : entity work.Clock_Manager(Structural)
 	port map(
-		Reset_i			=> reset_global,
+		Reset_i			=> reset_global or reset_global_except_registers,
 		CLK0_i			=> MClk_0,
 		CLK1_i			=> MClk_1,
 		PLL_reset_i		=>	'0',--clock_FPGA_PLLrst,		
 		CLK_187p5MHz_o => clock_187p5MHz,
-		CLK_75MHz_o		=> clock_75MHz,
+		CLK_93MHz_o		=> clock_93MHz,
 		CLK_15MHz_o 	=> clock_15MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
 		CLK_1Hz_o		=> clock_1Hz,
@@ -207,10 +222,10 @@ begin
 		fpga_pllLock_o => clock_FPGA_PLLlock);
 	
 	--//adc configuration and data-handling block
-	xADC_CONTROLLER : entity work.adc_controller(rtl)
+	xADC_CONTROLLER : entity work.adc_controller
 	port map(
 		clk_i					=> clock_1MHz,
-		clk_core_i			=> clock_75MHz,
+		clk_core_i			=> clock_93MHz,
 		clk_fast_i			=> clock_187p5MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
@@ -238,26 +253,26 @@ begin
 		timestream_data_o		=> wfm_data,
 		dat_valid_o				=> adc_data_valid);
 		
-	xBEAMFORMER : entity work.beamform(rtl)
+	xBEAMFORMER : entity work.beamform
 	port map(
-		rst_i			=> reset_global,
-		clk_i			=>	clock_75MHz,		
+		rst_i			=> reset_global or reset_global_except_registers,
+		clk_i			=>	clock_93MHz,		
 		reg_i			=> registers,
 		data_i		=>	wfm_data,
 		beams_8_o	=> beam_data);
 		
-	xPOWER_DETECTOR : entity work.power_detector(rtl)
+	xPOWER_DETECTOR : entity work.power_detector
 	port map(
-		rst_i  	=> reset_global,
-		clk_i	 	=> clock_75MHz,
+		rst_i  	=> reset_global or reset_global_except_registers,
+		clk_i	 	=> clock_93MHz,
 		reg_i		=> registers,
 		beams_i	=> beam_data,
 		sum_pow_o=> powsum_4);
 		
 	--//pll configuration block	
-	xPLL_CONTROLLER : entity work.pll_controller(rtl)
+	xPLL_CONTROLLER : entity work.pll_controller
 	port map(
-		rst_i			=> reset_global,
+		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_1MHz,
 		reg_i			=> (others=>'0'), --//set registers manually
 		write_i		=> lmk_start_write or startup_pll,
@@ -268,9 +283,9 @@ begin
 		pll_sync_o	=> LMK_SYNC);
 
 	--//attenuator configuration block	
-	xDSA_CONTROLLER : entity work.atten_controller(rtl)
+	xDSA_CONTROLLER : entity work.atten_controller
 	port map(
-		rst_i			=> reset_global,
+		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_1MHz,
 		reg_i			=> registers,
 		addr_i		=> register_adr,
@@ -281,19 +296,20 @@ begin
 		dsa_le_o		=> DSA_LE);
 		
 	--//system resets and power-on cycle
-	xGLOBAL_RESET : entity work.sys_reset(rtl)
+	xGLOBAL_RESET : entity work.sys_reset
 	port map( 
 		clk_i				=> clock_1MHz,
 		clk_rdy_i		=> clock_FPGA_PLLlock,
 		user_wakeup_i	=> not USB_WAKEUP, --//set this to 0 eventually when no longer using USB
 		reg_i				=> registers,
+		reset_sys_o		=> reset_global_except_registers,
 		reset_o			=> reset_global,
 		pll_strtup_o	=> startup_pll,
 		dsa_strtup_o	=> startup_dsa,
 		adc_strtup_o	=> startup_adc,
 		adc_reset_o		=> reset_adc);
 	
-	xREGISTERS : entity work.registers(rtl)
+	xREGISTERS : entity work.registers
 	port map(
 		rst_i				=> reset_global,
 		clk_i				=> clock_15MHz,  --//clock for register interface
@@ -307,9 +323,9 @@ begin
 		
 	--//ADC data receiver block
 	ReceiverBlock	:	 for i in 0 to 3 generate
-		xDATA_RECEIVER : entity work.RxData(rtl)
+		xDATA_RECEIVER : entity work.RxData
 		port map(
-			rst_i					=>	reset_global or not startup_adc,		
+			rst_i					=>	reset_global_except_registers or reset_global or not startup_adc,		
 			rx_dat_valid_i		=>	adc_data_valid,
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
@@ -348,10 +364,10 @@ begin
 --			data_ram_ch0_o		=> ram_data(6), 
 --			data_ram_ch1_o		=> ram_data(7));
 
-	xDATA_MANAGER : entity work.data_manager(rtl)
+	xDATA_MANAGER : entity work.data_manager
 	port map(
-		rst_i						=> reset_global,
-		clk_i						=> clock_75MHz,
+		rst_i						=> reset_global or reset_global_except_registers,
+		clk_i						=> clock_93MHz,
 		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger
 		read_clk_i 				=> usb_slwr, --//usb read
 		read_ram_adr_i			=> ram_read_address,
@@ -365,12 +381,13 @@ begin
 		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
 		powsum_ram_o			=> powsum_ram_data);
 	
-	xREADOUT_CONTROLLER : entity work.rdout_controller(rtl)
+	xREADOUT_CONTROLLER : entity work.rdout_controller
 	port map(
-		rst_i					=> reset_global or usb_done_write,
+		--rst_i					=> reset_global or usb_done_write or reset_global_except_registers, --//for USB operation
+		rst_i					=> reset_global or reset_global_except_registers,
 		clk_i					=> usb_slwr,
 		clk_interface_i	=> USB_IFCLK,
-		rdout_reg_i			=> register_to_read,
+		rdout_reg_i			=> register_to_read,  --//read register
 		reg_adr_i			=> register_adr,
 		registers_i			=> registers,         
 		ram_data_i			=> ram_data, 
@@ -384,27 +401,28 @@ begin
 		rdout_adr_o			=> ram_read_address,
 		rdout_fpga_data_o	=> rdout_data_16bit);
 		
-	xUSB	:	entity work.usb_32bit(Behavioral)
-	port map(
-		USB_IFCLK		=> USB_IFCLK,
-		USB_RESET    	=> (not USB_WAKEUP) or reset_global,
-		USB_BUS  		=> USB_FD,
-		FPGA_DATA		=> rdout_data_16bit, 
-      USB_FLAGB    	=>	USB_CTL(1),
-      USB_FLAGC    	=> USB_CTL(2),
-		USB_START_WR	=> rdout_start_flag,--//start write to PC
-		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
-      USB_DONE  		=> usb_done_write, --//usb done with write to PC
-      USB_PKTEND     => USB_PA(6),
-      USB_SLWR  		=> usb_slwr, --//USB write clock
-      USB_WBUSY 		=> usb_write_busy, --//USB writing
-      USB_FLAGA    	=> USB_CTL(0),
-      USB_FIFOADR  	=>	USB_PA(5 downto 4),
-      USB_SLOE     	=> USB_PA(2),
-      USB_SLRD     	=> USB_RDY(0),
-      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
-      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
-		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
+		
+--	xUSB	:	entity work.usb_32bit(Behavioral)
+--	port map(
+--		USB_IFCLK		=> USB_IFCLK,
+--		USB_RESET    	=> (not USB_WAKEUP) or reset_global,
+--		USB_BUS  		=> USB_FD,
+--		FPGA_DATA		=> rdout_data_16bit, 
+--      USB_FLAGB    	=>	USB_CTL(1),
+--      USB_FLAGC    	=> USB_CTL(2),
+--		USB_START_WR	=> rdout_start_flag,--//start write to PC
+--		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
+--      USB_DONE  		=> usb_done_write, --//usb done with write to PC
+--      USB_PKTEND     => USB_PA(6),
+--      USB_SLWR  		=> usb_slwr, --//USB write clock
+--      USB_WBUSY 		=> usb_write_busy, --//USB writing
+--      USB_FLAGA    	=> USB_CTL(0),
+--      USB_FIFOADR  	=>	USB_PA(5 downto 4),
+--      USB_SLOE     	=> USB_PA(2),
+--      USB_SLRD     	=> USB_RDY(0),
+--      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
+--      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
+--		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
 
 --	xSERIAL_LINKS	:	entity work.SerialLinks(Behavioral)
 --	port map(

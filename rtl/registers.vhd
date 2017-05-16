@@ -107,6 +107,7 @@ end process;
 --//write registers: 
 proc_write_register : process(rst_i, clk_i, internal_rdy_flag(3), internal_register_p1)
 begin
+	
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
 		--//read-only registers:
@@ -115,7 +116,9 @@ begin
 		registers_io(3) <= status_i;      	 --//status register
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
-		registers_io(0) <= x"000001";
+		registers_io(0)  <= x"000001"; --//set read register
+		registers_io(16) <= x"000001"; --//set 100 MHz clock source
+
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
 		registers_io(base_adrs_rdout_cntrl+2) <= x"000001"; --//data readout mode- pick between wfms, beams, etc(66) 

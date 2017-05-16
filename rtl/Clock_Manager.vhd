@@ -24,7 +24,7 @@ entity Clock_Manager is
 		PLL_reset_i		:  in		std_logic;
 		
 		CLK_187p5MHz_o :  out	std_logic;
-		CLK_75MHz_o		:  out	std_logic;  
+		CLK_93MHz_o		:  out	std_logic;  
 		CLK_15MHz_o		:  out	std_logic;
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
@@ -63,7 +63,7 @@ begin
 	CLK_1MHz_o	<=	clk_1MHz_sig;
 
 	xPLL_BLOCK : pll_block
-		port map(CLK0_i, PLL_reset_i, CLK_75MHz_o, CLK_15MHz_o, 
+		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_15MHz_o, 
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2

@@ -9,8 +9,7 @@
 -- DATE:         1/2016
 --
 -- DESCRIPTION:  global resets
---               a number of typical firmware 'good design techniques' are 
---               abandoned here due to the nature of asynch resets
+--
 ---------------------------------------------------------------------------------
 
 library IEEE;
@@ -26,7 +25,8 @@ entity sys_reset is
 		clk_rdy_i		:	in		std_logic;
 		reg_i				:  in 	register_array_type;
 		user_wakeup_i	:	in		std_logic;	--//user input, rising edge
-		reset_o			:	out	std_logic;	--//active hi
+		reset_o			:	out	std_logic;	--//active hi -- THIS IS THE GLOBAL RESET
+		reset_sys_o		:  out   std_logic;  --//active hi -- THIS RESETS EVERYTHING EXCEPT THE REGISTER VALUES
 		--//start-up signals for external circuits, only toggled on power-up
 		pll_strtup_o	:  out	std_logic; 
 		dsa_strtup_o	:	out	std_logic;
@@ -45,8 +45,9 @@ architecture rtl of sys_reset is
 	
 	signal	fpga_reset_count	:	std_logic_vector(31 downto 0) := (others=>'0');
 	signal	fpga_reset_pwr		:	std_logic := '1';
-	signal	fpga_reset_usr		:	std_logic;
-	signal 	adc_reset_usr		:	std_logic;
+	signal	fpga_reset_usr		:	std_logic := '0';
+	signal 	fpga_reset_sys_usr:	std_logic := '0';
+	signal 	adc_reset_usr		:	std_logic := '0';
 	
 	signal	power_seq_count	:	std_logic_vector(31 downto 0);
 	signal 	adc_strtup			: 	std_logic;
@@ -55,8 +56,8 @@ architecture rtl of sys_reset is
 	
 begin
 
-reset_o	<= fpga_reset_pwr or fpga_reset_usr;
-
+reset_o			<= fpga_reset_pwr or fpga_reset_usr;
+reset_sys_o		<= fpga_reset_sys_usr;
 --//
 proc_reset_powerup : process(clk_i, fpga_reset_count)
 begin
@@ -81,6 +82,7 @@ begin
 	end if;
 end process;
 
+--//user-initiated global reset
 xUSER_RESET : entity work.pulse_stretcher(rtl)
 generic map(stretch => 2000000) --//2 second reset
 port map(
@@ -89,6 +91,16 @@ port map(
 	pulse_i	=> reg_i(127)(0), --//reset bit in reset register
 	pulse_o	=> fpga_reset_usr);
 
+--//reset everything except the register values
+xUSER_SYS_RESET : entity work.pulse_stretcher(rtl)
+generic map(stretch => 2000000) --//2 second reset
+port map(
+	rst_i		=> fpga_reset_pwr or fpga_reset_usr,
+	clk_i		=> clk_i,
+	pulse_i	=> reg_i(127)(1), --// bit in reset register
+	pulse_o	=> fpga_reset_sys_usr);	
+
+--//user-initiated reset of ADCs only
 xADC_RESET : entity work.pulse_stretcher(rtl)
 generic map(stretch => 100000) --//0.1 second reset
 port map(

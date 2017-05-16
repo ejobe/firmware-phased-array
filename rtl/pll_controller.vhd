@@ -93,7 +93,7 @@ end process;
 --//lmk serial programming:
 proc_set_reg : process(rst_i, clk_i)
 begin
-	if rst_i = '1' then
+	--if rst_i = '1' then
 		--//set default code register values:
 		--lmk_reg(0) <= x"80160180"; --//noted as 'init'
 		lmk_reg_init <= x"80160180";
@@ -124,7 +124,7 @@ begin
 		lmk_reg(29) <= x"018001FD";
 		lmk_reg(30) <= x"020001FE";
 		lmk_reg(31) <= x"001F001F";
-	end if;
+	--end if;
 	--//eventually add in method to write registers
 end process;
 
