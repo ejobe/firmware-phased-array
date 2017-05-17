@@ -381,12 +381,34 @@ begin
 		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
 		powsum_ram_o			=> powsum_ram_data);
 	
-	xREADOUT_CONTROLLER : entity work.rdout_controller
+	--//readout controller using USB
+	--//allows something like dynamic mem access (start + stop readout address)
+--	xREADOUT_CONTROLLER : entity work.rdout_controller
+--	port map(
+--		--rst_i					=> reset_global or usb_done_write or reset_global_except_registers, --//for USB operation
+--		rst_i					=> reset_global or reset_global_except_registers,
+--		clk_i					=> usb_slwr,
+--		clk_interface_i	=> USB_IFCLK,
+--		rdout_reg_i			=> register_to_read,  --//read register
+--		reg_adr_i			=> register_adr,
+--		registers_i			=> registers,         
+--		ram_data_i			=> ram_data, 
+--		ram_beam_i			=> beam_ram_data, 
+--		ram_powsum_i		=> powsum_ram_data, 
+--		rdout_start_o		=> rdout_start_flag,
+--		rdout_ram_rd_en_o => rdout_ram_rd_en, 
+--		rdout_beam_rd_en_o=> rdout_beam_rd_en, 
+--		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
+--		rdout_pckt_size_o	=> rdout_pckt_size,
+--		rdout_adr_o			=> ram_read_address,
+--		rdout_fpga_data_o	=> rdout_data_16bit);
+		
+	--//readout controller using MCU/BeagleBone
+	--//
+	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
-		--rst_i					=> reset_global or usb_done_write or reset_global_except_registers, --//for USB operation
 		rst_i					=> reset_global or reset_global_except_registers,
-		clk_i					=> usb_slwr,
-		clk_interface_i	=> USB_IFCLK,
+		clk_i					=> 
 		rdout_reg_i			=> register_to_read,  --//read register
 		reg_adr_i			=> register_adr,
 		registers_i			=> registers,         
@@ -397,32 +419,41 @@ begin
 		rdout_ram_rd_en_o => rdout_ram_rd_en, 
 		rdout_beam_rd_en_o=> rdout_beam_rd_en, 
 		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
-		rdout_pckt_size_o	=> rdout_pckt_size,
 		rdout_adr_o			=> ram_read_address,
 		rdout_fpga_data_o	=> rdout_data_16bit);
 		
-		
---	xUSB	:	entity work.usb_32bit(Behavioral)
---	port map(
---		USB_IFCLK		=> USB_IFCLK,
---		USB_RESET    	=> (not USB_WAKEUP) or reset_global,
---		USB_BUS  		=> USB_FD,
---		FPGA_DATA		=> rdout_data_16bit, 
---      USB_FLAGB    	=>	USB_CTL(1),
---      USB_FLAGC    	=> USB_CTL(2),
---		USB_START_WR	=> rdout_start_flag,--//start write to PC
---		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
---      USB_DONE  		=> usb_done_write, --//usb done with write to PC
---      USB_PKTEND     => USB_PA(6),
---      USB_SLWR  		=> usb_slwr, --//USB write clock
---      USB_WBUSY 		=> usb_write_busy, --//USB writing
---      USB_FLAGA    	=> USB_CTL(0),
---      USB_FIFOADR  	=>	USB_PA(5 downto 4),
---      USB_SLOE     	=> USB_PA(2),
---      USB_SLRD     	=> USB_RDY(0),
---      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
---      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
---		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
+	xPCINTERFACE : entity work.mcu_interface
+	port map
+		rst_i			 => reset_global or reset_global_except_registers,	
+		mcu_fpga_io	 => uC_dig,
+		data_i		 => 
+		tx_load_i	 =>
+		data_o   	 =>
+		rx_req_i		 => 
+		spi_busy_o	 => );
+	
+	
+	xUSB	:	entity work.usb_32bit(Behavioral)
+	port map(
+		USB_IFCLK		=> USB_IFCLK,
+		USB_RESET    	=> '1', --(not USB_WAKEUP) or reset_global,
+		USB_BUS  		=> USB_FD,
+		FPGA_DATA		=> (others=>'0'), --rdout_data_16bit, 
+      USB_FLAGB    	=>	USB_CTL(1),
+      USB_FLAGC    	=> USB_CTL(2),
+		USB_START_WR	=> '0', --rdout_start_flag,--//start write to PC
+		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
+      USB_DONE  		=> usb_done_write, --//usb done with write to PC
+      USB_PKTEND     => USB_PA(6),
+      USB_SLWR  		=> usb_slwr, --//USB write clock
+      USB_WBUSY 		=> usb_write_busy, --//USB writing
+      USB_FLAGA    	=> USB_CTL(0),
+      USB_FIFOADR  	=>	USB_PA(5 downto 4),
+      USB_SLOE     	=> USB_PA(2),
+      USB_SLRD     	=> USB_RDY(0),
+      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
+      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
+		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
 
 --	xSERIAL_LINKS	:	entity work.SerialLinks(Behavioral)
 --	port map(

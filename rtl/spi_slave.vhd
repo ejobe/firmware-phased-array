@@ -20,7 +20,6 @@
 --   Version 1.1 11/27/2012 Scott Larson
 --     Added an asynchronous active low reset
 --
---   EJO changed standard d_width to 32 bits 5/2017
 ------------------------------------------------------------------------------
 
 LIBRARY ieee;

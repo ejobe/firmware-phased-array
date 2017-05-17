@@ -20,8 +20,6 @@ use work.defs.all;
 use work.register_map.all;
 
 entity rdout_controller is		
-	generic(
-		readout_mode		:	string := "USB");
 	port(
 		rst_i					:	in		std_logic;	
 		clk_i					:  in		std_logic; --//data clock=>rdout_fpga_data_o set on falling edge of this clock
