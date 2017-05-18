@@ -108,7 +108,7 @@ architecture rtl of top_level is
 	
 	--//system resets/startup
 	signal reset_global			:	std_logic;	--//system-wide reset signal
-	signal reset_global_except_registers : std_logic  --//system-wide reset signal EXCEPT register values
+	signal reset_global_except_registers : std_logic;  --//system-wide reset signal EXCEPT register values
 	signal startup_adc			: 	std_logic;  --//startup adc circuit after reset
 	signal startup_pll			: 	std_logic;  --//startup pll circuit after reset
 	signal startup_dsa			: 	std_logic;  --//startup dsa circuit after reset
@@ -125,13 +125,20 @@ architecture rtl of top_level is
 	signal clock_FPGA_PLLlock	:	std_logic;
 	signal clock_FPGA_PLLrst	:	std_logic;
 	--//signals for usb, specifically
-	signal usb_start_write			:	std_logic;
-   signal usb_done_write			:	std_logic;
-	signal usb_write_busy			:	std_logic;
-	signal usb_slwr					:  std_logic;
-	signal usb_read_busy				:	std_logic;
-	signal usb_read_packet_32bit	:	std_logic_vector(31 downto 0);
-	signal usb_read_packet_rdy		:	std_logic;
+--	signal usb_start_write			:	std_logic;
+--   signal usb_done_write			:	std_logic;
+--	signal usb_write_busy			:	std_logic;
+--	signal usb_slwr					:  std_logic;
+--	signal usb_read_busy				:	std_logic;
+--	signal usb_read_packet_32bit	:	std_logic_vector(31 downto 0);
+--	signal usb_read_packet_rdy		:	std_logic;
+	--//mcu spi interface
+	signal mcu_data_pkt_32bit	:	std_logic_vector(31 downto 0);
+	signal mcu_tx_flag			: 	std_logic;
+	signal mcu_tx_rdy				:	std_logic;
+	signal mcu_rx_rdy				:	std_logic;
+	signal mcu_rx_req				:	std_logic;
+	signal mcu_spi_busy			:	std_logic;
 	--//signals from ADC chips
 	signal adc_data_valid		:	std_logic;
 	signal adc_cal_sig			:	std_logic;
@@ -152,12 +159,13 @@ architecture rtl of top_level is
 	signal lmk_start_write		:	std_logic := '0';
 	signal lmk_done_write		:	std_logic;
 	--//data readout signals
-	signal rdout_pckt_size		:	std_logic_vector(15 downto 0);
-	signal rdout_data_16bit		:	std_logic_vector(15 downto 0);
+	--signal rdout_pckt_size		:	std_logic_vector(15 downto 0);
+	signal rdout_data				:	std_logic_vector(31 downto 0);
 	signal rdout_start_flag		:	std_logic;
 	signal rdout_ram_rd_en		:	std_logic_vector(7 downto 0);
 	signal rdout_beam_rd_en		:	std_logic_vector(define_num_beams-1 downto 0);
 	signal rdout_powsum_rd_en	:	std_logic_vector(define_num_beams-1 downto 0);
+	signal rdout_clock			:	std_logic;
 	--//register stuff
 	signal register_to_read		:	std_logic_vector(define_register_size-1 downto 0);
 	signal registers				:	register_array_type;
@@ -308,18 +316,6 @@ begin
 		dsa_strtup_o	=> startup_dsa,
 		adc_strtup_o	=> startup_adc,
 		adc_reset_o		=> reset_adc);
-	
-	xREGISTERS : entity work.registers
-	port map(
-		rst_i				=> reset_global,
-		clk_i				=> clock_15MHz,  --//clock for register interface
-		ioclk_i			=> USB_IFCLK,
-		status_i			=> (others=>'0'), --//status register
-		write_reg_i		=> usb_read_packet_32bit,
-		write_rdy_i		=> usb_read_packet_rdy,
-		read_reg_o 		=> register_to_read,
-		registers_io	=> registers, --//system register space
-		address_o		=> register_adr);
 		
 	--//ADC data receiver block
 	ReceiverBlock	:	 for i in 0 to 3 generate
@@ -330,7 +326,7 @@ begin
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
 			adc_ovrange_i	 	=> ADC_OvRange(i),
-			ram_read_Clk_i		=> clock_75MHz,   
+			ram_read_Clk_i		=> clock_93MHz,   
 			ram_read_Adrs_i	=> rx_ram_read_address, 
 			ram_read_en_i		=> rx_ram_rd_en,
 			ram_wr_adr_rst_i	=> '0', --usb_done_write, --/restart ram write address
@@ -369,7 +365,7 @@ begin
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
 		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger
-		read_clk_i 				=> usb_slwr, --//usb read
+		read_clk_i 				=> rdout_clock,  --usb_slwr,
 		read_ram_adr_i			=> ram_read_address,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
@@ -402,58 +398,84 @@ begin
 --		rdout_pckt_size_o	=> rdout_pckt_size,
 --		rdout_adr_o			=> ram_read_address,
 --		rdout_fpga_data_o	=> rdout_data_16bit);
+--
+--	xREGISTERS : entity work.registers
+--	port map(
+--		rst_i				=> reset_global,
+--		clk_i				=> clock_15MHz,  --//clock for register interface
+--		ioclk_i			=> USB_IFCLK,
+--		status_i			=> (others=>'0'), --//status register
+--		write_reg_i		=> usb_read_packet_32bit,
+--		write_rdy_i		=> usb_read_packet_rdy,
+--		read_reg_o 		=> register_to_read,
+--		registers_io	=> registers, --//system register space
+--		address_o		=> register_adr);
 		
 	--//readout controller using MCU/BeagleBone
-	--//
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
-		rst_i					=> reset_global or reset_global_except_registers,
-		clk_i					=> 
-		rdout_reg_i			=> register_to_read,  --//read register
-		reg_adr_i			=> register_adr,
-		registers_i			=> registers,         
-		ram_data_i			=> ram_data, 
-		ram_beam_i			=> beam_ram_data, 
-		ram_powsum_i		=> powsum_ram_data, 
-		rdout_start_o		=> rdout_start_flag,
-		rdout_ram_rd_en_o => rdout_ram_rd_en, 
-		rdout_beam_rd_en_o=> rdout_beam_rd_en, 
+		rst_i						=> reset_global or reset_global_except_registers,
+		clk_i						=> clock_1MHz,
+		rdout_reg_i				=> register_to_read,  --//read register
+		reg_adr_i				=> register_adr,
+		registers_i				=> registers,         
+		ram_data_i				=> ram_data, 
+		ram_beam_i				=> beam_ram_data, 
+		ram_powsum_i			=> powsum_ram_data, 
+		read_clk_o				=> rdout_clock,
+		tx_rdy_o					=> mcu_tx_flag,
+		tx_rdy_spi_i			=> mcu_tx_rdy,
+		rdout_ram_rd_en_o 	=> rdout_ram_rd_en, 
+		rdout_beam_rd_en_o	=> rdout_beam_rd_en, 
 		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
-		rdout_adr_o			=> ram_read_address,
-		rdout_fpga_data_o	=> rdout_data_16bit);
+		rdout_adr_o				=> ram_read_address,
+		rdout_fpga_data_o		=> rdout_data);
+			
+	xREGISTERS : entity work.registers_mcu_spi
+	port map(
+		rst_i				=> reset_global,
+		clk_i				=> clock_1MHz,  --//clock for register interface
+		status_i			=> (others=>'0'), --//status register
+		write_reg_i		=> mcu_data_pkt_32bit,
+		write_rdy_i		=> mcu_rx_rdy,
+		write_req_o		=> mcu_rx_req,
+		read_reg_o 		=> register_to_read,
+		registers_io	=> registers, --//system register space
+		address_o		=> register_adr);
 		
 	xPCINTERFACE : entity work.mcu_interface
-	port map
+	port map(
 		rst_i			 => reset_global or reset_global_except_registers,	
 		mcu_fpga_io	 => uC_dig,
-		data_i		 => 
-		tx_load_i	 =>
-		data_o   	 =>
-		rx_req_i		 => 
-		spi_busy_o	 => );
-	
-	
-	xUSB	:	entity work.usb_32bit(Behavioral)
-	port map(
-		USB_IFCLK		=> USB_IFCLK,
-		USB_RESET    	=> '1', --(not USB_WAKEUP) or reset_global,
-		USB_BUS  		=> USB_FD,
-		FPGA_DATA		=> (others=>'0'), --rdout_data_16bit, 
-      USB_FLAGB    	=>	USB_CTL(1),
-      USB_FLAGC    	=> USB_CTL(2),
-		USB_START_WR	=> '0', --rdout_start_flag,--//start write to PC
-		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
-      USB_DONE  		=> usb_done_write, --//usb done with write to PC
-      USB_PKTEND     => USB_PA(6),
-      USB_SLWR  		=> usb_slwr, --//USB write clock
-      USB_WBUSY 		=> usb_write_busy, --//USB writing
-      USB_FLAGA    	=> USB_CTL(0),
-      USB_FIFOADR  	=>	USB_PA(5 downto 4),
-      USB_SLOE     	=> USB_PA(2),
-      USB_SLRD     	=> USB_RDY(0),
-      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
-      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
-		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
+		data_i		 => rdout_data,
+		tx_load_i	 => mcu_tx_flag,
+		data_o   	 => mcu_data_pkt_32bit,
+		rx_req_i		 => mcu_rx_req,
+		spi_busy_o	 => mcu_spi_busy,
+		rx_rdy_o		 => mcu_rx_rdy,
+		tx_rdy_o		 => mcu_tx_rdy);
+		
+--	xUSB	:	entity work.usb_32bit(Behavioral)
+--	port map(
+--		USB_IFCLK		=> USB_IFCLK,
+--		USB_RESET    	=> '1', --(not USB_WAKEUP) or reset_global,
+--		USB_BUS  		=> USB_FD,
+--		FPGA_DATA		=> (others=>'0'), --rdout_data_16bit, 
+--      USB_FLAGB    	=>	USB_CTL(1),
+--      USB_FLAGC    	=> USB_CTL(2),
+--		USB_START_WR	=> '0', --rdout_start_flag,--//start write to PC
+--		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
+--      USB_DONE  		=> usb_done_write, --//usb done with write to PC
+--      USB_PKTEND     => USB_PA(6),
+--      USB_SLWR  		=> usb_slwr, --//USB write clock
+--      USB_WBUSY 		=> usb_write_busy, --//USB writing
+--      USB_FLAGA    	=> USB_CTL(0),
+--      USB_FIFOADR  	=>	USB_PA(5 downto 4),
+--      USB_SLOE     	=> USB_PA(2),
+--      USB_SLRD     	=> USB_RDY(0),
+--      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
+--      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
+--		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
 
 --	xSERIAL_LINKS	:	entity work.SerialLinks(Behavioral)
 --	port map(
@@ -491,8 +513,11 @@ begin
 	LOC_serial_out0	<= xAUX_0_tx_pin(0);
 	LOC_serial_out3  	<= xAUX_1_tx_pin(1); 
 	LOC_serial_out2	<= xAUX_1_tx_pin(0);
+	
 	--//USB
-	USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
+	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
+	USB_RDY(1) <= '0';
+	
 	--//ADC
 	ADC_Cal 		<= adc_cal_sig; --//adc calibration init pulse
 	ADC_PD		<= adc_pd_sig;	 --//adc power-down
@@ -506,11 +531,11 @@ begin
 	DEBUG(4) <=  registers(base_adrs_rdout_cntrl+0)(0); --'0';--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
 	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
 	DEBUG(6) <=  ram_read_address(0);--adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
-	DEBUG(7) <=  usb_slwr;--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
+	DEBUG(7) <=  '0';--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
 	DEBUG(8) <=  rdout_start_flag;
-	DEBUG(9) <=  usb_write_busy; --DSA_LE;--usb_read_packet_rdy;
+	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
 	DEBUG(10)<=  USB_PA(6);--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
-	DEBUG(11)<=  usb_done_write;--adc_cal_sig; --usb_slwr;
+	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	
 	LED(0) <= not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
 	LED(1) <= not USB_WAKEUP;

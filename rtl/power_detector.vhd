@@ -17,7 +17,7 @@ use ieee.numeric_std.all;
 
 use work.defs.all;
 use work.register_map.all;
-use work.pow_lut.all;
+use work.pow_lut.all;  --//lut for power calculations
 
 entity power_detector is
 	port(

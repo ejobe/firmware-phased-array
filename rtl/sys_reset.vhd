@@ -106,7 +106,7 @@ generic map(stretch => 100000) --//0.1 second reset
 port map(
 	rst_i		=> fpga_reset_pwr or fpga_reset_usr,
 	clk_i		=> clk_i,
-	pulse_i	=> reg_i(127)(1), --//adc reset bit in reset register
+	pulse_i	=> reg_i(127)(2), --//adc reset bit in reset register
 	pulse_o	=> adc_reset_usr);
 
 --//simple power-up sequence
