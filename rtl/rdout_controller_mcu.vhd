@@ -58,7 +58,7 @@ signal beam_mask			: std_logic_vector(d_width-1 downto 0);
 signal pow_mask			: std_logic_vector(d_width-1 downto 0);
 
 signal read_ch : integer range 0 to 7 := 0;
-signal beam_ch : integer range 0 to 10 := 0; --update this when changing he number of beams
+signal beam_ch : integer range 0 to 10 := 0; --update this when changing the number of beams
 signal ram_chunk : integer range 0 to 3 := 0; --needs updating if spi_slave d_width changes, or ram_width changes
 
 begin
@@ -123,7 +123,6 @@ begin
 				read_ch <= 0;
 				beam_ch <= 0;
 		end case;
-
 		--//////////////////////////////////////
 		--//update ram chunk
 		case registers_i(base_adrs_rdout_cntrl+9)(1 downto 0) is
@@ -138,7 +137,6 @@ begin
 			when others=>
 				ram_chunk <= 0;
 		end case;
-		
 		--//////////////////////////////////////
 		--//update readout data type
 		case registers_i(base_adrs_rdout_cntrl+2)(1 downto 0) is
@@ -168,7 +166,6 @@ begin
 				beam_mask 		<= (others=>'0');
 				pow_mask 		<= (others=>'0');
 		end case;
-		
 		--//////////////////////////////////////
 		--//update ram address and ram read enables
 		rdout_adr_o 			<= registers_i(base_adrs_rdout_cntrl+5)(define_data_ram_depth-1 downto 0);
@@ -177,7 +174,7 @@ begin
 		rdout_powsum_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and pow_mask(define_num_beams-1 downto 0);
 	end if;
 end process;
-
+--///////////////////////////////
 --//readout process	
 proc_read : process(rst_i, clk_i, reg_adr_i, tx_rdy_spi_i)
 variable i : integer range 0 to 4 := 0;
@@ -211,6 +208,7 @@ begin
 			--//assign the readout register to the appropriate data
 			when set_readout_reg_st =>
 				i := 0;
+				--//real data assigned here:
 				rdout_fpga_data_o <= (ram_data_i(read_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and data_mask) or  --//readout wfm
 											(ram_beam_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and beam_mask) or  --//readout beamform
 											(ram_powsum_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and pow_mask) or --//readout power sum

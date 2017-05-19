@@ -126,6 +126,4 @@ PowRamBlock : for i in 0 to define_num_beams-1 generate
 		q				=>	powsum_ram_o(i));
 end generate PowRamBlock;
 --////////////////////////////////////////////////////////////////////////////
-
-
 end rtl;

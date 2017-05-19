@@ -118,6 +118,10 @@ begin
 		registers_io(base_adrs_dsa_cntrl+2) <= x"000000"; --//atten values for CH 6 & 7
 		registers_io(base_adrs_dsa_cntrl+3) <= x"000000"; --//write attenuator spi interface (address toggle)
 		
+		--//electronics cal pulse:
+		registers_io(41) <= x"000000"; --//set RF switch direction(LSB) [41]
+		registers_io(42) <= x"000000"; --//enable cal pulse(LSB)    [42]
+
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 		--////////////////////////////////////////////////////////////////////////////

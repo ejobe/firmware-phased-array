@@ -114,7 +114,7 @@ architecture rtl of top_level is
 	signal startup_dsa			: 	std_logic;  --//startup dsa circuit after reset
 	signal reset_adc				:	std_logic;  --//signal to reset just the ADC firmware blocks
 	--//the following signals to/from Clock_Manager--
-	signal clock_187p5MHz		:	std_logic;		
+	signal clock_300MHz			:	std_logic;		
 	signal clock_93MHz			:	std_logic;		
 	signal clock_15MHz			:	std_logic;  
 	signal clock_1MHz				:	std_logic;		
@@ -126,7 +126,7 @@ architecture rtl of top_level is
 	signal clock_FPGA_PLLrst	:	std_logic;
 	--//signals for usb, specifically
 --	signal usb_start_write			:	std_logic;
---   signal usb_done_write			:	std_logic;
+-- signal usb_done_write			:	std_logic;
 --	signal usb_write_busy			:	std_logic;
 --	signal usb_slwr					:  std_logic;
 --	signal usb_read_busy				:	std_logic;
@@ -219,7 +219,7 @@ begin
 		CLK0_i			=> MClk_0,
 		CLK1_i			=> MClk_1,
 		PLL_reset_i		=>	'0',--clock_FPGA_PLLrst,		
-		CLK_187p5MHz_o => clock_187p5MHz,
+		CLK_187p5MHz_o => clock_300MHz,
 		CLK_93MHz_o		=> clock_93MHz,
 		CLK_15MHz_o 	=> clock_15MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
@@ -234,14 +234,13 @@ begin
 	port map(
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
-		clk_fast_i			=> clock_187p5MHz,
+		clk_fast_i			=> clock_300MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
 		rx_locked_i			=> (adc_rx_lvds_locked(0) and 
 									 adc_rx_lvds_locked(1) and 
 									 adc_rx_lvds_locked(2) and 
 									 adc_rx_lvds_locked(3)),
-		
 		pd_o 					=> adc_pd_sig,
 		sclk_outv_o 		=> ADC_SClk,
 		sdat_oedge_ddr_o	=> ADC_SData,
@@ -251,15 +250,13 @@ begin
 		ece_o					=> ADC_ECEb,
 		cal_o					=> adc_cal_sig,
 		dclk_rst_lvds_o	=> ADC_DCLK_RST,
-
-		reg_addr_i		=> register_adr,
-		reg_i				=> registers,
-		
-		rx_adc_data_i			=> rx_ram_data,
-		rx_ram_rd_adr_o 		=> rx_ram_read_address,
-		rx_ram_rd_en_o 		=> rx_ram_rd_en,
-		timestream_data_o		=> wfm_data,
-		dat_valid_o				=> adc_data_valid);
+		reg_addr_i			=> register_adr,
+		reg_i					=> registers,
+		rx_adc_data_i		=> rx_ram_data,
+		rx_ram_rd_adr_o 	=> rx_ram_read_address,
+		rx_ram_rd_en_o 	=> rx_ram_rd_en,
+		timestream_data_o	=> wfm_data,
+		dat_valid_o			=> adc_data_valid);
 		
 	xBEAMFORMER : entity work.beamform
 	port map(
@@ -276,6 +273,14 @@ begin
 		reg_i		=> registers,
 		beams_i	=> beam_data,
 		sum_pow_o=> powsum_4);
+		
+   xCALPULSE : entity work.electronics_calpulse 
+	port map(
+		rst_i			=> reset_global or reset_global_except_registers,
+		clk_i			=> clock_300MHz,
+		reg_i			=> registers,
+		pulse_o		=> SMA_out1, --//pulse out in 'TRIG_OUT_AUX' SMA connector
+		rf_switch_o => DEBUG(0)); --//RF switch select wired to GPIO Pin
 		
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
@@ -524,7 +529,7 @@ begin
 	--///////////////////////////////////////////////////////////////
 	--//debug headers & LEDs
 	--///////////////////////////////////////////////////////////////
-	DEBUG(0) <=  '0'; --LMK_DAT_uWire;
+	--DEBUG(0) <=  '0'; --LMK_DAT_uWire;
 	DEBUG(1) <=  '0';--ram_write_address(1)(0); -- LMK_CLK_uWire;
 	DEBUG(2) <=  '0';--ram_write_address(2)(0); --LMK_LEu_uWire;
 	DEBUG(3) <=  '0';--ram_write_address(3)(0); --lmk_start_write;

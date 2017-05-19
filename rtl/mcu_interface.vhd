@@ -31,13 +31,10 @@ entity mcu_interface is
 		spi_busy_o	:	out	std_logic; 											--//interface is busy
 		rx_rdy_o		:	out	std_logic;                                --//rx data is ready
 		tx_rdy_o		:	out	std_logic);											--//tx data is ready
-
 end mcu_interface;
 
 architecture rtl of mcu_interface is
-
 begin
-
 --/////////////////////////////////////////////////////////
 --//primary interface to MCU / BeagleBone is SPI coms
 xSPI_SLAVE : entity work.spi_slave
@@ -61,6 +58,5 @@ port map(
 	rx_data        	=> data_o,				--receive register output to logic
 	busy           	=> spi_busy_o,			--busy signal to logic ('1' during transaction)
 	miso         		=> mcu_fpga_io(2));	--master in, slave out
-
 --//
 end rtl;
