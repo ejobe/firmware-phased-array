@@ -34,7 +34,7 @@ constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; 
 --//waveform acq RAM:
 constant define_ram_width  				: 	integer := 128;
 constant define_ram_depth					: 	integer := 3; --// words for Rx receiving RAM
-constant define_data_ram_depth			: 	integer := 9; --// words for block RAM
+constant define_data_ram_depth			: 	integer := 7; --// words for block RAM
 
 --//firmware registers:
 constant define_address_size				:	integer := 8; --//8 bits for now

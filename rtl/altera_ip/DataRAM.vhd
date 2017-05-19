@@ -45,10 +45,10 @@ ENTITY DataRAM IS
 	(
 		data		: IN STD_LOGIC_VECTOR (127 DOWNTO 0);
 		rd_aclr		: IN STD_LOGIC  := '0';
-		rdaddress		: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (6 DOWNTO 0);
 		rdclock		: IN STD_LOGIC ;
 		rden		: IN STD_LOGIC  := '1';
-		wraddress		: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
+		wraddress		: IN STD_LOGIC_VECTOR (6 DOWNTO 0);
 		wrclock		: IN STD_LOGIC  := '1';
 		wren		: IN STD_LOGIC  := '0';
 		q		: OUT STD_LOGIC_VECTOR (127 DOWNTO 0)
@@ -72,15 +72,15 @@ BEGIN
 		clock_enable_output_b => "BYPASS",
 		intended_device_family => "Arria V",
 		lpm_type => "altsyncram",
-		numwords_a => 512,
-		numwords_b => 512,
+		numwords_a => 128,
+		numwords_b => 128,
 		operation_mode => "DUAL_PORT",
 		outdata_aclr_b => "CLEAR1",
 		outdata_reg_b => "CLOCK1",
 		power_up_uninitialized => "FALSE",
 		rdcontrol_reg_b => "CLOCK1",
-		widthad_a => 9,
-		widthad_b => 9,
+		widthad_a => 7,
+		widthad_b => 7,
 		width_a => 128,
 		width_b => 128,
 		width_byteena_a => 1
@@ -134,7 +134,7 @@ END SYN;
 -- Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 -- Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
--- Retrieval info: PRIVATE: MEMSIZE NUMERIC "65536"
+-- Retrieval info: PRIVATE: MEMSIZE NUMERIC "16384"
 -- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 -- Retrieval info: PRIVATE: MIFfilename STRING ""
 -- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "2"
@@ -171,30 +171,30 @@ END SYN;
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Arria V"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
--- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "512"
--- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "512"
+-- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "128"
+-- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "128"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "DUAL_PORT"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "CLEAR1"
 -- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "CLOCK1"
 -- Retrieval info: CONSTANT: POWER_UP_UNINITIALIZED STRING "FALSE"
 -- Retrieval info: CONSTANT: RDCONTROL_REG_B STRING "CLOCK1"
--- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "9"
--- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "9"
+-- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "7"
+-- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "7"
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "128"
 -- Retrieval info: CONSTANT: WIDTH_B NUMERIC "128"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
 -- Retrieval info: USED_PORT: data 0 0 128 0 INPUT NODEFVAL "data[127..0]"
 -- Retrieval info: USED_PORT: q 0 0 128 0 OUTPUT NODEFVAL "q[127..0]"
 -- Retrieval info: USED_PORT: rd_aclr 0 0 0 0 INPUT GND "rd_aclr"
--- Retrieval info: USED_PORT: rdaddress 0 0 9 0 INPUT NODEFVAL "rdaddress[8..0]"
+-- Retrieval info: USED_PORT: rdaddress 0 0 7 0 INPUT NODEFVAL "rdaddress[6..0]"
 -- Retrieval info: USED_PORT: rdclock 0 0 0 0 INPUT NODEFVAL "rdclock"
 -- Retrieval info: USED_PORT: rden 0 0 0 0 INPUT VCC "rden"
--- Retrieval info: USED_PORT: wraddress 0 0 9 0 INPUT NODEFVAL "wraddress[8..0]"
+-- Retrieval info: USED_PORT: wraddress 0 0 7 0 INPUT NODEFVAL "wraddress[6..0]"
 -- Retrieval info: USED_PORT: wrclock 0 0 0 0 INPUT VCC "wrclock"
 -- Retrieval info: USED_PORT: wren 0 0 0 0 INPUT GND "wren"
 -- Retrieval info: CONNECT: @aclr1 0 0 0 0 rd_aclr 0 0 0 0
--- Retrieval info: CONNECT: @address_a 0 0 9 0 wraddress 0 0 9 0
--- Retrieval info: CONNECT: @address_b 0 0 9 0 rdaddress 0 0 9 0
+-- Retrieval info: CONNECT: @address_a 0 0 7 0 wraddress 0 0 7 0
+-- Retrieval info: CONNECT: @address_b 0 0 7 0 rdaddress 0 0 7 0
 -- Retrieval info: CONNECT: @clock0 0 0 0 0 wrclock 0 0 0 0
 -- Retrieval info: CONNECT: @clock1 0 0 0 0 rdclock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 128 0 data 0 0 128 0

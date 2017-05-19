@@ -41,6 +41,8 @@ signal read_request_state 	: read_request_state_type;
 
 signal internal_register 	: std_logic_vector(31 downto 0);
 signal internal_ready 		: std_logic;
+signal unique_chip_id		: std_logic_vector(63 downto 0);
+signal unique_chip_id_rdy	: std_logic;
 begin
 --//handle rrdy interupts [write_rdy_i] from spi_slave and toggle read_request [write_req_o]
 process(rst_i, clk_i, write_rdy_i)
@@ -85,6 +87,9 @@ begin
 		registers_io(1) <= firmware_version; --//firmware version (see defs.vhd)
 		registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
 		registers_io(3) <= status_i;      	 --//status register
+		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
+		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
+		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(0)  <= x"000001"; --//set read register
@@ -142,8 +147,21 @@ begin
 		address_o <= x"00";
 		registers_io(3) <= status_i; --//update status
 		registers_io(127) <= x"000000"; --//clear the reset register
-		--////////////////////////////////////////////////////////////////////////////		
+		--////////////////////////////////////////////////////////////////////////////	
+		if unique_chip_id_rdy = '1' then
+			registers_io(4) <= unique_chip_id(23 downto 0);
+			registers_io(5) <= unique_chip_id(47 downto 24);
+			registers_io(6) <= x"00" & unique_chip_id(63 downto 48);	
+		end if;
+		--////////////////////////////////////////////////////////////////////////////
 	end if;
 end process;
 --/////////////////////////////////////////////////////////////////
+--//get silicon ID:
+xUNIQUECHIPID : entity work.ChipID
+port map(
+	clkin      => clk_i,
+	reset      => rst_i,
+	data_valid => unique_chip_id_rdy,
+	chip_id    => unique_chip_id);
 end rtl;

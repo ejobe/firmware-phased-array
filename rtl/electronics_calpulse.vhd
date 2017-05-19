@@ -20,8 +20,7 @@ use work.defs.all;
 entity electronics_calpulse is
 	port(
 		rst_i			:	in		std_logic;
-		clk_i			: 	in		std_logic;
-			
+		clk_i			: 	in		std_logic;		
 		reg_i			: 	in		register_array_type;				
 		pulse_o		:	out	std_logic;  --//fast pulse to board SMA
 		rf_switch_o :	out	std_logic); --//pick RF switch input
@@ -37,7 +36,6 @@ signal index  : std_logic_vector(7 downto 0) := (others=>'0'); --//matches d_len
 signal data_h_current_value : std_logic_vector(0 downto 0);
 signal data_l_current_value : std_logic_vector(0 downto 0);
 signal data_out_current_value : std_logic_vector(0 downto 0);
-
 --//
 begin
 data_h(0) <= '1'; --//single hi bit for pulse

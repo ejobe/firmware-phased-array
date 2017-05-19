@@ -83,9 +83,9 @@ begin
 		internal_ram_write_adrs <= internal_address_max;
 	end if;
 end process;
-
+--///////////////////
 DataRamBlock : for i in 0 to 7 generate
-	xDataRAM 	:	entity work.DataRAM(syn)
+	xDataRAM 	:	entity work.DataRAM
 	port map(
 		data			=> wfm_data_i(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
@@ -97,9 +97,9 @@ DataRamBlock : for i in 0 to 7 generate
 		wren			=>	internal_data_ram_write_en,
 		q				=>	data_ram_o(i));
 end generate DataRamBlock;
-
+--///////////////////
 BeamRamBlock : for i in 0 to define_num_beams-1 generate
-	xBeamRAM 	:	entity work.DataRAM(syn)
+	xBeamRAM 	:	entity work.DataRAM
 	port map(
 		data			=> beam_data_i(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
@@ -111,9 +111,9 @@ BeamRamBlock : for i in 0 to define_num_beams-1 generate
 		wren			=>	internal_data_ram_write_en,
 		q				=>	beam_ram_o(i));
 end generate BeamRamBlock;
-
+--///////////////////
 PowRamBlock : for i in 0 to define_num_beams-1 generate
-	xPowRAM 	:	entity work.DataRAM(syn)
+	xPowRAM 	:	entity work.DataRAM
 	port map(
 		data			=> powsum_data_i(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)

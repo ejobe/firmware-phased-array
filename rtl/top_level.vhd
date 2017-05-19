@@ -11,7 +11,6 @@
 -- DESCRIPTION:  design top level vhdl
 --
 ---------------------------------------------------------------------------------
-
 library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -101,11 +100,10 @@ entity top_level is
 		berr				:  out	std_logic;
 		dir_trans		: 	out	std_logic;
 		tranceivers_OE	:	out	std_logic);
-
 end top_level;
 
 architecture rtl of top_level is
-	
+	--///////////////////////////////////////
 	--//system resets/startup
 	signal reset_global			:	std_logic;	--//system-wide reset signal
 	signal reset_global_except_registers : std_logic;  --//system-wide reset signal EXCEPT register values
@@ -210,8 +208,6 @@ begin
 		end if;
 	end process;
 	--///////////////////////////////////////
-
-	
 	--//system-wide clocks
 	xCLOCKS : entity work.Clock_Manager(Structural)
 	port map(
@@ -228,7 +224,7 @@ begin
 		CLK_1kHz_o		=> clock_1kHz,	
 		CLK_100kHz_o	=> clock_100kHz,
 		fpga_pllLock_o => clock_FPGA_PLLlock);
-	
+	--///////////////////////////////////////
 	--//adc configuration and data-handling block
 	xADC_CONTROLLER : entity work.adc_controller
 	port map(
@@ -257,7 +253,7 @@ begin
 		rx_ram_rd_en_o 	=> rx_ram_rd_en,
 		timestream_data_o	=> wfm_data,
 		dat_valid_o			=> adc_data_valid);
-		
+	--///////////////////////////////////////	
 	xBEAMFORMER : entity work.beamform
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
@@ -265,7 +261,7 @@ begin
 		reg_i			=> registers,
 		data_i		=>	wfm_data,
 		beams_8_o	=> beam_data);
-		
+	--///////////////////////////////////////	
 	xPOWER_DETECTOR : entity work.power_detector
 	port map(
 		rst_i  	=> reset_global or reset_global_except_registers,
@@ -273,7 +269,7 @@ begin
 		reg_i		=> registers,
 		beams_i	=> beam_data,
 		sum_pow_o=> powsum_4);
-		
+	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
@@ -281,7 +277,7 @@ begin
 		reg_i			=> registers,
 		pulse_o		=> SMA_out1, --//pulse out in 'TRIG_OUT_AUX' SMA connector
 		rf_switch_o => DEBUG(0)); --//RF switch select wired to GPIO Pin
-		
+	--///////////////////////////////////////	
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
 	port map(
@@ -294,7 +290,7 @@ begin
 		lmk_sclk_o	=> LMK_CLK_uWire,
 		lmk_le_o		=> LMK_LEu_uWire,
 		pll_sync_o	=> LMK_SYNC);
-
+	--///////////////////////////////////////
 	--//attenuator configuration block	
 	xDSA_CONTROLLER : entity work.atten_controller
 	port map(
@@ -307,7 +303,7 @@ begin
 		dsa_sdata_o	=> DSA_SI,
 		dsa_sclk_o	=> DSA_SClk,
 		dsa_le_o		=> DSA_LE);
-		
+	--///////////////////////////////////////	
 	--//system resets and power-on cycle
 	xGLOBAL_RESET : entity work.sys_reset
 	port map( 
@@ -321,7 +317,7 @@ begin
 		dsa_strtup_o	=> startup_dsa,
 		adc_strtup_o	=> startup_adc,
 		adc_reset_o		=> reset_adc);
-		
+	--///////////////////////////////////////	
 	--//ADC data receiver block
 	ReceiverBlock	:	 for i in 0 to 3 generate
 		xDATA_RECEIVER : entity work.RxData
@@ -364,7 +360,7 @@ begin
 --			ram_write_adrs_o	=> ram_write_address(3),
 --			data_ram_ch0_o		=> ram_data(6), 
 --			data_ram_ch1_o		=> ram_data(7));
-
+	--///////////////////////////////////////
 	xDATA_MANAGER : entity work.data_manager
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
@@ -381,7 +377,7 @@ begin
 		powsum_data_i			=> powsum_4,
 		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
 		powsum_ram_o			=> powsum_ram_data);
-	
+	--///////////////////////////////////////
 	--//readout controller using USB
 	--//allows something like dynamic mem access (start + stop readout address)
 --	xREADOUT_CONTROLLER : entity work.rdout_controller
@@ -415,7 +411,7 @@ begin
 --		read_reg_o 		=> register_to_read,
 --		registers_io	=> registers, --//system register space
 --		address_o		=> register_adr);
-		
+	--///////////////////////////////////////	
 	--//readout controller using MCU/BeagleBone
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
@@ -435,7 +431,7 @@ begin
 		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
 		rdout_adr_o				=> ram_read_address,
 		rdout_fpga_data_o		=> rdout_data);
-			
+	--///////////////////////////////////////		
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
 		rst_i				=> reset_global,
@@ -447,7 +443,7 @@ begin
 		read_reg_o 		=> register_to_read,
 		registers_io	=> registers, --//system register space
 		address_o		=> register_adr);
-		
+	--///////////////////////////////////////	
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
 		rst_i			 => reset_global or reset_global_except_registers,	
@@ -459,7 +455,7 @@ begin
 		spi_busy_o	 => mcu_spi_busy,
 		rx_rdy_o		 => mcu_rx_rdy,
 		tx_rdy_o		 => mcu_tx_rdy);
-		
+	--///////////////////////////////////////	
 --	xUSB	:	entity work.usb_32bit(Behavioral)
 --	port map(
 --		USB_IFCLK		=> USB_IFCLK,
