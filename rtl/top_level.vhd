@@ -546,7 +546,6 @@ begin
 	LED(4) <= '1';
 	LED(5) <= not (adc_rx_lvds_locked(0) and adc_rx_lvds_locked(1) and 
 						adc_rx_lvds_locked(2) and adc_rx_lvds_locked(2) and adc_data_valid and clock_10Hz);
-
 	--/////////////////////////////////////////////////////////////////////////////
 	--//define unused VME interface pins
 	dtack			 	<= '0';

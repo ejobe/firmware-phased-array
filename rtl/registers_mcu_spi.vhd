@@ -23,13 +23,10 @@ entity registers_mcu_spi is
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
 		status_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); --//status register
-		
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
 		write_req_o		:	out	std_logic; --//request the data
-		
 		read_reg_o 		:	out 	std_logic_vector(define_register_size-1 downto 0); --//set data here to be read out
-
 		registers_io	:	inout	register_array_type;
 		address_o		:	out	std_logic_vector(define_address_size-1 downto 0));
 		
@@ -54,6 +51,7 @@ begin
 		read_request_state <= idle_st;
 	elsif rising_edge(clk_i) then
 		case read_request_state is
+			--//wait for rdy signal from spi_slave
 			when idle_st =>
 				internal_ready <= '0';
 				internal_register <= (others=>'0');
@@ -61,7 +59,7 @@ begin
 				if write_rdy_i = '1' then  --//data available
 					read_request_state <= read_rdy_st;
 				end if;
-			
+			--//send read request to spislave
 			when read_rdy_st =>
 				write_req_o <= '1';
 				if write_rdy_i = '0' then --//data successfully read
@@ -69,7 +67,7 @@ begin
 					internal_ready <= '1'; --//ready flag to register-setting process below
 					read_request_state <= read_req_st;
 				end if;
-				
+			--//reset and go back to idle state	
 			when read_req_st =>
 				write_req_o <= '0';
 				internal_ready <= '0';
@@ -124,8 +122,8 @@ begin
 		registers_io(base_adrs_dsa_cntrl+3) <= x"000000"; --//write attenuator spi interface (address toggle)
 		
 		--//electronics cal pulse:
-		registers_io(41) <= x"000000"; --//set RF switch direction(LSB) [41]
-		registers_io(42) <= x"000000"; --//enable cal pulse(LSB)    [42]
+		registers_io(41) <= x"000000"; --//set RF switch direction(LSB=1 for cal pulse) [41]
+		registers_io(42) <= x"000001"; --//enable cal pulse(LSB=1)    [42]
 
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
