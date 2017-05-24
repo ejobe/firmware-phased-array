@@ -42,42 +42,44 @@ signal unique_chip_id		: std_logic_vector(63 downto 0);
 signal unique_chip_id_rdy	: std_logic;
 begin
 --//handle rrdy interupts [write_rdy_i] from spi_slave and toggle read_request [write_req_o]
-process(rst_i, clk_i, write_rdy_i)
-begin
-	if rst_i = '1' then
-		internal_ready <= '0';
-		internal_register <= (others=>'0');
-		write_req_o <= '0';
-		read_request_state <= idle_st;
-	elsif rising_edge(clk_i) then
-		case read_request_state is
-			--//wait for rdy signal from spi_slave
-			when idle_st =>
-				internal_ready <= '0';
-				internal_register <= (others=>'0');
-				write_req_o <= '0';
-				if write_rdy_i = '1' then  --//data available
-					read_request_state <= read_rdy_st;
-				end if;
-			--//send read request to spislave
-			when read_rdy_st =>
-				write_req_o <= '1';
-				if write_rdy_i = '0' then --//data successfully read
-					internal_register <= write_reg_i;
-					internal_ready <= '1'; --//ready flag to register-setting process below
-					read_request_state <= read_req_st;
-				end if;
-			--//reset and go back to idle state	
-			when read_req_st =>
-				write_req_o <= '0';
-				internal_ready <= '0';
-				read_request_state <= idle_st;
-		end case;
-	end if;
-end process;
+--process(rst_i, clk_i, write_rdy_i)
+--begin
+--	if rst_i = '1' then
+--		internal_ready <= '0';
+--		internal_register <= (others=>'0');
+--		write_req_o <= '0';
+--		read_request_state <= idle_st;
+--	elsif rising_edge(clk_i) then
+--		case read_request_state is
+--			--//wait for rdy signal from spi_slave
+--			when idle_st =>
+--				internal_ready <= '0';
+--				internal_register <= (others=>'0');
+--				write_req_o <= '0';
+--				if write_rdy_i = '1' then  --//data available
+--					read_request_state <= read_rdy_st;
+--				end if;
+--			--//send read request to spislave
+--			when read_rdy_st =>
+--				write_req_o <= '1';
+--				if write_rdy_i = '0' then --//data successfully read
+--					internal_register <= write_reg_i;
+--					internal_ready <= '1'; --//ready flag to register-setting process below
+--					read_request_state <= read_req_st;
+--				end if;
+--			--//reset and go back to idle state	
+--			when read_req_st =>
+--				write_req_o <= '0';
+--				internal_ready <= '0';
+--				read_request_state <= idle_st;
+--		end case;
+--	end if;
+--end process;
+
+
 --/////////////////////////////////////////////////////////////////
 --//write registers: 
-proc_write_register : process(rst_i, clk_i, internal_ready, internal_register)
+proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i)+
 begin
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
@@ -99,8 +101,12 @@ begin
 		registers_io(base_adrs_rdout_cntrl+3) <= x"000001"; --//start readout address (67) NOT USED
 		registers_io(base_adrs_rdout_cntrl+4) <= x"000100"; --//x"000600"; --//stop readout address (68) NOT USED
 		registers_io(base_adrs_rdout_cntrl+5) <= x"000000"; --//current/target RAM address
-		registers_io(base_adrs_rdout_cntrl+6) <= x"000000"; --//initiate write to PC adr pulse (write 'read' register) (70) 
-		registers_io(base_adrs_rdout_cntrl+7) <= x"000000"; --//initiate write to PC adr pulse (write data) (71)
+		--//////////////////////////////////////////////////////////////////////////////////////////////////
+		--//note differentiating between the following 2 readout types only used when using USB readout
+		--//otherwise only base_adrs_rdout_cntrl+7 is used
+		registers_io(base_adrs_rdout_cntrl+6) <= x"000000"; --//initiate write to PC adr pulse (write 'read' register) (70) --only used when USB readout
+		registers_io(base_adrs_rdout_cntrl+7) <= x"000000"; --//initiate write to PC adr pulse (write data) (71) --use this ONLY when MCU/BeagleBone to initiate write to PC
+		--///////////////////////////////////////
 		registers_io(base_adrs_rdout_cntrl+8) <= x"000000"; --//clear USB write (72)
 		registers_io(base_adrs_rdout_cntrl+9) <= x"000000"; --//data chunk
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
@@ -123,23 +129,38 @@ begin
 		
 		--//electronics cal pulse:
 		registers_io(41) <= x"000000"; --//set RF switch direction(LSB=1 for cal pulse) [41]
-		registers_io(42) <= x"000001"; --//enable cal pulse(LSB=1)    [42]
+		registers_io(42) <= x"000000"; --//enable cal pulse(LSB=1)    [42]
 
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 		--////////////////////////////////////////////////////////////////////////////
-	elsif rising_edge(clk_i) and internal_ready = '1' then
+	--//use this if using new spi_slave code:
+	elsif rising_edge(clk_i) and write_rdy_i= '1' then --write_rdy_i is sync with clk_i with newer spi_slave code
 		--//write registers, but exclude read-only registers
-		if internal_register(31 downto 24) > x"0F" then 
+		if write_reg_i(31 downto 24) > x"0F" then 
 		
-			registers_io(to_integer(unsigned(internal_register(31 downto 24)))) <= internal_register(23 downto 0);
-			address_o <= internal_register(31 downto 24);
+			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
+			address_o <= write_reg_i(31 downto 24);
 		
 		end if;
 		
-		if internal_register(31 downto 24) = x"00" then
-			read_reg_o <= x"00" & registers_io(to_integer(unsigned(internal_register(7 downto 0))));
+		if write_reg_i(31 downto 24) = x"00" then
+			read_reg_o <= x"00" & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
 		end if;
+		
+	--//use this if using old spi_slave code:
+--	elsif rising_edge(clk_i) and internal_ready = '1' then  --using old spi_slave code
+--		--//write registers, but exclude read-only registers
+--		if internal_register(31 downto 24) > x"0F" then 
+--		
+--			registers_io(to_integer(unsigned(internal_register(31 downto 24)))) <= internal_register(23 downto 0);
+--			address_o <= internal_register(31 downto 24);
+--		
+--		end if;
+--		
+--		if internal_register(31 downto 24) = x"00" then
+--			read_reg_o <= x"00" & registers_io(to_integer(unsigned(internal_register(7 downto 0))));
+--		end if;
 		--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) then
 		address_o <= x"00";

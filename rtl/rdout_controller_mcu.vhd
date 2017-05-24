@@ -37,6 +37,7 @@ entity rdout_controller_mcu is
 		
 		tx_rdy_o					:	out	std_logic;  --// tx ready flag
 		tx_rdy_spi_i			:	in		std_logic;  --// spi_slave tx_rdy signal
+		tx_ack_i					:	in		std_logic;  --//tx ack from spi_slave (newer spi_slave module ONLY)
 		
 		rdout_ram_rd_en_o		:	out	std_logic_vector(7 downto 0); --//read enable for ram blocks holding waveforms (1 per channel)
 		rdout_beam_rd_en_o	:  out	std_logic_vector(define_num_beams-1 downto 0); --//read enable for ram blocks holding beamforms (1 per beam)
@@ -213,16 +214,27 @@ begin
 											(ram_beam_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and beam_mask) or  --//readout beamform
 											(ram_powsum_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and pow_mask) or --//readout power sum
 											(rdout_reg_i and register_mask); --//readout register value
+				tx_rdy_o <= '1';
 				readout_state <= tx_st;
 				
+--			when tx_st =>
+--				read_clk_o <= '0';
+--				if i > 2 then
+--					tx_rdy_o <= '0';
+--					i := 0;
+--					readout_state <= idle_st;
+--				else
+--					i := i+1;
+--					tx_rdy_o <= '1';
+--				end if;
+
 			when tx_st =>
 				read_clk_o <= '0';
-				if i > 2 then
+				if tx_ack_i = '1' then
 					tx_rdy_o <= '0';
 					i := 0;
 					readout_state <= idle_st;
 				else
-					i := i+1;
 					tx_rdy_o <= '1';
 				end if;
 		end case;

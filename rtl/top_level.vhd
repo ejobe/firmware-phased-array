@@ -134,6 +134,7 @@ architecture rtl of top_level is
 	signal mcu_data_pkt_32bit	:	std_logic_vector(31 downto 0);
 	signal mcu_tx_flag			: 	std_logic;
 	signal mcu_tx_rdy				:	std_logic;
+	signal mcu_spi_tx_ack		:	std_logic;
 	signal mcu_rx_rdy				:	std_logic;
 	signal mcu_rx_req				:	std_logic;
 	signal mcu_spi_busy			:	std_logic;
@@ -416,7 +417,7 @@ begin
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
-		clk_i						=> clock_1MHz,
+		clk_i						=> clock_15MHz,
 		rdout_reg_i				=> register_to_read,  --//read register
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
@@ -424,8 +425,10 @@ begin
 		ram_beam_i				=> beam_ram_data, 
 		ram_powsum_i			=> powsum_ram_data, 
 		read_clk_o				=> rdout_clock,
-		tx_rdy_o					=> mcu_tx_flag,
-		tx_rdy_spi_i			=> mcu_tx_rdy,
+		tx_rdy_o					=> mcu_tx_flag, 
+		--tx_rdy_spi_i			=> mcu_tx_rdy,
+		tx_ack_i					=> mcu_spi_tx_ack,
+		tx_rdy_spi_i			=> '0', --newer spi_slave code
 		rdout_ram_rd_en_o 	=> rdout_ram_rd_en, 
 		rdout_beam_rd_en_o	=> rdout_beam_rd_en, 
 		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
@@ -435,7 +438,7 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
 		rst_i				=> reset_global,
-		clk_i				=> clock_1MHz,  --//clock for register interface
+		clk_i				=> clock_15MHz,  --//clock for register interface
 		status_i			=> (others=>'0'), --//status register
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
@@ -446,15 +449,29 @@ begin
 	--///////////////////////////////////////	
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
+		clk_i			 => clock_15MHz,
 		rst_i			 => reset_global or reset_global_except_registers,	
 		mcu_fpga_io	 => uC_dig,
 		data_i		 => rdout_data,
 		tx_load_i	 => mcu_tx_flag,
 		data_o   	 => mcu_data_pkt_32bit,
-		rx_req_i		 => mcu_rx_req,
-		spi_busy_o	 => mcu_spi_busy,
-		rx_rdy_o		 => mcu_rx_rdy,
-		tx_rdy_o		 => mcu_tx_rdy);
+		--rx_req_i		 => mcu_rx_req,
+		--spi_busy_o	 => mcu_spi_busy,
+		tx_ack_o		 => mcu_spi_tx_ack,
+		rx_rdy_o		 => mcu_rx_rdy);
+		--tx_rdy_o		 => mcu_tx_rdy);
+	
+--	xPCINTERFACE : entity work.mcu_interface
+--	port map(
+--		rst_i			 => reset_global or reset_global_except_registers,	
+--		mcu_fpga_io	 => uC_dig,
+--		data_i		 => rdout_data,
+--		tx_load_i	 => mcu_tx_flag,
+--		data_o   	 => mcu_data_pkt_32bit,
+--		rx_req_i		 => mcu_rx_req,
+--		spi_busy_o	 => mcu_spi_busy,
+--		rx_rdy_o		 => mcu_rx_rdy,
+--		tx_rdy_o		 => mcu_tx_rdy);
 	--///////////////////////////////////////	
 --	xUSB	:	entity work.usb_32bit(Behavioral)
 --	port map(
