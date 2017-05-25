@@ -124,7 +124,7 @@ VCCR_GXBR                    : AA6       : power  :                   : 1.1V    
 GND                          : AA7       :        :                   :         : B0R       :                
 GND                          : AA8       :        :                   :         : B0R       :                
 GND                          : AA9       : gnd    :                   :         :           :                
-Trig_in                      : AA10      : input  : 2.5 V             :         : 4B        : Y              
+Trig_in                      : AA10      : bidir  : 2.5 V             :         : 4B        : Y              
 GND                          : AA11      : gnd    :                   :         :           :                
 GPIO[4]                      : AA12      : bidir  : 2.5 V             :         : 4C        : Y              
 GND                          : AA13      : gnd    :                   :         :           :                

@@ -54,9 +54,13 @@ type buffered_data_type is array (7 downto 0) of std_logic_vector(2*define_ram_w
 type register_array_type is array (127 downto 0) 
 	of std_logic_vector(define_register_size-define_address_size-1 downto 0); --//8 bit address, 24 bit data
 
---//firmware metadata
-constant firmware_version : std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000001";
+--////////////////////////////////////////////////
+--///////////////////////////////////////////////////////////////////////////////////////////////////
+--//FIRMWARE INFORMATION
+constant firmware_version : std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000002";
 constant firmware_date : std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e0" & x"A" & x"12";
+--///////////////////////////////////////////////////////////////////////////////////////////////////
+--///////////////////////////////////////////////
 
 --//////////////////////////////
 --//stuff for beamforming
@@ -102,11 +106,9 @@ end defs;
 package register_map is
 --////////////////////////////////////////////////////////////////
 
-constant base_adrs_pll_cntrl		:	integer := 16;
 constant base_adrs_dsa_cntrl		:	integer := 50;
 
 constant base_adrs_adc_cntrl		:	integer := 54;
---	constant adrs_trig				:  integer := base_adrs_adc_cntrl + 0; --//pulsed
 
 constant base_adrs_rdout_cntrl 	:  integer := 64;
 

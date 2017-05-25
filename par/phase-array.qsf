@@ -1084,7 +1084,7 @@ set_location_assignment PIN_R26 -to GXB_ref_clk_0
 set_location_assignment PIN_R27 -to "GXB_ref_clk_0(n)"
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to ADCclk0
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to ADCclk1
-set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name ENABLE_SIGNALTAP OFF
 set_global_assignment -name USE_SIGNALTAP_FILE ../sig_tap/tapSPIinterface.stp
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"

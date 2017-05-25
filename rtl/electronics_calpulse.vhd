@@ -10,6 +10,7 @@
 --
 -- DESCRIPTION:  Pulse and enable for plug-in-line cal pulse board, which
 --               allows user to line up ADC timestreams
+--					  --//set by register 42
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -19,9 +20,9 @@ use work.defs.all;
 
 entity electronics_calpulse is
 	port(
-		rst_i			:	in		std_logic;
-		clk_i			: 	in		std_logic;		
-		reg_i			: 	in		register_array_type;				
+		rst_i			:	in		std_logic;  --//async reset
+		clk_i			: 	in		std_logic;  --//fast clock to run DDR output		
+		reg_i			: 	in		register_array_type;		--//system registers		
 		pulse_o		:	out	std_logic;  --//fast pulse to board SMA
 		rf_switch_o :	out	std_logic); --//pick RF switch input
 end electronics_calpulse;
@@ -40,7 +41,7 @@ signal data_out_current_value : std_logic_vector(0 downto 0);
 begin
 data_h(0) <= '1'; --//single hi bit for pulse
 ----///////////
-rf_switch_o <= reg_i(41)(0); --//set rf switch input selection
+rf_switch_o <= reg_i(42)(1); --//set rf switch input selection
 --/////////////
 pulse_o <= data_out_current_value(0);
 --/////////////

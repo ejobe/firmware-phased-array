@@ -79,7 +79,7 @@ begin
 
 --/////////////////////////////////////////////////////////////////
 --//write registers: 
-proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i)+
+proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i)
 begin
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(0)  <= x"000001"; --//set read register
-		registers_io(16) <= x"000001"; --//set 100 MHz clock source
+		registers_io(16) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -128,9 +128,9 @@ begin
 		registers_io(base_adrs_dsa_cntrl+3) <= x"000000"; --//write attenuator spi interface (address toggle)
 		
 		--//electronics cal pulse:
-		registers_io(41) <= x"000000"; --//set RF switch direction(LSB=1 for cal pulse) [41]
-		registers_io(42) <= x"000000"; --//enable cal pulse(LSB=1)    [42]
-
+		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
+		--registers_io(43) <= x"000001"; --//cal pulse pattern
+		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 		--////////////////////////////////////////////////////////////////////////////

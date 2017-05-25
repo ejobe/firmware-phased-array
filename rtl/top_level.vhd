@@ -51,7 +51,7 @@ entity top_level is
 		USB_FD			:	inout	std_logic_vector(15 downto 0);
 		USB_RDY			:	out	std_logic_vector(1 downto 0);
 		--//Trigger SMA's
-		SMA_in			: 	in		std_logic;
+		SMA_in			: 	inout	std_logic;
 		SMA_out0			: 	out	std_logic;
 		SMA_out1			: 	out	std_logic;
 		--//LMK04808 interface
@@ -277,7 +277,7 @@ begin
 		clk_i			=> clock_300MHz,
 		reg_i			=> registers,
 		pulse_o		=> SMA_out1, --//pulse out in 'TRIG_OUT_AUX' SMA connector
-		rf_switch_o => DEBUG(0)); --//RF switch select wired to GPIO Pin
+		rf_switch_o => SMA_in);                      --DEBUG(0)); --//RF switch select wired to GPIO Pin
 	--///////////////////////////////////////	
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
