@@ -180,7 +180,7 @@ architecture rtl of top_level is
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
 	signal beam_data				: array_of_beams_type; --//registered on core clk
-	signal powsum_4				: sum_power_type;
+	signal powsum_ev2samples	: sum_power_type;
 
 begin
 	--//pin to signal assignments
@@ -204,8 +204,8 @@ begin
 	proc_set_clock_ref : process(reset_global)
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
-			CLK_select(0) <= registers(16)(0);
-			CLK_select(1) <= not registers(16)(0);
+			CLK_select(0) <= registers(32)(0);   --//board clock
+			CLK_select(1) <= not registers(32)(0);  --//input clock
 		end if;
 	end process;
 	--///////////////////////////////////////
@@ -269,7 +269,7 @@ begin
 		clk_i	 	=> clock_93MHz,
 		reg_i		=> registers,
 		beams_i	=> beam_data,
-		sum_pow_o=> powsum_4);
+		sum_pow_o=> powsum_ev2samples);
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
@@ -375,7 +375,7 @@ begin
 		beam_data_i				=> beam_data,
 		beam_ram_read_en_i	=> rdout_beam_rd_en,
 		beam_ram_o				=> beam_ram_data,
-		powsum_data_i			=> powsum_4,
+		powsum_data_i			=> powsum_ev2samples,
 		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
 		powsum_ram_o			=> powsum_ram_data);
 	--///////////////////////////////////////

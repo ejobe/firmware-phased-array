@@ -74,8 +74,13 @@ signal data_pipe_2 	: full_data_type;
 --////////////////////////////////////
 
 begin
-pd_o <= not pwr_up_i & not pwr_up_i & not pwr_up_i & not pwr_up_i;
+pd_o <= (not pwr_up_i or reg_i(base_adrs_adc_cntrl+6)(3)) &     --//ADC3
+		  (not pwr_up_i or reg_i(base_adrs_adc_cntrl+6)(2)) &     --//ADC2
+		  (not pwr_up_i or reg_i(base_adrs_adc_cntrl+6)(1)) &     --//ADC1
+		  (not pwr_up_i or reg_i(base_adrs_adc_cntrl+6)(0));      --//ADC0
 
+--pd_o <= not pwr_up_i & not pwr_up_i & not pwr_up_i & not pwr_up_i;
+		  
 --/////////////////////////////////////////////////////////////
 --//set static values when *not* using extended-control mode:
 --/////////////////////////////////////////////////////////////

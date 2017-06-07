@@ -90,10 +90,12 @@ begin
 		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
 		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
+		
+		
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(0)  <= x"000001"; --//set read register
-		registers_io(16) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
+		registers_io(32) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -120,6 +122,7 @@ begin
 		registers_io(base_adrs_adc_cntrl+3) <= x"000000"; --//delay ADC1   (57)
 		registers_io(base_adrs_adc_cntrl+4) <= x"000000"; --//delay ADC2   (58)
 		registers_io(base_adrs_adc_cntrl+5) <= x"000000"; --//delay ADC3   (59)
+		registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
 
 		--//step-attenuator:
 		registers_io(base_adrs_dsa_cntrl+0) <= x"000000"; --//atten values for CH 0 & 1 & 2
@@ -129,7 +132,7 @@ begin
 		
 		--//electronics cal pulse:
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
-		--registers_io(43) <= x"000001"; --//cal pulse pattern
+		--registers_io(43) <= x"000001"; --//cal pulse pattern, dunno maybe make this configurable? 
 		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
@@ -137,7 +140,7 @@ begin
 	--//use this if using new spi_slave code:
 	elsif rising_edge(clk_i) and write_rdy_i= '1' then --write_rdy_i is sync with clk_i with newer spi_slave code
 		--//write registers, but exclude read-only registers
-		if write_reg_i(31 downto 24) > x"0F" then 
+		if write_reg_i(31 downto 24) > x"1F" then 
 		
 			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
 			address_o <= write_reg_i(31 downto 24);
