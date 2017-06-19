@@ -14,13 +14,13 @@ module scaler
 	(
 		input rst_i, 
 		input clk_i,
-		input refresh_i, 
+		input refresh_i, //refresh pulse-> update scaler register
 		input count_i,
 		output [WIDTH-1:0] scaler_o
     );
 	 
-	parameter WIDTH = 16;
-	parameter PRESCALE = 0;
+	parameter WIDTH = 16;    //width of scaler counter
+	parameter PRESCALE = 0;  
 	
 	reg [WIDTH+PRESCALE-1:0] counter = {WIDTH+PRESCALE{1'b0}};
 	wire [WIDTH+PRESCALE:0] counter_plus_one = counter + 1;

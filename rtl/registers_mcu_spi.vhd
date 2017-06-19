@@ -109,8 +109,8 @@ begin
 		registers_io(base_adrs_rdout_cntrl+6) <= x"000000"; --//initiate write to PC adr pulse (write 'read' register) (70) --only used when USB readout
 		registers_io(base_adrs_rdout_cntrl+7) <= x"000000"; --//initiate write to PC adr pulse (write data) (71) --use this ONLY when MCU/BeagleBone to initiate write to PC
 		--///////////////////////////////////////
-		registers_io(base_adrs_rdout_cntrl+8) <= x"000000"; --//clear USB write (72)
-		registers_io(base_adrs_rdout_cntrl+9) <= x"000000"; --//data chunk
+		registers_io(base_adrs_rdout_cntrl+8)  <= x"000000"; --//clear USB write (72)
+		registers_io(base_adrs_rdout_cntrl+9)  <= x"000000"; --//data chunk
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
 		registers_io(base_adrs_rdout_cntrl+11) <= x"000004"; --//length of register readout (NOT USED, only signal word readouts) (75)
 		

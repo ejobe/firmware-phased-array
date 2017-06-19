@@ -120,6 +120,7 @@ architecture rtl of top_level is
 	signal clock_10Hz				:	std_logic;		
 	signal clock_1kHz				:	std_logic;
 	signal clock_100kHz			:	std_logic;
+	signal clock_rfrsh_pulse	:	std_logic;
 	signal clock_FPGA_PLLlock	:	std_logic;
 	signal clock_FPGA_PLLrst	:	std_logic;
 	--//signals for usb, specifically
@@ -210,7 +211,7 @@ begin
 	end process;
 	--///////////////////////////////////////
 	--//system-wide clocks
-	xCLOCKS : entity work.Clock_Manager(Structural)
+	xCLOCKS : entity work.Clock_Manager
 	port map(
 		Reset_i			=> reset_global or reset_global_except_registers,
 		CLK0_i			=> MClk_0,
@@ -224,6 +225,7 @@ begin
 		CLK_10Hz_o		=> clock_10Hz,
 		CLK_1kHz_o		=> clock_1kHz,	
 		CLK_100kHz_o	=> clock_100kHz,
+		refresh_1Hz_o	=> clock_rfrsh_pulse,
 		fpga_pllLock_o => clock_FPGA_PLLlock);
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block

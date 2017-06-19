@@ -25,20 +25,27 @@ entity Clock_Manager is
 		
 		CLK_187p5MHz_o :  out	std_logic;
 		CLK_93MHz_o		:  out	std_logic;  
-		CLK_15MHz_o		:  out	std_logic;
+		CLK_15MHz_o		:  inout	std_logic;  --//main logic clock
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
 		CLK_10Hz_o		:  out	std_logic;
 		CLK_1kHz_o		:	out	std_logic;
 		CLK_100kHz_o	:	out	std_logic;
+		
+		refresh_1Hz_o	:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o
 
 		fpga_pllLock_o	:	out	std_logic);  --lock signal from PLL on fpga
 
 end Clock_Manager;
 
-architecture Structural of Clock_Manager is
+architecture rtl of Clock_Manager is
 	
 	signal clk_1MHz_sig	: 	std_logic;
+	
+	--//need to create a single pulse every Hz with width of 15 MHz clock period
+	signal refresh_clk_counter :	std_logic_vector(23 downto 0) := (others=>'0');
+	signal refresh_clk			:	std_logic;
+	constant REFRESH_CLK_MATCH : 	std_logic_vector(23 downto 0) := x"16E360";
 	
 	component pll_block
 		port( refclk, rst			: in 	std_logic;
@@ -60,7 +67,8 @@ architecture Structural of Clock_Manager is
 	end component;	
 	
 begin
-	CLK_1MHz_o	<=	clk_1MHz_sig;
+	CLK_1MHz_o		<=	clk_1MHz_sig;
+	refresh_1Hz_o	<= refresh_clk;
 
 	xPLL_BLOCK : pll_block
 		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_15MHz_o, 
@@ -85,8 +93,26 @@ begin
 		generic map(clk_divide_by => 500000)
 		port map(clk_1MHz_sig, Reset_i, CLK_1Hz_o);
 		
-end Structural;
-
 		
+	--//make 1 Hz refresh clock from the main iface clock (15 MHz)
+	proc_make_refresh_pulse : process(CLK_15MHz_o)
+	begin
+		if rising_edge(CLK_15MHz_o) then
+			if refresh_clk = '1' then
+				refresh_clk_counter <= (others=>'0');
+			else
+				refresh_clk_counter <= refresh_clk_counter + 1;
+			end if;
+			
+			--//pulse refresh when refresh_clk_counter = REFRESH_CLK_MATCH
+			case refresh_clk_counter is
+				when REFRESH_CLK_MATCH =>
+					refresh_clk <= '1';
+				when others =>
+					refresh_clk <= '0';
+			end case;
+			
+		end if;
+	end process;
 	
-
+end rtl;
