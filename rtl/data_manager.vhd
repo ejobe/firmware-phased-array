@@ -42,7 +42,7 @@ entity data_manager is
 		--//power data
 		powsum_data_i			:	in	 	sum_power_type;
 		powsum_ram_read_en_i	:	in		std_logic_vector(define_num_beams-1 downto 0);
-		powsum_ram_o			:  out	sum_power_type);
+		powsum_ram_o			:  out	array_of_beams_type);
 	
 	end data_manager;
 
@@ -52,8 +52,28 @@ signal internal_trigger_reg : std_logic_vector(3 downto 0);
 signal internal_data_ram_write_en : std_logic;
 signal internal_ram_write_adrs : std_logic_vector(define_data_ram_depth-1 downto 0);
 constant internal_address_max : std_logic_vector(define_data_ram_depth-1 downto 0) := (others=>'1');		
+
+--//squeeze the powsum data into 16-bit chunks (basically just chop off MSB: don't really care here since
+--//only time to read out power sum info is for debugging)
+type internal_sum_power_type is array(define_num_beams-1 downto 0) of 
+	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0);  
+signal internal_powsum_data : internal_sum_power_type;
 		
 begin
+
+process(clk_i)
+begin
+	for i in 0 to define_num_beams-1 loop
+		internal_powsum_data(i)(15 downto 0) 	<= powsum_data_i(i)(15 downto 0);
+		internal_powsum_data(i)(31 downto 16) 	<= powsum_data_i(i)(32 downto 17);
+		internal_powsum_data(i)(47 downto 32) 	<= powsum_data_i(i)(49 downto 34);
+		internal_powsum_data(i)(63 downto 48) 	<= powsum_data_i(i)(66 downto 51);
+		internal_powsum_data(i)(79 downto 64) 	<= powsum_data_i(i)(83 downto 68);
+		internal_powsum_data(i)(95 downto 80) 	<= powsum_data_i(i)(100 downto 85);
+		internal_powsum_data(i)(111 downto 96) <= powsum_data_i(i)(117 downto 102);
+		internal_powsum_data(i)(127 downto 112)<= powsum_data_i(i)(134 downto 119);
+	end loop;
+end process;
 
 proc_trig : process(rst_i, clk_i, trig_i)
 begin
@@ -73,6 +93,7 @@ begin
 		
 	elsif rising_edge(clk_i) and internal_trigger_reg(2) = '1' and	
 		internal_ram_write_adrs < internal_address_max then
+	
 		
 		internal_data_ram_write_en <= '1';
 		internal_ram_write_adrs <= internal_ram_write_adrs + 1;
@@ -81,6 +102,7 @@ begin
 				
 		internal_data_ram_write_en <= '0';
 		internal_ram_write_adrs <= internal_address_max;
+		
 	end if;
 end process;
 --///////////////////
@@ -115,7 +137,7 @@ end generate BeamRamBlock;
 PowRamBlock : for i in 0 to define_num_beams-1 generate
 	xPowRAM 	:	entity work.DataRAM
 	port map(
-		data			=> powsum_data_i(i), 
+		data			=> internal_powsum_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,

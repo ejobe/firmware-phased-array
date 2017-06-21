@@ -112,15 +112,16 @@ architecture rtl of top_level is
 	signal startup_dsa			: 	std_logic;  --//startup dsa circuit after reset
 	signal reset_adc				:	std_logic;  --//signal to reset just the ADC firmware blocks
 	--//the following signals to/from Clock_Manager--
-	signal clock_300MHz			:	std_logic;		
+	signal clock_250MHz			:	std_logic;		
 	signal clock_93MHz			:	std_logic;		
-	signal clock_15MHz			:	std_logic;  
+	signal clock_7p5MHz			:	std_logic;  
 	signal clock_1MHz				:	std_logic;		
 	signal clock_1Hz				:	std_logic;		
 	signal clock_10Hz				:	std_logic;		
 	signal clock_1kHz				:	std_logic;
 	signal clock_100kHz			:	std_logic;
-	signal clock_rfrsh_pulse	:	std_logic;
+	signal clock_rfrsh_pulse_1Hz		:	std_logic;
+	signal clock_rfrsh_pulse_100mHz	:	std_logic;
 	signal clock_FPGA_PLLlock	:	std_logic;
 	signal clock_FPGA_PLLrst	:	std_logic;
 	--//signals for usb, specifically
@@ -147,7 +148,7 @@ architecture rtl of top_level is
 	signal adc_pd_sig				:	std_logic_vector(3 downto 0);
 	signal adc_rx_lvds_locked	:	std_logic_vector(3 downto 0);
 	--//fpga RAM data
-	signal powsum_ram_data		:  sum_power_type;
+	signal powsum_ram_data		:  array_of_beams_type; --sum_power_type;
 	signal beam_ram_data			:  array_of_beams_type;
 	signal ram_data				:	full_data_type;
 	signal ram_read_address		:  std_logic_vector(define_data_ram_depth-1 downto 0);
@@ -217,15 +218,16 @@ begin
 		CLK0_i			=> MClk_0,
 		CLK1_i			=> MClk_1,
 		PLL_reset_i		=>	'0',--clock_FPGA_PLLrst,		
-		CLK_187p5MHz_o => clock_300MHz,
+		CLK_250MHz_o 	=> clock_250MHz,
 		CLK_93MHz_o		=> clock_93MHz,
-		CLK_15MHz_o 	=> clock_15MHz,
+		CLK_7p5MHz_o 	=> clock_7p5MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
 		CLK_1Hz_o		=> clock_1Hz,
 		CLK_10Hz_o		=> clock_10Hz,
 		CLK_1kHz_o		=> clock_1kHz,	
 		CLK_100kHz_o	=> clock_100kHz,
-		refresh_1Hz_o	=> clock_rfrsh_pulse,
+		refresh_1Hz_o		=> clock_rfrsh_pulse_1Hz,
+		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz,
 		fpga_pllLock_o => clock_FPGA_PLLlock);
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block
@@ -233,7 +235,7 @@ begin
 	port map(
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
-		clk_fast_i			=> clock_300MHz,
+		clk_fast_i			=> clock_250MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
 		rx_locked_i			=> (adc_rx_lvds_locked(0) and 
@@ -276,7 +278,7 @@ begin
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
-		clk_i			=> clock_300MHz,
+		clk_i			=> clock_250MHz,
 		reg_i			=> registers,
 		pulse_o		=> SMA_out1, --//pulse out in 'TRIG_OUT_AUX' SMA connector
 		rf_switch_o => SMA_in);                      --DEBUG(0)); --//RF switch select wired to GPIO Pin
@@ -368,7 +370,7 @@ begin
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
-		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger
+		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger only, for now
 		read_clk_i 				=> rdout_clock,  --usb_slwr,
 		read_ram_adr_i			=> ram_read_address,
 		wfm_data_i				=> wfm_data,
@@ -377,7 +379,7 @@ begin
 		beam_data_i				=> beam_data,
 		beam_ram_read_en_i	=> rdout_beam_rd_en,
 		beam_ram_o				=> beam_ram_data,
-		powsum_data_i			=> powsum_ev2samples,
+		powsum_data_i			=> powsum_ev2samples, --powsum_ev2samples,
 		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
 		powsum_ram_o			=> powsum_ram_data);
 	--///////////////////////////////////////
@@ -419,7 +421,7 @@ begin
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
-		clk_i						=> clock_15MHz,
+		clk_i						=> clock_7p5MHz,
 		rdout_reg_i				=> register_to_read,  --//read register
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
@@ -440,7 +442,7 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
 		rst_i				=> reset_global,
-		clk_i				=> clock_15MHz,  --//clock for register interface
+		clk_i				=> clock_7p5MHz,  --//clock for register interface
 		status_i			=> (others=>'0'), --//status register
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
@@ -451,7 +453,7 @@ begin
 	--///////////////////////////////////////	
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
-		clk_i			 => clock_15MHz,
+		clk_i			 => clock_7p5MHz,
 		rst_i			 => reset_global or reset_global_except_registers,	
 		mcu_fpga_io	 => uC_dig,
 		data_i		 => rdout_data,
@@ -545,8 +547,8 @@ begin
 	--//debug headers & LEDs
 	--///////////////////////////////////////////////////////////////
 	--DEBUG(0) <=  '0'; --LMK_DAT_uWire;
-	DEBUG(1) <=  '0';--ram_write_address(1)(0); -- LMK_CLK_uWire;
-	DEBUG(2) <=  '0';--ram_write_address(2)(0); --LMK_LEu_uWire;
+	DEBUG(1) <=  clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
+	DEBUG(2) <=  clock_7p5MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
 	DEBUG(3) <=  '0';--ram_write_address(3)(0); --lmk_start_write;
 	DEBUG(4) <=  registers(base_adrs_rdout_cntrl+0)(0); --'0';--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
 	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
@@ -554,7 +556,7 @@ begin
 	DEBUG(7) <=  '0';--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
 	DEBUG(8) <=  rdout_start_flag;
 	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
-	DEBUG(10)<=  USB_PA(6);--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
+	DEBUG(10)<=  '0';--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	
 	LED(0) <= not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);

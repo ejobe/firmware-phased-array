@@ -23,16 +23,17 @@ entity Clock_Manager is
 		CLK1_i			:  in		std_logic;
 		PLL_reset_i		:  in		std_logic;
 		
-		CLK_187p5MHz_o :  out	std_logic;
+		CLK_250MHz_o 	:  out	std_logic;
 		CLK_93MHz_o		:  out	std_logic;  
-		CLK_15MHz_o		:  inout	std_logic;  --//main logic clock
+		CLK_7p5MHz_o	:  inout	std_logic;  --//main logic clock
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
 		CLK_10Hz_o		:  out	std_logic;
 		CLK_1kHz_o		:	out	std_logic;
 		CLK_100kHz_o	:	out	std_logic;
 		
-		refresh_1Hz_o	:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o
+		refresh_1Hz_o		:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o
+		refresh_100mHz_o 	:	out	std_logic;	--//refresh pulse derived from CLK_15MHz_o every 10 s
 
 		fpga_pllLock_o	:	out	std_logic);  --lock signal from PLL on fpga
 
@@ -43,10 +44,15 @@ architecture rtl of Clock_Manager is
 	signal clk_1MHz_sig	: 	std_logic;
 	
 	--//need to create a single pulse every Hz with width of 15 MHz clock period
-	signal refresh_clk_counter :	std_logic_vector(23 downto 0) := (others=>'0');
-	signal refresh_clk			:	std_logic;
-	constant REFRESH_CLK_MATCH : 	std_logic_vector(23 downto 0) := x"16E360";
+	signal refresh_clk_counter_1Hz 	:	std_logic_vector(23 downto 0) := (others=>'0');
+	signal refresh_clk_counter_100mHz:	std_logic_vector(27 downto 0) := (others=>'0');
+
+	signal refresh_clk_1Hz				:	std_logic;
+	signal refresh_clk_100mHz			:	std_logic;
 	
+	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(23 downto 0) := x"7270E0";  --//7.5e6
+	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"47868C0";  --//7.5e7
+
 	component pll_block
 		port( refclk, rst			: in 	std_logic;
 				outclk_0, outclk_1, 
@@ -67,15 +73,16 @@ architecture rtl of Clock_Manager is
 	end component;	
 	
 begin
-	CLK_1MHz_o		<=	clk_1MHz_sig;
-	refresh_1Hz_o	<= refresh_clk;
-
+	CLK_1MHz_o			<=	clk_1MHz_sig;
+	refresh_1Hz_o		<= refresh_clk_1Hz;
+	refresh_100mHz_o	<=	refresh_clk_100mHz;
+	
 	xPLL_BLOCK : pll_block
-		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_15MHz_o, 
+		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_7p5MHz_o, 
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2
-		port map(CLK1_i, PLL_reset_i, CLK_187p5MHz_o, open);
+		port map(CLK1_i, PLL_reset_i, CLK_250MHz_o, open);
 					
 	xCLK_GEN_100kHz : Slow_Clocks
 		generic map(clk_divide_by => 5)
@@ -93,23 +100,38 @@ begin
 		generic map(clk_divide_by => 500000)
 		port map(clk_1MHz_sig, Reset_i, CLK_1Hz_o);
 		
-		
-	--//make 1 Hz refresh clock from the main iface clock (15 MHz)
-	proc_make_refresh_pulse : process(CLK_15MHz_o)
+	--/////////////////////////////////////////////////////////////////////////////////
+	--//make 1 Hz and 100mHz refresh pulses from the main iface clock (7.5 MHz)
+	proc_make_refresh_pulse : process(CLK_7p5MHz_o)
 	begin
-		if rising_edge(CLK_15MHz_o) then
-			if refresh_clk = '1' then
-				refresh_clk_counter <= (others=>'0');
-			else
-				refresh_clk_counter <= refresh_clk_counter + 1;
-			end if;
+		if rising_edge(CLK_7p5MHz_o) then
 			
+			if refresh_clk_1Hz = '1' then
+				refresh_clk_counter_1Hz <= (others=>'0');
+			else
+				refresh_clk_counter_1Hz <= refresh_clk_counter_1Hz + 1;
+			end if;
 			--//pulse refresh when refresh_clk_counter = REFRESH_CLK_MATCH
-			case refresh_clk_counter is
-				when REFRESH_CLK_MATCH =>
-					refresh_clk <= '1';
+			case refresh_clk_counter_1Hz is
+				when REFRESH_CLK_MATCH_1HZ =>
+					refresh_clk_1Hz <= '1';
 				when others =>
-					refresh_clk <= '0';
+					refresh_clk_1Hz <= '0';
+			end case;
+			
+			--//////////////////////////////////////
+			
+			if refresh_clk_100mHz = '1' then
+				refresh_clk_counter_100mHz <= (others=>'0');
+			else
+				refresh_clk_counter_100mHz <= refresh_clk_counter_100mHz + 1;
+			end if;
+			--//pulse refresh when refresh_clk_counter = REFRESH_CLK_MATCH
+			case refresh_clk_counter_100mHz is
+				when REFRESH_CLK_MATCH_100mHz =>
+					refresh_clk_100mHz <= '1';
+				when others =>
+					refresh_clk_100mHz <= '0';
 			end case;
 			
 		end if;

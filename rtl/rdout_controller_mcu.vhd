@@ -32,7 +32,7 @@ entity rdout_controller_mcu is
 		registers_i				:	in		register_array_type;   --//firmware register array      
 		ram_data_i				:	in		full_data_type; --//data stored in fpga ram
 		ram_beam_i				:	in		array_of_beams_type; --//data stored in fpga ram
-		ram_powsum_i			:  in		sum_power_type;  --//data stored in powersum ram
+		ram_powsum_i			:  in		array_of_beams_type; --//data stored in powersum ram
 		read_clk_o				:	out	std_logic;
 		
 		tx_rdy_o					:	out	std_logic;  --// tx ready flag

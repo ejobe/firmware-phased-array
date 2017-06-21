@@ -8,7 +8,7 @@
 -- EMAIL         ejo@uchicago.edu
 -- DATE:         3/2017...
 --
--- DESCRIPTION:  first stab at calculating power in beams/waveforms
+-- DESCRIPTION:  calculate power in beams (waveforms, too, at some point?)
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -40,10 +40,13 @@ signal instantaneous_power			 	: pipe_full_inst_power_array_type;
 signal internal_beams					: array_of_beams_type;
 
 signal sum_power	: sum_power_type;
+
 constant ref : integer := define_serdes_factor*define_pow_sum_range;
 
 begin
 
+--//sum_power holds the summed power in adjacent samples (every 2 samples)
+--//note that define_pow_sum_range (defined in defs) is 16
 proc_sum_power : process(rst_i, clk_i)
 begin
 	for i in 0 to define_num_beams-1 loop
@@ -54,14 +57,16 @@ begin
 		elsif rising_edge(clk_i) then
 	
 			sum_pow_o(i) <= sum_power(i);
-	
+	 				
 			for j in 0 to define_num_power_sums-1 loop
-				
-				sum_power(i)((j+1)*define_pow_sum_range-1 downto j*define_pow_sum_range) <=
-		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref+(2*j)*define_pow_sum_range) ), define_pow_sum_range)) + 
-		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref+(2*j+1)*define_pow_sum_range)), define_pow_sum_range)); 
+
+				--//sum_power at each step is 17 bits wide (define_pow_sum_range+1)
+				sum_power(i)((j+1)*(define_pow_sum_range+1)-1 downto j*(define_pow_sum_range+1)) <=
+		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref+(2*j)*define_pow_sum_range) ), define_pow_sum_range+1)) + 
+		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref+(2*j+1)*define_pow_sum_range)), define_pow_sum_range+1)); 
 					--instantaneous_power(i)( ref+(2*j+3)*define_pow_sum_range-1 downto ref + (2*j+2)*define_pow_sum_range ) + 
 					--instantaneous_power(i)( ref+(2*j+4)*define_pow_sum_range-1 downto ref + (2*j+3)*define_pow_sum_range ); 
+				
 			end loop;
 		end if;
 	end loop;
@@ -76,9 +81,11 @@ begin
 			instantaneous_power(i) <= (others=>'0');
 
 		elsif rising_edge(clk_i) then
+			--//pipeline stage for beam data
 			internal_beams(i) <= beams_i(i);
-			
+			--//final assignment of power calc.
 			instantaneous_power(i) <= internal_instant_power_pipe(i);
+			--//pipeline stage for power calc.
 			internal_instant_power_pipe(i)(2*define_serdes_factor*define_pow_sum_range-1 downto 0)
 				<= internal_instant_power_pipe(i)(4*define_serdes_factor*define_pow_sum_range-1 downto 2*define_serdes_factor*define_pow_sum_range);
 			
@@ -91,6 +98,7 @@ begin
 	end loop;
 end process;
 
+--//calculate instantaneous power using LUT
 proc_power_calc : process(rst_i, clk_i, internal_beams)
 begin
 	--//loop over beams
