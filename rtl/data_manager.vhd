@@ -61,7 +61,7 @@ signal internal_powsum_data : internal_sum_power_type;
 		
 begin
 
-process(clk_i)
+process(clk_i, powsum_data_i)
 begin
 	for i in 0 to define_num_beams-1 loop
 		internal_powsum_data(i)(15 downto 0) 	<= powsum_data_i(i)(15 downto 0);

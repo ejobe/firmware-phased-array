@@ -119,6 +119,7 @@ constant base_adrs_adc_cntrl		:	integer := 54;
 
 constant base_adrs_rdout_cntrl 	:  integer := 64;
 
+constant base_adrs_trig_thresh	:	integer := 86;
 	
 end register_map;
 	

@@ -9,7 +9,8 @@
 -- DATE:         10/2016, and onwards...
 --
 -- DESCRIPTION:  control bits for TI 7-bit ADC
---               also put the ADc data on the core_clk, apply delays to line up timestreams
+--               also handle + combine ADC data: 
+--                  put the ADc data on the core_clk, apply delays to line up timestreams
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -70,6 +71,7 @@ signal delay_en   	: std_logic_vector(7 downto 0);
 signal delay_chan 	: rx_data_delay_type;
 signal data_pipe   	: buffered_data_type;
 signal data_pipe_2 	: full_data_type;
+signal channel_mask	: full_data_type;
 
 --////////////////////////////////////
 
@@ -219,6 +221,7 @@ begin
 		for j in 0 to 7 loop
 			delay_en(j) 	<= '0';
 			delay_chan(j)  <= (others=>'0');
+			channel_mask(j)<= (others=>'0'); --(others=> not reg_i(48)(j));
 		end loop;
 		
 	elsif rising_edge(clk_core_i) then
@@ -232,6 +235,10 @@ begin
 			delay_chan(2*j+1) <= reg_i(base_adrs_adc_cntrl+2+j)(8 downto 5);
 		end loop;
 		--////////////////
+		
+		for j in 0 to 7 loop
+			channel_mask(j)<= (others=> not reg_i(48)(j));
+		end loop;
 		
 		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & dat_valid_o;
 		
@@ -305,8 +312,11 @@ begin
 					data_pipe_2(i) <= data_pipe(i)(16*define_word_size*2-1 downto 16*define_word_size);
 			end case;
 		
+			--////////////////////////////////////////////////
+			--//first pipeline stage
 			data_pipe(i)(define_ram_width-1 downto 0) <= data_pipe(i)(2*define_ram_width-1 downto define_ram_width);
-			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rx_adc_data_i(i); 
+			--//apply channel-level mask here
+			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rx_adc_data_i(i) and channel_mask(i); 
 			
 		end if;
 	end loop;

@@ -22,12 +22,14 @@ entity registers_mcu_spi is
 	port(
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
+		--clk_data_i		:	in		std_logic;	--//fast data clock (create copy of register array on this clock)
 		status_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); --//status register
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
 		write_req_o		:	out	std_logic; --//request the data
 		read_reg_o 		:	out 	std_logic_vector(define_register_size-1 downto 0); --//set data here to be read out
 		registers_io	:	inout	register_array_type;
+		--registers_dclk_o		:	out	register_array_type;  --//copy of registers on clk_data_i
 		address_o		:	out	std_logic_vector(define_address_size-1 downto 0));
 		
 	end registers_mcu_spi;
@@ -132,7 +134,27 @@ begin
 		
 		--//electronics cal pulse:
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
-		--registers_io(43) <= x"000001"; --//cal pulse pattern, dunno maybe make this configurable? 
+		--registers_io(43) <= x"000001"; --//cal pulse pattern, dunno maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
+		
+		registers_io(48) <= x"000000";  --//channel masking [48]
+		
+		--//trigger thresholds:
+		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
+		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]
+		registers_io(base_adrs_trig_thresh+2) <= x"0FFFFF";   --//[88]
+		registers_io(base_adrs_trig_thresh+3) <= x"0FFFFF";   --//[89]
+		registers_io(base_adrs_trig_thresh+4) <= x"0FFFFF";   --//[90]
+		registers_io(base_adrs_trig_thresh+5) <= x"0FFFFF";   --//[91]
+		registers_io(base_adrs_trig_thresh+6) <= x"0FFFFF";   --//[92]
+		registers_io(base_adrs_trig_thresh+7) <= x"0FFFFF";   --//[93]
+		registers_io(base_adrs_trig_thresh+8) <= x"0FFFFF";   --//[94]
+		registers_io(base_adrs_trig_thresh+9) <= x"0FFFFF";   --//[95]
+		registers_io(base_adrs_trig_thresh+10) <= x"0FFFFF";   --//[96]
+		registers_io(base_adrs_trig_thresh+11) <= x"0FFFFF";   --//[97]
+		registers_io(base_adrs_trig_thresh+12) <= x"0FFFFF";   --//[98]
+		registers_io(base_adrs_trig_thresh+13) <= x"0FFFFF";   --//[99]
+		registers_io(base_adrs_trig_thresh+14) <= x"0FFFFF";   --//[100]
+		registers_io(base_adrs_trig_thresh+15) <= x"0FFFFF";   --//[101]
 		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";

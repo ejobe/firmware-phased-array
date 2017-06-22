@@ -131,7 +131,7 @@ begin
 end process;
 
 xPLL_RESET : entity work.pulse_stretcher(rtl)
-generic map(stretch => to_integer(x"F"))
+generic map(stretch => 15)
 port map(
 	rst_i		=> fpga_reset_pwr,
 	clk_i		=> clk_i,
@@ -139,7 +139,7 @@ port map(
 	pulse_o	=> pll_strtup_o);
 	
 xDSA_RESET : entity work.pulse_stretcher(rtl)
-generic map(stretch => to_integer(x"F"))
+generic map(stretch => 15)
 port map(
 	rst_i		=> fpga_reset_pwr,
 	clk_i		=> clk_i,

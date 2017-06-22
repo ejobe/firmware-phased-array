@@ -44,10 +44,25 @@ signal buffered_powersum : buffered_powersum_type;
 signal instantaneous_avg_power_0 : average_power_16samp_type;  --//defined in defs.vhd
 signal instantaneous_avg_power_1 : average_power_16samp_type;  --//defined in defs.vhd
 
-signal beam_trig			:	std_logic_vector(define_num_beams-1 downto 0); --//trigger in each beam
-signal above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check in each beam
+signal instantaneous_above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check if beam above threshold at each clk_data_i edge
+signal thresholds  : average_power_16samp_type;
+
+type stuck_on_counter_type is array(define_num_beams-1 downto 0) of std_logic_vector(13 downto 0);
+signal stuck_on_counter 			: stuck_on_counter_type;  --//counter to check for 'stuck on' beam
+signal stuck_on						: std_logic_vector(define_num_beams-1 downto 0);  --//stuck on signal
+signal stuck_on_refresh_counter 	: stuck_on_counter_type; --//counter to automatically clear stuck on and re-check (basically sets a limit on the trigger rate)
+--//with 14 bit counter at ~93 MHz, this sets max rate for a stuck-on channel at ~5 kHz (does this make sense?)
 
 begin
+
+proc_get_thresholds : process(clk_data_i, reg_i)
+begin
+	for i in 0 to define_num_beams-1 loop
+		if rising_edge(clk_data_i) then
+			thresholds(i)  <= reg_i(base_adrs_trig_thresh+i)(define_16avg_pow_sum_range-1 downto 0);
+		end if;
+	end loop;
+end process;
 
 proc_buf_powsum : process(rst_i, clk_data_i)
 begin
@@ -57,11 +72,28 @@ begin
 			instantaneous_avg_power_1(i) <= (others=>'0');
 			
 			buffered_powersum(i) <= (others=>'0');
+			
+			stuck_on_counter(i) 	<= (others=>'0');
+			stuck_on(i)				<= '0';
+			stuck_on_refresh_counter(i) <= (others=>'0');
 		
 		--//there are 16 samples every clock cycle. We want to calculate the power in 16 sample units every 8 samples.
 		--//So that's two power calculations every clk_data_i cycle
 		elsif rising_edge(clk_data_i) then
 		
+			if (instantaneous_avg_power_0(i) > thresholds(i)) or (instantaneous_avg_power_1(i) > thresholds(i)) then
+				instantaneous_above_threshold(i) <= '1';
+				stuck_on_counter(i) <= stuck_on_counter(i) + 1;
+			else
+				instantaneous_above_threshold(i) <= '0';
+				stuck_on_counter(i) <= (others=>'0');
+			end if;
+			
+		--	if stuck_on_counter(i)(3 downto 0) = "1111" then	
+		--		stuck_on(i) <= '1';
+		--	elsif 
+		
+			
 			--//calculate first 16-sample power
 			--//note that buffered_powersum already contains 2 samples, so we need to sum over 8 of these
 			instantaneous_avg_power_0(i) <= 
@@ -87,9 +119,12 @@ begin
 			
 			buffered_powersum(i) <= buffered_powersum(i)(define_num_power_sums*(define_pow_sum_range+1)-1 downto 0) & powersums_i(i);	
 
+			
 		end if;
 	end loop;
 end process;
+
+
 
 
 
