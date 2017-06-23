@@ -181,7 +181,10 @@ architecture rtl of top_level is
 	signal vme_unused_pins		: 	std_logic_vector(79 downto 0);
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
-	signal beam_data				: array_of_beams_type; --//registered on core clk
+	signal beam_data_8			: array_of_beams_type; --//registered on core clk
+	signal beam_data_4a			: array_of_beams_type; --//registered on core clk
+	signal beam_data_4b			: array_of_beams_type; --//registered on core clk
+
 	signal powsum_ev2samples	: sum_power_type;
 
 begin
@@ -265,14 +268,16 @@ begin
 		clk_i			=>	clock_93MHz,		
 		reg_i			=> registers,
 		data_i		=>	wfm_data,
-		beams_8_o	=> beam_data);
+		beams_4a_o	=> beam_data_4a,
+		beams_4b_o	=> beam_data_4b,
+		beams_8_o	=> beam_data_8);
 	--///////////////////////////////////////	
 	xPOWER_DETECTOR : entity work.power_detector
 	port map(
 		rst_i  	=> reset_global or reset_global_except_registers,
 		clk_i	 	=> clock_93MHz,
 		reg_i		=> registers,
-		beams_i	=> beam_data,
+		beams_i	=> beam_data_8,
 		sum_pow_o=> powsum_ev2samples);
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
@@ -371,12 +376,15 @@ begin
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
 		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger only, for now
+		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  --usb_slwr,
 		read_ram_adr_i			=> ram_read_address,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
 		data_ram_o				=> ram_data,
-		beam_data_i				=> beam_data,
+		beam_data_i				=> beam_data_8,
+		beam_data_4a_i			=> beam_data_4a,
+		beam_data_4b_i 		=> beam_data_4b,
 		beam_ram_read_en_i	=> rdout_beam_rd_en,
 		beam_ram_o				=> beam_ram_data,
 		powsum_data_i			=> powsum_ev2samples, --powsum_ev2samples,

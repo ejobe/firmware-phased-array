@@ -25,6 +25,7 @@ entity data_manager is
 		clk_i					:  in	 std_logic;
 		
 		trig_i				:	in	 std_logic; --//forced trigger
+		reg_i					:	in	 register_array_type;
 		
 		read_clk_i 			:	in		std_logic;
 		read_ram_adr_i		:	in  	std_logic_vector(define_data_ram_depth-1 downto 0);
@@ -35,10 +36,13 @@ entity data_manager is
 		data_ram_o				:  out	full_data_type;
 		
 		--//beamforming data
-		beam_data_i				:	in	 	array_of_beams_type;
+		beam_data_i				:	in	 	array_of_beams_type; --//beams made w/ coherent sums of all 8 antennas (baseline every antenna)
+		beam_data_4a_i			:	in	 	array_of_beams_type; --//beams made w/ 4 antennas, starting with 1st antenna (baseline every other antenna)
+		beam_data_4b_i			:	in	 	array_of_beams_type; --//beams made w/ 4 antennas, starting with 2nd antenna (baseline every other antenna)
+
 		beam_ram_read_en_i	:	in		std_logic_vector(define_num_beams-1 downto 0);
 		beam_ram_o				:  out	array_of_beams_type;
-		
+
 		--//power data
 		powsum_data_i			:	in	 	sum_power_type;
 		powsum_ram_read_en_i	:	in		std_logic_vector(define_num_beams-1 downto 0);
@@ -59,6 +63,14 @@ type internal_sum_power_type is array(define_num_beams-1 downto 0) of
 	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0);  
 signal internal_powsum_data : internal_sum_power_type;
 		
+		
+signal internal_beam_ram_8 	: array_of_beams_type;
+signal internal_beam_ram_4a 	: array_of_beams_type;
+signal internal_beam_ram_4b 	: array_of_beams_type;
+signal internal_beam_ram_en_8		: std_logic_vector(define_num_beams-1 downto 0);
+signal internal_beam_ram_en_4a	: std_logic_vector(define_num_beams-1 downto 0);
+signal internal_beam_ram_en_4b	: std_logic_vector(define_num_beams-1 downto 0);
+
 begin
 
 process(clk_i, powsum_data_i)
@@ -105,6 +117,34 @@ begin
 		
 	end if;
 end process;
+
+proc_select_beam_ram : process(reg_i)
+begin
+	for i in 0 to define_num_beams-1 loop
+		case reg_i(base_adrs_rdout_cntrl+2)(3 downto 2) is		
+			when "00" =>
+				beam_ram_o(i) <= internal_beam_ram_8(i);
+				internal_beam_ram_en_8(i)	<= beam_ram_read_en_i(i);
+				internal_beam_ram_en_4a(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= '0';
+			when "01" =>
+				beam_ram_o(i) <= internal_beam_ram_4a(i);
+				internal_beam_ram_en_8(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= beam_ram_read_en_i(i);
+				internal_beam_ram_en_4a(i)	<= '0';
+			when "10" =>
+				beam_ram_o(i) <= internal_beam_ram_4b(i);
+				internal_beam_ram_en_8(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= beam_ram_read_en_i(i);
+			when others=>
+				beam_ram_o(i) <= (others=>'0');
+				internal_beam_ram_en_8(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= '0';
+				internal_beam_ram_en_4a(i)	<= '0';
+		end case;
+	end loop;
+end process;
 --///////////////////
 DataRamBlock : for i in 0 to 7 generate
 	xDataRAM 	:	entity work.DataRAM
@@ -120,19 +160,45 @@ DataRamBlock : for i in 0 to 7 generate
 		q				=>	data_ram_o(i));
 end generate DataRamBlock;
 --///////////////////
-BeamRamBlock : for i in 0 to define_num_beams-1 generate
+BeamRamBlock1 : for i in 0 to define_num_beams-1 generate
 	xBeamRAM 	:	entity work.DataRAM
 	port map(
 		data			=> beam_data_i(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,
-		rden			=> beam_ram_read_en_i(i),
+		rden			=> internal_beam_ram_en_8(i),
 		wraddress	=> internal_ram_write_adrs, 
 		wrclock		=> clk_i,
 		wren			=>	internal_data_ram_write_en,
-		q				=>	beam_ram_o(i));
-end generate BeamRamBlock;
+		q				=>	internal_beam_ram_8(i));
+end generate BeamRamBlock1;
+BeamRamBlock2 : for i in 0 to define_num_beams-1 generate
+	xBeamRAM 	:	entity work.DataRAM
+	port map(
+		data			=> beam_data_4a_i(i), 
+		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
+		rdaddress	=> read_ram_adr_i,
+		rdclock		=> read_clk_i,
+		rden			=> internal_beam_ram_en_4a(i),
+		wraddress	=> internal_ram_write_adrs, 
+		wrclock		=> clk_i,
+		wren			=>	internal_data_ram_write_en,
+		q				=>	internal_beam_ram_4a(i));
+end generate BeamRamBlock2;
+BeamRamBlock3 : for i in 0 to define_num_beams-1 generate
+	xBeamRAM 	:	entity work.DataRAM
+	port map(
+		data			=> beam_data_4b_i(i), 
+		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
+		rdaddress	=> read_ram_adr_i,
+		rdclock		=> read_clk_i,
+		rden			=> internal_beam_ram_en_4b(i),
+		wraddress	=> internal_ram_write_adrs, 
+		wrclock		=> clk_i,
+		wren			=>	internal_data_ram_write_en,
+		q				=>	internal_beam_ram_4b(i));
+end generate BeamRamBlock3;
 --///////////////////
 PowRamBlock : for i in 0 to define_num_beams-1 generate
 	xPowRAM 	:	entity work.DataRAM
