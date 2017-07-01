@@ -138,6 +138,8 @@ begin
 		
 		registers_io(48) <= x"000000";  --//channel masking [48]
 		
+		
+		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
 		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]

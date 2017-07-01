@@ -184,9 +184,11 @@ architecture rtl of top_level is
 	signal beam_data_8			: array_of_beams_type; --//registered on core clk
 	signal beam_data_4a			: array_of_beams_type; --//registered on core clk
 	signal beam_data_4b			: array_of_beams_type; --//registered on core clk
-
+	--//signal for power sums
 	signal powsum_ev2samples	: sum_power_type;
-
+	--//trigger signals
+	signal internal_trigger		: std_logic;
+	
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -270,15 +272,19 @@ begin
 		data_i		=>	wfm_data,
 		beams_4a_o	=> beam_data_4a,
 		beams_4b_o	=> beam_data_4b,
-		beams_8_o	=> beam_data_8);
-	--///////////////////////////////////////	
-	xPOWER_DETECTOR : entity work.power_detector
+		beams_8_o	=> beam_data_8,
+		sum_pow_o	=> powsum_ev2samples);
+	--///////////////////////////////////////
+	xTRIGGER : entity work.trigger
 	port map(
-		rst_i  	=> reset_global or reset_global_except_registers,
-		clk_i	 	=> clock_93MHz,
-		reg_i		=> registers,
-		beams_i	=> beam_data_8,
-		sum_pow_o=> powsum_ev2samples);
+		rst_i					=> reset_global or reset_global_except_registers,
+		clk_data_i			=> clock_93MHz,
+		clk_iface_i			=> clock_7p5MHz,
+		reg_i					=> registers,
+		powersums_i			=> powsum_ev2samples,
+		beam_trigger_out	=> open,
+		trig_clk_data_o	=> internal_trigger,
+		trig_o				=> open);
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
@@ -375,7 +381,7 @@ begin
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
-		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0), --//software trigger only, for now
+		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0) or internal_trigger, --//software trigger only, for now
 		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  --usb_slwr,
 		read_ram_adr_i			=> ram_read_address,

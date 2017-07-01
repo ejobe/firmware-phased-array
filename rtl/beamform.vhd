@@ -32,7 +32,9 @@ entity beamform is
 		
 		beams_4a_o	:	out	array_of_beams_type;   --//beams made w/ 4 antennas, starting with 1st antenna (baseline every other antenna)
 		beams_4b_o	:	out	array_of_beams_type;   --//beams made w/ 4 antennas, starting with 2nd antenna (baseline every other antenna)
-		beams_8_o	:	out	array_of_beams_type);  --//beams made w/ coherent sums of all 8 antennas (baseline every antenna)
+		beams_8_o	:	out	array_of_beams_type;  --//beams made w/ coherent sums of all 8 antennas (baseline every antenna)
+		
+		sum_pow_o	:	out	sum_power_type);
 		
 end beamform;
 
@@ -117,6 +119,11 @@ signal internal_beams_4a_pipe	: array_of_beams_type;
 
 signal internal_beams_4b 		: array_of_beams_type;
 signal internal_beams_4b_pipe	: array_of_beams_type;
+
+signal internal_summed_power_8	:	sum_power_type;
+signal internal_summed_power_4a	:	sum_power_type;
+signal internal_summed_power_4b	:	sum_power_type;
+
 --//
 begin
 
@@ -158,6 +165,9 @@ begin
 			internal_beams_4a_pipe(i) <= (others=>'0');
 			internal_beams_4b_pipe(i) <= (others=>'0');
 			
+			--//output beam power
+			sum_pow_o(i) <= (others=>'0');
+			
 		elsif rising_edge(clk_i) then
 			beams_8_o(i) <= internal_beams_8_pipe(i);
 			internal_beams_8_pipe(i) <= internal_beams_8(i);
@@ -167,6 +177,11 @@ begin
 			
 			beams_4b_o(i) <= internal_beams_4b_pipe(i);
 			internal_beams_4b_pipe(i) <= internal_beams_4b(i);
+			
+			--//output beam power. make effective beam using different baselines - for power-thresholding
+			sum_pow_o(i) <= 	std_logic_vector(unsigned(internal_summed_power_8(i))) +
+									std_logic_vector(unsigned(internal_summed_power_4a(i))) +
+									std_logic_vector(unsigned(internal_summed_power_4b(i)));
 		end if;
 	end loop;
 end process;
@@ -230,9 +245,9 @@ begin
 				internal_beams_4a(k)((i+1)*define_beam_bits-1 downto i*define_beam_bits) <= (others=>'0');
 				internal_beams_4a(k)((i+1)*define_beam_bits-1 downto i*define_beam_bits) <= (others=>'0');
 			end loop;
-
+			
 		elsif rising_edge(clk_i) then
-		
+									
 --			internal_beams(0)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m7(i);
 --			internal_beams(1)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m6(i);
 --			internal_beams(2)((i+1)*define_word_size-1 downto i*define_word_size) <= beam_8_m5(i);
@@ -629,6 +644,32 @@ begin
 		end if;
 	end loop;
 end process;
+	
+xPOWER_SUM_8 : entity work.power_detector
+	port map(
+		rst_i  	=> rst_i,
+		clk_i	 	=> clk_i,
+		reg_i		=> reg_i,
+		beams_i	=> internal_beams_8_pipe,
+		sum_pow_o=> internal_summed_power_8);
+		
+xPOWER_SUM_4a : entity work.power_detector
+	port map(
+		rst_i  	=> rst_i,
+		clk_i	 	=> clk_i,
+		reg_i		=> reg_i,
+		beams_i	=> internal_beams_4a_pipe,
+		sum_pow_o=> internal_summed_power_4a);
+		
+xPOWER_SUM_4b : entity work.power_detector
+	port map(
+		rst_i  	=> rst_i,
+		clk_i	 	=> clk_i,
+		reg_i		=> reg_i,
+		beams_i	=> internal_beams_4b_pipe,
+		sum_pow_o=> internal_summed_power_4b);
+
+--//calculate power
 
 end rtl;
 		
