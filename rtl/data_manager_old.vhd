@@ -22,13 +22,10 @@ use work.register_map.all;
 entity data_manager is
 	port(
 		rst_i					:	in	 std_logic;
-		clk_i					:  in	 std_logic; --//core data clock
-		clk_iface_i			:	in	 std_logic; --//slower interface clock
-		wr_busy_o			:	out std_logic; --//
-		buffer_full_o		:	out std_logic_vector(0 downto 0); --//single buffer, for now
+		clk_i					:  in	 std_logic;
 		
-		phased_trig_i		:	in	 std_logic; 
-		reg_i					:	in	 register_array_type; --//forced trig sent in register array
+		trig_i				:	in	 std_logic; --//forced trigger
+		reg_i					:	in	 register_array_type;
 		
 		read_clk_i 			:	in		std_logic;
 		read_ram_adr_i		:	in  	std_logic_vector(define_data_ram_depth-1 downto 0);
@@ -54,11 +51,8 @@ entity data_manager is
 	end data_manager;
 
 architecture rtl of data_manager is
-
-type save_event_state_type is (idle_st, adr_inc_st, done_st)
-signal save_event_state 	: save_event_state_type;
 		
-signal internal_forced_trigger : std_logic;
+signal internal_trigger_reg : std_logic_vector(3 downto 0);
 signal internal_data_ram_write_en : std_logic;
 signal internal_ram_write_adrs : std_logic_vector(define_data_ram_depth-1 downto 0);
 constant internal_address_max : std_logic_vector(define_data_ram_depth-1 downto 0) := (others=>'1');		
@@ -77,18 +71,8 @@ signal internal_beam_ram_en_8		: std_logic_vector(define_num_beams-1 downto 0);
 signal internal_beam_ram_en_4a	: std_logic_vector(define_num_beams-1 downto 0);
 signal internal_beam_ram_en_4b	: std_logic_vector(define_num_beams-1 downto 0);
 
-component flag_sync is
-port(
-	clkA			: in	std_logic;
-   clkB			: in	std_logic;
-   in_clkA		: in	std_logic;
-   busy_clkA	: out	std_logic;
-   out_clkB		: out	std_logic);
-end component;
-
 begin
---////////////////////////////////////////////////////////////////////////////////
---//chop off some of the pow_sum_data in order to fit in 16 bit word for readout
+
 process(clk_i, powsum_data_i)
 begin
 	for i in 0 to define_num_beams-1 loop
@@ -102,81 +86,37 @@ begin
 		internal_powsum_data(i)(127 downto 112)<= powsum_data_i(i)(134 downto 119);
 	end loop;
 end process;
---///////////////////////////////////////////////////////////////////////////////
 
---//////////////////////////////////////////////////////////
---//sync software trigger to faster data clk
-xSOFTTRIGSYNC : flag_sync
-port map(
-		clkA 			=> clk_iface_i,
-		clkB			=> clk_i,
-		in_clkA		=> reg_i(base_adrs_rdout_cntrl+0)(0),
-		busy_clkA	=> open,
-		out_clkB		=> internal_forced_trigger);
---/////////////////////////////////////////////////////////
-
---/////////////////////////////////////////////////////////	
---//if trigger, write to data ram
-proc_save_triggered_event(rst_i, clk_i, internal_forced_trigger, phased_trig_i)
+proc_trig : process(rst_i, clk_i, trig_i)
 begin
-	if rst_i = '1' then
+	if rst_i = '1' then	
+		internal_trigger_reg <= (others=>'0');	
+	elsif rising_edge(clk_i) then
+		internal_trigger_reg <= internal_trigger_reg(internal_trigger_reg'length-2 downto 0) & trig_i;
+	end if;
+end process;	
+	
+--//if trigger, write to data ram
+proc_forced_trigger : process(rst_i, clk_i, internal_trigger_reg)
+begin
+	if rst_i = '1' or internal_trigger_reg(0) <= '0' then	
 		internal_data_ram_write_en <= '0';
 		internal_ram_write_adrs <= (others=>'0');
-		wr_busy_o <= '0';
-		save_event_state <= idle_st;
+		
+	elsif rising_edge(clk_i) and internal_trigger_reg(2) = '1' and	
+		internal_ram_write_adrs < internal_address_max then
 	
-	elsif rising_edge(clk_i) then
 		
-		case save_event_state is =>
+		internal_data_ram_write_en <= '1';
+		internal_ram_write_adrs <= internal_ram_write_adrs + 1;
+	
+	elsif rising_edge(clk_i) and internal_ram_write_adrs = internal_address_max then
+				
+		internal_data_ram_write_en <= '0';
+		internal_ram_write_adrs <= internal_address_max;
 		
-			when idle_st =>
-				internal_data_ram_write_en <= '0';
-				internal_ram_write_adrs <= (others=>'0');
-				wr_busy_o <= '0';
-				
-				if internal_forced_trigger = '1' or phased_trig_i = '1' then
-					save_event_state <= adr_inc_st;
-				else
-					save_event_state <= idle_st;
-				
-			when adr_inc_st=>
-				internal_data_ram_write_en <= '1';
-				internal_ram_write_adrs <= internal_ram_write_adrs + 1;
-				wr_busy_o <= '1';
-				
-				if internal_ram_write_adrs = internal_address_max then --add toggle of 'buffer full flag' here
-					save_event_state <= done_st;
-				else
-					save_event_state <= adr_inc_st;
-					
-				when done_st =>
-					wr_busy <= '0';
-					save_event_state <= idle_st;
-				
-		end case;
 	end if;
 end process;
-	
---proc_trigger : process(rst_i, clk_i, internal_trigger_reg)
---begin
---	if rst_i = '1' or internal_trigger_reg(0) <= '0' then	
---		internal_data_ram_write_en <= '0';
---		internal_ram_write_adrs <= (others=>'0');
---		
---	elsif rising_edge(clk_i) and internal_trigger_reg(2) = '1' and	
---		internal_ram_write_adrs < internal_address_max then
---	
---		
---		internal_data_ram_write_en <= '1';
---		internal_ram_write_adrs <= internal_ram_write_adrs + 1;
---	
---	elsif rising_edge(clk_i) and internal_ram_write_adrs = internal_address_max then
---				
---		internal_data_ram_write_en <= '0';
---		internal_ram_write_adrs <= internal_address_max;
---		
---	end if;
---end process;
 
 proc_select_beam_ram : process(reg_i)
 begin

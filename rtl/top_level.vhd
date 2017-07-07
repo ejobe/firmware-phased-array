@@ -381,6 +381,7 @@ begin
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
+		clk_iface_i				=> clock_7p5MHz,
 		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0) or internal_trigger, --//software trigger only, for now
 		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  --usb_slwr,
