@@ -8,7 +8,7 @@
 -- EMAIL         ejo@uchicago.edu
 -- DATE:         3/2017
 --
--- DESCRIPTION:  manage data, RAMs, etc
+-- DESCRIPTION:  manage data, event-forming, etc
 --               
 ---------------------------------------------------------------------------------
 library IEEE;
@@ -55,7 +55,7 @@ entity data_manager is
 
 architecture rtl of data_manager is
 
-type save_event_state_type is (idle_st, adr_inc_st, done_st)
+type save_event_state_type is (idle_st, adr_inc_st, done_st);
 signal save_event_state 	: save_event_state_type;
 		
 signal internal_forced_trigger : std_logic;
@@ -69,6 +69,7 @@ type internal_sum_power_type is array(define_num_beams-1 downto 0) of
 	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0);  
 signal internal_powsum_data : internal_sum_power_type;
 		
+signal internal_wfm_data : full_data_type;
 		
 signal internal_beam_ram_8 		: array_of_beams_type;
 signal internal_beam_ram_4a 		: array_of_beams_type;
@@ -86,6 +87,7 @@ port(
    out_clkB		: out	std_logic);
 end component;
 
+--//note saving beam/power sum info mainly for debugging. Might chop this out once things confirmed working
 begin
 --////////////////////////////////////////////////////////////////////////////////
 --//chop off some of the pow_sum_data in order to fit in 16 bit word for readout
@@ -115,9 +117,22 @@ port map(
 		out_clkB		=> internal_forced_trigger);
 --/////////////////////////////////////////////////////////
 
+--//////////////////////////////////////
+--//apply programmable pre-trigger window
+PreTrigBlock : for i in 0 to 7 generate
+	xPRETRIGBLOCK : entity work.pretrigger_window
+	port map(
+		rst_i		=> rst_i,
+		clk_i		=>	clk_i,
+		reg_i		=>	reg_i,
+		data_i	=>	wfm_data_i(i),
+		data_o	=>	internal_wfm_data(i));
+end generate;
+--//////////////////////////////////////
+
 --/////////////////////////////////////////////////////////	
 --//if trigger, write to data ram
-proc_save_triggered_event(rst_i, clk_i, internal_forced_trigger, phased_trig_i)
+proc_save_triggered_event : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i)
 begin
 	if rst_i = '1' then
 		internal_data_ram_write_en <= '0';
@@ -127,8 +142,9 @@ begin
 	
 	elsif rising_edge(clk_i) then
 		
-		case save_event_state is =>
+		case save_event_state is
 		
+			--//idle state, sit around wait for forced or beam trigger
 			when idle_st =>
 				internal_data_ram_write_en <= '0';
 				internal_ram_write_adrs <= (others=>'0');
@@ -138,46 +154,32 @@ begin
 					save_event_state <= adr_inc_st;
 				else
 					save_event_state <= idle_st;
-				
+				end if;
+			
+			--//push data to RAM block, increment address until max address is reached
 			when adr_inc_st=>
 				internal_data_ram_write_en <= '1';
 				internal_ram_write_adrs <= internal_ram_write_adrs + 1;
 				wr_busy_o <= '1';
 				
-				if internal_ram_write_adrs = internal_address_max then --add toggle of 'buffer full flag' here
+				if internal_ram_write_adrs = internal_address_max then 
 					save_event_state <= done_st;
 				else
 					save_event_state <= adr_inc_st;
-					
-				when done_st =>
-					wr_busy <= '0';
+				end if;
+			
+			--//saving is done, relax the wr_busy signal and go back to idle state 		
+			when done_st =>
+					internal_data_ram_write_en <= '0';
+					internal_ram_write_adrs <= internal_address_max;
+					wr_busy_o <= '0';
 					save_event_state <= idle_st;
 				
 		end case;
 	end if;
 end process;
-	
---proc_trigger : process(rst_i, clk_i, internal_trigger_reg)
---begin
---	if rst_i = '1' or internal_trigger_reg(0) <= '0' then	
---		internal_data_ram_write_en <= '0';
---		internal_ram_write_adrs <= (others=>'0');
---		
---	elsif rising_edge(clk_i) and internal_trigger_reg(2) = '1' and	
---		internal_ram_write_adrs < internal_address_max then
---	
---		
---		internal_data_ram_write_en <= '1';
---		internal_ram_write_adrs <= internal_ram_write_adrs + 1;
---	
---	elsif rising_edge(clk_i) and internal_ram_write_adrs = internal_address_max then
---				
---		internal_data_ram_write_en <= '0';
---		internal_ram_write_adrs <= internal_address_max;
---		
---	end if;
---end process;
 
+--//simple block to interpret registers to pick which beam RAM block to readout 
 proc_select_beam_ram : process(reg_i)
 begin
 	for i in 0 to define_num_beams-1 loop
@@ -205,11 +207,14 @@ begin
 		end case;
 	end loop;
 end process;
+
+--///////////////////
+--//FPGA RAM blocks defined here:
 --///////////////////
 DataRamBlock : for i in 0 to 7 generate
 	xDataRAM 	:	entity work.DataRAM
 	port map(
-		data			=> wfm_data_i(i), 
+		data			=> internal_wfm_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,

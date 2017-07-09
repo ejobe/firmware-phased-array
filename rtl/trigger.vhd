@@ -30,11 +30,9 @@ entity trigger is
 		reg_i				: 	in		register_array_type;		
 		powersums_i		:	in		sum_power_type;
 		
-		beam_trigger_out	:	out	std_logic_vector(define_num_beams-1 downto 0);
-		
+		trig_beam_o			:	out	std_logic_vector(define_num_beams-1 downto 0);
 		trig_clk_data_o	:	inout	std_logic;  --//trig flag on faster clock
-		trig_o				:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
-
+		trig_clk_iface_o	:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
 		
 end trigger;
 
@@ -197,7 +195,7 @@ TrigSync	:	 for i in 0 to define_num_beams-1 generate
 		clkB			=> clk_iface_i,
 		in_clkA		=> instantaneous_above_threshold(i),
 		busy_clkA	=> open,
-		out_clkB		=> beam_trigger_out(i));
+		out_clkB		=> trig_beam_o(i));
 end generate TrigSync;
 
 xTRIGSYNC : flag_sync
@@ -206,7 +204,7 @@ xTRIGSYNC : flag_sync
 		clkB			=> clk_iface_i,
 		in_clkA		=> trig_clk_data_o,
 		busy_clkA	=> open,
-		out_clkB		=> trig_o); --//trig_o is high for one clk_iface_i cycle (use for scalers)
+		out_clkB		=> trig_clk_iface_o); --//trig_o is high for one clk_iface_i cycle (use for scalers)
 
 --//////////////////////
 end rtl;

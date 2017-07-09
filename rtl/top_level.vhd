@@ -187,7 +187,7 @@ architecture rtl of top_level is
 	--//signal for power sums
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
-	signal internal_trigger		: std_logic;
+	signal the_phased_trigger		: std_logic;
 	
 begin
 	--//pin to signal assignments
@@ -282,9 +282,9 @@ begin
 		clk_iface_i			=> clock_7p5MHz,
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
-		beam_trigger_out	=> open,
-		trig_clk_data_o	=> internal_trigger,
-		trig_o				=> open);
+		trig_beam_o			=> open,  				--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
+		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
+		trig_clk_iface_o	=> open);            --//trig_clk_data_o synced to 7p5 MHz clock
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
@@ -382,9 +382,11 @@ begin
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
 		clk_iface_i				=> clock_7p5MHz,
-		trig_i					=> registers(base_adrs_rdout_cntrl+0)(0) or internal_trigger, --//software trigger only, for now
+		wr_busy_o				=> open,
+		buffer_full_o			=> open,
+		phased_trig_i			=> the_phased_trigger,
 		reg_i						=> registers,
-		read_clk_i 				=> rdout_clock,  --usb_slwr,
+		read_clk_i 				=> rdout_clock,  
 		read_ram_adr_i			=> ram_read_address,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
@@ -420,18 +422,7 @@ begin
 --		rdout_adr_o			=> ram_read_address,
 --		rdout_fpga_data_o	=> rdout_data_16bit);
 --
---	xREGISTERS : entity work.registers
---	port map(
---		rst_i				=> reset_global,
---		clk_i				=> clock_15MHz,  --//clock for register interface
---		ioclk_i			=> USB_IFCLK,
---		status_i			=> (others=>'0'), --//status register
---		write_reg_i		=> usb_read_packet_32bit,
---		write_rdy_i		=> usb_read_packet_rdy,
---		read_reg_o 		=> register_to_read,
---		registers_io	=> registers, --//system register space
---		address_o		=> register_adr);
-	--///////////////////////////////////////	
+
 	--//readout controller using MCU/BeagleBone
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
