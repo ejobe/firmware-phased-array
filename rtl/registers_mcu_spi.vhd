@@ -22,8 +22,10 @@ entity registers_mcu_spi is
 	port(
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
-		--clk_data_i		:	in		std_logic;	--//fast data clock (create copy of register array on this clock)
-		status_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); --//status register
+		--//////////////////////////////
+		--//status registers:
+		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
+		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
 		write_req_o		:	out	std_logic; --//request the data
@@ -53,10 +55,11 @@ begin
 		--//read-only registers:
 		registers_io(1) <= firmware_version; --//firmware version (see defs.vhd)
 		registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
-		registers_io(3) <= status_i;      	 --//status register
+		registers_io(3) <= x"000000";       --//status register
 		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
 		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
+		registers_io(7) <= x"000000"; 
 		
 		
 		--////////////////////////////////////////////////////////////////////////////
@@ -81,7 +84,9 @@ begin
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
 		registers_io(base_adrs_rdout_cntrl+11) <= x"000004"; --//length of register readout (NOT USED, only signal word readouts) (75)
 		registers_io(base_adrs_rdout_cntrl+12) <= x"000000"; --//readout pre-trig window [76]
-		
+		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer [77]
+		registers_io(base_adrs_rdout_cntrl+14) <= x"000000"; --//select readout waveform buffer [78]
+
 		registers_io(127)	<= x"000000"; --//software global reset when LSB is toggled [127]
 		 
 		registers_io(base_adrs_adc_cntrl+0) <= x"000000"; --//nothing assigned yet (54)
@@ -143,9 +148,13 @@ begin
 	--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) then
 		address_o <= x"00";
-		registers_io(3) <= status_i; --//update status
+		--///////////////////////
+		--//update status registers
+		registers_io(7) <= status_data_manager_i; 
+		--///////////////////////
 		registers_io(127) <= x"000000"; --//clear the reset register
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
+		registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
 		--////////////////////////////////////////////////////////////////////////////	
 		--//these should be static, but keep updating every clk_i cycle
 		if unique_chip_id_rdy = '1' then

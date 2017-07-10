@@ -178,12 +178,10 @@ end process;
 --///////////////////////////////
 --//readout process	
 proc_read : process(rst_i, clk_i, reg_adr_i, tx_rdy_spi_i)
-variable i : integer range 0 to 4 := 0;
 begin
 	if rst_i = '1' or reg_adr_i = std_logic_vector(to_unsigned(base_adrs_rdout_cntrl+8, define_address_size)) then
 		rdout_fpga_data_o		<= (others=>'0'); --/fpga readout data
 		tx_rdy_o <= '0'; 								--//tx flag to spi_slave
-		i := 0;
 		readout_state <= idle_st;
 		read_clk_o <= '0';
 		
@@ -194,7 +192,6 @@ begin
 				read_clk_o <= '0';
 
 				tx_rdy_o <= '0';
-				i := 0;
 				rdout_fpga_data_o		<= x"1234DEAD"; --dummy data
 				--///////////////////////////////////////////////
 				--//if readout register is written, and spi interface is done with last transfer we initiate a transfer:
@@ -208,7 +205,6 @@ begin
 			
 			--//assign the readout register to the appropriate data
 			when set_readout_reg_st =>
-				i := 0;
 				--//real data assigned here:
 				rdout_fpga_data_o <= (ram_data_i(read_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and data_mask) or  --//readout wfm
 											(ram_beam_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and beam_mask) or  --//readout beamform
@@ -232,7 +228,6 @@ begin
 				read_clk_o <= '0';
 				if tx_ack_i = '1' then
 					tx_rdy_o <= '0';
-					i := 0;
 					readout_state <= idle_st;
 				else
 					tx_rdy_o <= '1';

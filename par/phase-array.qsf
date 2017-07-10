@@ -1117,8 +1117,6 @@ set_global_assignment -name VHDL_FILE ../rtl/SerialLinks.vhd
 set_global_assignment -name VHDL_FILE ../rtl/serdes_wrapper.vhd
 set_global_assignment -name VHDL_FILE ../rtl/rxdata_nodeser.vhd
 set_global_assignment -name VHDL_FILE ../rtl/RxData.vhd
-set_global_assignment -name VHDL_FILE ../rtl/registers.vhd
-set_global_assignment -name VHDL_FILE ../rtl/rdout_controller.vhd
 set_global_assignment -name VHDL_FILE ../rtl/pulse_stretcher.vhd
 set_global_assignment -name VHDL_FILE ../rtl/pll_controller.vhd
 set_global_assignment -name BDF_FILE "../rtl/phase-array.bdf"

@@ -188,6 +188,8 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	--//module status registers
+	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	
 begin
 	--//pin to signal assignments
@@ -388,6 +390,7 @@ begin
 		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  
 		read_ram_adr_i			=> ram_read_address,
+		status_reg_o			=> status_reg_data_manager,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
 		data_ram_o				=> ram_data,
@@ -449,7 +452,10 @@ begin
 	port map(
 		rst_i				=> reset_global,
 		clk_i				=> clock_7p5MHz,  --//clock for register interface
-		status_i			=> (others=>'0'), --//status register
+		--//////////////////////////
+		--//status registers
+		status_data_manager_i => status_reg_data_manager,
+		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
 		write_req_o		=> mcu_rx_req,
