@@ -27,7 +27,7 @@ entity RxData is
 			adc_data_i			:  in		std_logic_vector(27 downto 0);
 			adc_ovrange_i		:  in		std_logic;
 			
-			ram_read_Clk_i		:  in		std_logic;
+			ram_read_Clk_i		:  in		std_logic;  --//core clock
 			ram_read_Adrs_i	:	in		std_logic_vector(define_ram_depth-1 downto 0);
 			ram_read_en_i		:	in		std_logic;
 			ram_wr_adr_rst_i	: 	in		std_logic;
@@ -60,6 +60,13 @@ architecture rtl of RxData is
 	
 	constant iq_split : integer := 112; --// = 28 * serdes_factor / 2 
 	
+	component signal_sync is
+	port(
+		clkA			: in	std_logic;
+		clkB			: in	std_logic;
+		SignalIn_clkA	: in	std_logic;
+		SignalOut_clkB	: out	std_logic);
+	end component;
 	
 	----//the following for DPA in SerDes block:
 	--signal xRxFifoReset	: adc_data_type;
@@ -112,20 +119,28 @@ begin
 			wren			=>	ram_write_en,
 			q				=>	internal_ram_data(i));
 	end generate TwoChanRamBlock;
+	
+	xDATVALIDSYNC : signal_sync
+	port map(
+		clkA				=> ram_read_Clk_i,
+		clkB				=> rx_out_clk,
+		SignalIn_clkA	=> rx_dat_valid_i,
+		SignalOut_clkB	=> internal_rx_dat_valid(0));
+	
 		
 proc_data_valid : process(rx_out_clk, rst_i)
 begin
 	if rst_i = '1' then	
-		internal_rx_dat_valid <= (others =>'0');
+		internal_rx_dat_valid(internal_rx_dat_valid'length-1 downto 1) <= (others =>'0');
 	elsif rising_edge(rx_out_clk) then
-		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & rx_dat_valid_i;
+		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & internal_rx_dat_valid(0);
 	end if;
 end process;
 
 	--// re-organize data and pipeline	
-	proc_pipeline_data : process(rx_out_clk, rst_i, rx_dat_valid_i, internal_rx_dat_valid)
+	proc_pipeline_data : process(rx_out_clk, rst_i, internal_rx_dat_valid)
 	begin
-		if rst_i = '1' or rx_dat_valid_i = '0' then
+		if rst_i = '1' or internal_rx_dat_valid(0) = '0' then
 		
 			data_p	 		<= (others => '0');
 			for i in 0 to 1 loop
@@ -191,9 +206,9 @@ end process;
 	end process;
 	
 	--// write ADC data to fpga rx buffer ram
-	proc_write_data : process(rx_out_clk, rst_i, internal_rx_dat_valid, ram_wr_adr_rst_i, rx_dat_valid_i)
+	proc_write_data : process(rx_out_clk, rst_i, internal_rx_dat_valid, ram_wr_adr_rst_i)
 	begin	
-		if rst_i = '1' or rx_dat_valid_i = '0' or ram_wr_adr_rst_i = '1' then
+		if rst_i = '1' or internal_rx_dat_valid(0) = '0' or ram_wr_adr_rst_i = '1' then
 			ram_write_adrs_rising_edge 	<= (others => '0');
 			ram_write_en						<= '0';
 					

@@ -242,6 +242,7 @@ begin
 	port map(
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
+		clk_iface_i			=> clock_7p5MHz,
 		clk_fast_i			=> clock_250MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,

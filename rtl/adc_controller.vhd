@@ -6,7 +6,8 @@
 -- FILE:         adc_controller.vhd
 -- AUTHOR:       e.oberla
 -- EMAIL         ejo@uchicago.edu
--- DATE:         10/2016, and onwards...
+-- DATE:         10/2016
+--					  major update to fix timing issues 7/2017		
 --
 -- DESCRIPTION:  control bits for TI 7-bit ADC
 --               also handle + combine ADC data: 
@@ -22,9 +23,10 @@ use work.register_map.all;
 
 entity adc_controller is
 	Port(
-		clk_i				:	in		std_logic; --// slow clock
-		clk_core_i		:	in		std_logic;
-		clk_fast_i		:	in		std_logic; --// fast clock for syncing ADC data outputs
+		clk_i				:	in		std_logic; --// slow clock (1 MHz)
+		clk_core_i		:	in		std_logic; --// core data clock (93 MHz)
+		clk_iface_i		:	in		std_logic; --// register clock
+		clk_fast_i		:	in		std_logic; --// fast clock for syncing ADC data outputs (250 MHz)
 		rst_i				:	in		std_logic; --// reset
 		pwr_up_i 		:	in		std_logic; --// pwr-up signal (pwr up when=1). ADC's should be started after the PLL
 		rx_locked_i		:	in		std_logic;
@@ -57,12 +59,18 @@ entity adc_controller is
 end adc_controller;		
 		
 architecture rtl of adc_controller is
-type adc_startup_state_type is (pwr_st, cal_st, rdy_st, done_st);
+type adc_startup_state_type is (pwr_st, cal_st, rdy_st, dclk_rst_st, done_st);
 signal adc_startup_state : adc_startup_state_type := pwr_st;
+
+type adc_dclk_rst_state_type is (idle_st, pulse_st, done_st);
+signal adc_dclk_rst_state : adc_dclk_rst_state_type;
 
 signal user_dclk_rst	: std_logic;
 signal internal_dclk_rst : std_logic;
+signal internal_startup_dclk_rst : std_logic;
 signal internal_data_valid : std_logic;
+signal internal_data_valid_fast_clk : std_logic;
+signal internal_startup_data_valid : std_logic;
 
 signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfer
 
@@ -73,6 +81,23 @@ signal data_pipe   	: buffered_data_type;
 signal data_pipe_2 	: full_data_type;
 signal channel_mask	: full_data_type;
 
+--////////////////////////////////////
+--//declare components, since verilog modules:
+component flag_sync is
+port(
+	clkA			: in	std_logic;
+   clkB			: in	std_logic;
+   in_clkA		: in	std_logic;
+   busy_clkA	: out	std_logic;
+   out_clkB		: out	std_logic);
+end component;
+component signal_sync is
+port(
+	clkA			: in	std_logic;
+   clkB			: in	std_logic;
+   SignalIn_clkA	: in	std_logic;
+   SignalOut_clkB	: out	std_logic);
+end component;
 --////////////////////////////////////
 
 begin
@@ -107,14 +132,17 @@ begin
 	if rst_i='1' or pwr_up_i='0' then
 		i:= 0;
 		--dat_valid_o <= '0';
-		internal_data_valid <= '0';
+		internal_startup_data_valid <= '0';
 		cal_o <= '0';
-		internal_dclk_rst <= '0';
+		internal_startup_dclk_rst <= '0';
 		adc_startup_state <= pwr_st;
 	
 	elsif rising_edge(clk_i) and pwr_up_i = '1' then
 		case adc_startup_state is
 			when pwr_st => 
+				internal_startup_data_valid <= '0';
+				internal_startup_dclk_rst <= '0';
+				cal_o <= '0';
 				if i >= 8000000 then	--//wait 8 seconds
 					i := 0;
 					adc_startup_state <= cal_st; --//skip spi write state
@@ -123,6 +151,8 @@ begin
 				end if;
 				
 			when cal_st =>
+				internal_startup_data_valid <= '0';
+				internal_startup_dclk_rst <= '0';
 				if i >= 1200 then	--//cal pulse >1280 clock cycles in length
 					i := 0;
 					cal_o <= '0';  --// set cal pin low again
@@ -136,42 +166,58 @@ begin
 				end if;
 				
 			when rdy_st => 
-				internal_data_valid <= '0';
+				internal_startup_data_valid <= '0';
+				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
 				if i >= 3000000 then  --//cal cycle takes 1.4e6 clock cycles
 					i := 0;
-					adc_startup_state <= done_st;
-				elsif i >= 2999999 then
-					internal_dclk_rst <= '1'; --//to sync up data clocks, toggle the process below
-					i := i + 1;
+					adc_startup_state <= dclk_rst_st;
 				else 
-					internal_dclk_rst <= '0';
 					i := i + 1;
+					adc_startup_state <= rdy_st;
 				end if;
 			
-			when done_st =>
-				internal_data_valid <= '1';
+			when dclk_rst_st =>
+				internal_startup_data_valid <= '0';
+				internal_startup_dclk_rst <= '1';
+				cal_o <= '0';
 				i := 0;
-				--dat_valid_o <= '1';
-				--//pulse for dclk_rst again
-				if user_dclk_rst = '1' then 
-					i := 0;
-					adc_startup_state <= rdy_st;
-				end if;			
+				adc_startup_state <= done_st;
+				
+			when done_st =>
+				internal_startup_data_valid <= '1';
+				internal_startup_dclk_rst <= '0';
+				cal_o <= '0';
+				i := 0;
 			 
 		end case;
 	end if;
 end process;
---//
-proc_user_dclk_rst : process(rst_i, reg_addr_i, adc_startup_state)
-begin
-	if rst_i = '1'  or adc_startup_state = rdy_st then
-		user_dclk_rst <= '0';
-	elsif reg_addr_i = std_logic_vector(to_unsigned(base_adrs_adc_cntrl+1, define_address_size)) then
-		user_dclk_rst <= '1';
-	end if;
-end process;
 
+--/////////////////
+xUSERDLKRSTSYNC : flag_sync
+port map(
+	clkA 			=> clk_iface_i,
+	clkB			=> clk_fast_i,
+	in_clkA		=> reg_i(55)(0),
+	busy_clkA	=> open,
+	out_clkB		=> user_dclk_rst);
+xSTARTUPDLKRSTSYNC : flag_sync
+port map(
+	clkA 			=> clk_i,
+	clkB			=> clk_fast_i,
+	in_clkA		=> internal_startup_dclk_rst,
+	busy_clkA	=> open,
+	out_clkB		=> internal_dclk_rst);
+xDATAVALIDSYNC : signal_sync
+port map(
+	clkA				=> clk_fast_i,
+   clkB				=> clk_core_i,
+   SignalIn_clkA	=> internal_data_valid_fast_clk,
+   SignalOut_clkB	=> internal_data_valid);
+	
+dat_valid_o <= internal_data_valid;
+--//
 
 --////////////////////////////////////////////////////////////////////////////////
 --//this is a one-shot process. rst_i or pwr_up_i need to be asserted to re-start
@@ -183,27 +229,44 @@ variable i : integer range 1000 downto 0 := 0;
 begin
 	if rst_i = '1' or pwr_up_i='0' then
 		i := 0;
-		dat_valid_o <='0';
+		internal_data_valid_fast_clk <= '0';
 		dclk_rst_lvds_o <= "1111"; --//dclk should not be asserted when CAL is running (blocks cal cycle)
-	elsif rising_edge(clk_fast_i) and internal_dclk_rst = '1' and internal_data_valid = '1' then
-
-		--dat_valid_o <= '1';
-		if i >= 100 then
-			dclk_rst_lvds_o <= "1111"; --//de-assert pulse
-			
-			if rx_locked_i = '1' then  --//then wait for data clocks to reappear and lock the serdes receiver
-				dat_valid_o <= '1';     --// send 'data valid' flag to RxData FPGA blocks
-			end if;
-			--i := i + 1;
-		else
-			dat_valid_o <= '0';
-			dclk_rst_lvds_o <= "0000";
-			i := i + 1;
-		end if;
-	elsif rising_edge(clk_fast_i) and internal_dclk_rst = '1' and internal_data_valid = '0' then	
-		i := 0;		
-		dat_valid_o <='0';
-		dclk_rst_lvds_o <= "0000";  --//send pulse (active low) This CLEARS the DCLK lines while active.
+		adc_dclk_rst_state <= idle_st;
+	elsif rising_edge(clk_fast_i) then
+	
+		case adc_dclk_rst_state is
+			when idle_st=>
+				i := 0;
+				dclk_rst_lvds_o <= "1111";
+				internal_data_valid_fast_clk <= internal_data_valid_fast_clk;
+				if internal_dclk_rst = '1' or user_dclk_rst = '1' then
+					adc_dclk_rst_state <= pulse_st;
+				else
+					adc_dclk_rst_state <= idle_st;
+				end if;
+				
+			when pulse_st=>
+				internal_data_valid_fast_clk <= '0';
+				if i >= 100 then
+					i := 0;
+					dclk_rst_lvds_o <= "1111"; --//de-assert pulse
+					adc_dclk_rst_state <= done_st;
+				else
+					dclk_rst_lvds_o <= "0000";  --//send pulse (active low) This CLEARS the DCLK lines while active.
+					i := i+1;
+				end if;
+				
+			when done_st=>
+				i:=0;
+				dclk_rst_lvds_o <= "1111";
+				if rx_locked_i = '1' then  --//then wait for data clocks to reappear and lock the serdes receiver
+					internal_data_valid_fast_clk <= '1';
+					adc_dclk_rst_state <= idle_st;
+				else
+					internal_data_valid_fast_clk <= '0';
+					adc_dclk_rst_state <= done_st;
+				end if;
+		end case;
 	end if;
 end process;
 
@@ -240,7 +303,7 @@ begin
 			channel_mask(j)<= (others=> not reg_i(48)(j));
 		end loop;
 		
-		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & dat_valid_o;
+		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & internal_data_valid;
 		
 		if internal_rx_dat_valid(internal_rx_dat_valid'length-1) = '1' then
 			rx_ram_rd_en_o <= '1';

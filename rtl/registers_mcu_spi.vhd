@@ -90,7 +90,7 @@ begin
 		registers_io(127)	<= x"000000"; --//software global reset when LSB is toggled [127]
 		 
 		registers_io(base_adrs_adc_cntrl+0) <= x"000000"; --//nothing assigned yet (54)
-		registers_io(base_adrs_adc_cntrl+1) <= x"000000"; --//pulse adr DCLK_RST   (55)
+		registers_io(base_adrs_adc_cntrl+1) <= x"000000"; --//write a one to pulse DCLK RST   (55)
 		registers_io(base_adrs_adc_cntrl+2) <= x"000000"; --//delay ADC0   (56)
 		registers_io(base_adrs_adc_cntrl+3) <= x"000000"; --//delay ADC1   (57)
 		registers_io(base_adrs_adc_cntrl+4) <= x"000000"; --//delay ADC2   (58)
@@ -155,6 +155,7 @@ begin
 		registers_io(127) <= x"000000"; --//clear the reset register
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
 		registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
+		registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse
 		--////////////////////////////////////////////////////////////////////////////	
 		--//these should be static, but keep updating every clk_i cycle
 		if unique_chip_id_rdy = '1' then
