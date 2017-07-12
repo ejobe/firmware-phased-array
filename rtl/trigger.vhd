@@ -30,9 +30,12 @@ entity trigger is
 		reg_i				: 	in		register_array_type;		
 		powersums_i		:	in		sum_power_type;
 		
-		trig_beam_o			:	out	std_logic_vector(define_num_beams-1 downto 0);
-		trig_clk_data_o	:	inout	std_logic;  --//trig flag on faster clock
-		trig_clk_iface_o	:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
+		data_write_busy_i	:	in	std_logic; --//prevent triggers if triggered event is already being written to ram
+		 
+		trig_beam_o						:	out	std_logic_vector(define_num_beams-1 downto 0); --//for scalers
+		trig_clk_data_o				:	inout	std_logic;  --//trig flag on faster clock
+		last_trig_beam_clk_data_o 	: 	out 	std_logic_vector(define_num_beams-1 downto 0); --//register the beam trigger 
+		trig_clk_iface_o				:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
 		
 end trigger;
 
@@ -46,6 +49,9 @@ signal instantaneous_avg_power_0 : average_power_16samp_type;  --//defined in de
 signal instantaneous_avg_power_1 : average_power_16samp_type;  --//defined in defs.vhd
 
 signal instantaneous_above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check if beam above threshold at each clk_data_i edge
+signal instantaneous_above_threshold_buf	:	std_logic_vector(define_num_beams-1 downto 0); 
+signal instantaneous_above_threshold_buf2	:	std_logic_vector(define_num_beams-1 downto 0); 
+
 signal thresholds  : average_power_16samp_type;
 
 --//here's the trigger state machine, which looks for power-above-threshold in each beam and checks for stuck-on beams
@@ -56,6 +62,10 @@ signal trigger_state_machine_state : trigger_state_machine_state_array_type;
 type trig_hold_counter_type is array(define_num_beams-1 downto 0) of std_logic_vector(7 downto 0);
 signal trigger_holdoff_counter		:	trig_hold_counter_type;
 
+signal internal_trigger_beam_mask :  std_logic_vector(define_num_beams-1 downto 0);
+
+signal internal_trig_clk_data : std_logic;
+
 component flag_sync is
 port(
 	clkA			: in	std_logic;
@@ -64,8 +74,24 @@ port(
    busy_clkA	: out	std_logic;
    out_clkB		: out	std_logic);
 end component;
+component signal_sync is
+port(
+	clkA			: in	std_logic;
+   clkB			: in	std_logic;
+   SignalIn_clkA	: in	std_logic;
+   SignalOut_clkB	: out	std_logic);
+end component;
 
 begin
+
+TrigMaskSync : for i in 0 to define_num_beams-1 generate
+	xTRIGMASKSYNC : signal_sync
+	port map(
+		clkA				=> clk_iface_i,
+		clkB				=> clk_data_i,
+		SignalIn_clkA	=> reg_i(80)(i), --//reg 80 has the beam mask
+		SignalOut_clkB	=> internal_trigger_beam_mask(i));
+end generate;
 
 proc_get_thresholds : process(clk_data_i, reg_i)
 begin
@@ -76,12 +102,18 @@ begin
 	end loop;
 end process;
 
-proc_buf_powsum : process(rst_i, clk_data_i)
+proc_buf_powsum : process(rst_i, clk_data_i, data_write_busy_i)
 begin
 	for i in 0 to define_num_beams-1 loop
 		if rst_i = '1' then
 			instantaneous_avg_power_0(i) <= (others=>'0');
 			instantaneous_avg_power_1(i) <= (others=>'0');
+			
+			last_trig_beam_clk_data_o(i) <= '0';
+			
+			instantaneous_above_threshold(i) <= '0';
+			instantaneous_above_threshold_buf(i) <= '0';
+			instantaneous_above_threshold_buf2(i) <= '0';
 			
 			buffered_powersum(i) <= (others=>'0');
 			
@@ -124,8 +156,12 @@ begin
 				--//waiting for trigger
 				when idle_st => 
 					trigger_holdoff_counter(i) <= (others=>'0');
-				
-					if (instantaneous_avg_power_0(i) > thresholds(i)) or (instantaneous_avg_power_1(i) > thresholds(i)) then
+					
+					if data_write_busy_i = '1' then
+						instantaneous_above_threshold(i) <= '0';
+						trigger_state_machine_state(i) <= idle_st;
+					
+					elsif (instantaneous_avg_power_0(i) > thresholds(i)) or (instantaneous_avg_power_1(i) > thresholds(i)) then
 						instantaneous_above_threshold(i) <= '1'; --// high for one clk_data_i cycle
 						trigger_state_machine_state(i) <= trig_hold_st;
 						
@@ -136,6 +172,10 @@ begin
 					
 				--//keep trig high for a bit
 				when trig_hold_st =>
+					--//add some latency for the outputs to meet timing
+					instantaneous_above_threshold_buf2(i) <= instantaneous_above_threshold_buf(i);
+					instantaneous_above_threshold_buf(i) <= instantaneous_above_threshold(i);
+					last_trig_beam_clk_data_o(i) <= instantaneous_above_threshold(i); --//get the triggered beam info
 					instantaneous_above_threshold(i) <= '0';
 					
 					--//need to limit trigger burst rate in order to register on 15MHz interface clock
@@ -150,6 +190,8 @@ begin
 					
 				--//trig done, go back to idle_st
 				when trig_done_st =>
+					instantaneous_above_threshold_buf2(i) <= '0';
+					instantaneous_above_threshold_buf(i) <=  '0';
 					instantaneous_above_threshold(i) <= '0';
 					trigger_holdoff_counter(i) <= (others=>'0');
 					trigger_state_machine_state(i) <= idle_st;
@@ -163,24 +205,25 @@ end process;
 process(clk_data_i, rst_i)
 begin
 	if rst_i = '1' then
+		internal_trig_clk_data <= '0';
 		trig_clk_data_o <= '0';
 	elsif rising_edge(clk_data_i) then
-		
-		trig_clk_data_o	<=	(instantaneous_above_threshold(0) and reg_i(80)(0)) or
-									(instantaneous_above_threshold(1) and reg_i(80)(1)) or
-									(instantaneous_above_threshold(2) and reg_i(80)(2)) or
-									(instantaneous_above_threshold(3) and reg_i(80)(3)) or
-									(instantaneous_above_threshold(4) and reg_i(80)(4)) or
-									(instantaneous_above_threshold(5) and reg_i(80)(5)) or
-									(instantaneous_above_threshold(6) and reg_i(80)(6)) or
-									(instantaneous_above_threshold(7) and reg_i(80)(7)) or
-									(instantaneous_above_threshold(8) and reg_i(80)(8)) or
-									(instantaneous_above_threshold(9) and reg_i(80)(9)) or
-									(instantaneous_above_threshold(10) and reg_i(80)(10)) or
-									(instantaneous_above_threshold(11) and reg_i(80)(11)) or
-									(instantaneous_above_threshold(12) and reg_i(80)(12)) or
-									(instantaneous_above_threshold(13) and reg_i(80)(13)) or
-									(instantaneous_above_threshold(14) and reg_i(80)(14));
+		internal_trig_clk_data <= trig_clk_data_o;
+		trig_clk_data_o	<=	(instantaneous_above_threshold_buf(0) and internal_trigger_beam_mask(0)) or
+									(instantaneous_above_threshold_buf(1) and internal_trigger_beam_mask(1)) or
+									(instantaneous_above_threshold_buf(2) and internal_trigger_beam_mask(2)) or
+									(instantaneous_above_threshold_buf(3) and internal_trigger_beam_mask(3)) or
+									(instantaneous_above_threshold_buf(4) and internal_trigger_beam_mask(4)) or
+									(instantaneous_above_threshold_buf(5) and internal_trigger_beam_mask(5)) or
+									(instantaneous_above_threshold_buf(6) and internal_trigger_beam_mask(6)) or
+									(instantaneous_above_threshold_buf(7) and internal_trigger_beam_mask(7)) or
+									(instantaneous_above_threshold_buf(8) and internal_trigger_beam_mask(8)) or
+									(instantaneous_above_threshold_buf(9) and internal_trigger_beam_mask(9)) or
+									(instantaneous_above_threshold_buf(10) and internal_trigger_beam_mask(10)) or
+									(instantaneous_above_threshold_buf(11) and internal_trigger_beam_mask(11)) or
+									(instantaneous_above_threshold_buf(12) and internal_trigger_beam_mask(12)) or
+									(instantaneous_above_threshold_buf(13) and internal_trigger_beam_mask(13)) or
+									(instantaneous_above_threshold_buf(14) and internal_trigger_beam_mask(14));
 	end if;
 end process;
 
@@ -193,7 +236,7 @@ TrigSync	:	 for i in 0 to define_num_beams-1 generate
 	port map(
 		clkA 			=> clk_data_i,
 		clkB			=> clk_iface_i,
-		in_clkA		=> instantaneous_above_threshold(i),
+		in_clkA		=> instantaneous_above_threshold_buf2(i),
 		busy_clkA	=> open,
 		out_clkB		=> trig_beam_o(i));
 end generate TrigSync;
@@ -202,9 +245,9 @@ xTRIGSYNC : flag_sync
 	port map(
 		clkA 			=> clk_data_i,
 		clkB			=> clk_iface_i,
-		in_clkA		=> trig_clk_data_o,
+		in_clkA		=> internal_trig_clk_data,
 		busy_clkA	=> open,
-		out_clkB		=> trig_clk_iface_o); --//trig_o is high for one clk_iface_i cycle (use for scalers)
+		out_clkB		=> trig_clk_iface_o); --//trig_o is high for one clk_iface_i cycle (use for scalers and to send off-board)
 
 --//////////////////////
 end rtl;

@@ -191,6 +191,9 @@ architecture rtl of top_level is
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	
+	--//signals driven from the data manager module
+	signal data_manager_write_busy : std_logic;
+	
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -285,8 +288,10 @@ begin
 		clk_iface_i			=> clock_7p5MHz,
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
+		data_write_busy_i => data_manager_write_busy,
 		trig_beam_o			=> open,  				--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
 		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
+		last_trig_beam_clk_data_o => open,
 		trig_clk_iface_o	=> open);            --//trig_clk_data_o synced to 7p5 MHz clock
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
@@ -385,7 +390,7 @@ begin
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
 		clk_iface_i				=> clock_7p5MHz,
-		wr_busy_o				=> open,
+		wr_busy_o				=> data_manager_write_busy,
 		buffer_full_o			=> open,
 		phased_trig_i			=> the_phased_trigger,
 		reg_i						=> registers,
