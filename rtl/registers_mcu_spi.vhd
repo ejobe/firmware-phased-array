@@ -23,7 +23,8 @@ entity registers_mcu_spi is
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
 		--//////////////////////////////
-		--//status registers:
+		--//status/system read-only registers:
+		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
@@ -103,14 +104,18 @@ begin
 		registers_io(base_adrs_dsa_cntrl+2) <= x"000000"; --//atten values for CH 6 & 7
 		registers_io(base_adrs_dsa_cntrl+3) <= x"000000"; --//write attenuator spi interface (address toggle)
 		
+		--//scalers
+		registers_io(40) <= x"000000"; --//update scaler pulse
+		registers_io(41) <= x"000000"; --//scaler-to-read
+		
 		--//electronics cal pulse:
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, dunno maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
 		
-		registers_io(48) <= x"000000";  --//channel masking [48]
-		
-		
+		--//masking:
+		registers_io(48) <= x"0000FF";   --//channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
+		
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
 		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]
@@ -149,13 +154,15 @@ begin
 	elsif rising_edge(clk_i) then
 		address_o <= x"00";
 		--///////////////////////
-		--//update status registers
+		--//update status/system read-only registers
+		registers_io(3) <= scaler_to_read_i;
 		registers_io(7) <= status_data_manager_i; 
 		--///////////////////////
 		registers_io(127) <= x"000000"; --//clear the reset register
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
 		registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
 		registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse
+		registers_io(40) <= x"000000"; --//clear the update scalers pulse
 		--////////////////////////////////////////////////////////////////////////////	
 		--//these should be static, but keep updating every clk_i cycle
 		if unique_chip_id_rdy = '1' then

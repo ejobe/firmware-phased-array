@@ -19,7 +19,7 @@ module scaler
 		output [WIDTH-1:0] scaler_o
     );
 	 
-	parameter WIDTH = 16;    //width of scaler counter
+	parameter WIDTH = 12;    //width of scaler counter
 	parameter PRESCALE = 0;  
 	
 	reg [WIDTH+PRESCALE-1:0] counter = {WIDTH+PRESCALE{1'b0}};

@@ -57,11 +57,14 @@ entity data_manager is
 
 architecture rtl of data_manager is
 
-type save_event_state_type is (idle_st, switch_buf_st, adr_inc_st, done_st);
-signal save_event_state 	: save_event_state_type;
+type save_event_state_type is (idle_st, trig_st, adr_inc_st, done_st);
+type save_event_state_type_array is array(define_num_wfm_buffers-1 downto 0) of save_event_state_type;
+signal save_event_state 	: save_event_state_type_array;
 --		
 signal internal_forced_trigger : std_logic;
-signal internal_ram_write_adrs : std_logic_vector(define_data_ram_depth-1 downto 0);
+
+type internal_ram_write_adrs_type is array(define_num_wfm_buffers-1 downto 0) of std_logic_vector(define_data_ram_depth-1 downto 0);
+signal internal_ram_write_adrs : internal_ram_write_adrs_type;
 constant internal_address_max : std_logic_vector(define_data_ram_depth-1 downto 0) := (others=>'1');		
 
 --//squeeze the powsum data into 16-bit chunks (basically just chop off MSB: don't really care here since
@@ -75,10 +78,12 @@ signal internal_wfm_ram_0 : full_data_type; --//data buffer 1
 signal internal_wfm_ram_1 : full_data_type; --//data buffer 2
 signal internal_wfm_ram_2 : full_data_type; --//data buffer 3
 signal internal_wfm_ram_3 : full_data_type; --//data buffer 4
-signal internal_wfm_ram_write_en : std_logic_vector(define_num_wfm_buffers-1 downto 0);
-signal internal_next_buffer_count : std_logic_vector(2 downto 0) := "000";
-signal internal_buffer_full : std_logic_vector(define_num_wfm_buffers-1 downto 0);
-signal internal_clear_buffer : std_logic;
+signal internal_wfm_ram_write_en 	: std_logic_vector(define_num_wfm_buffers-1 downto 0);
+signal next_write_buffer				: std_logic_vector(2 downto 0) := "000";
+signal internal_buffer_full  			: std_logic_vector(define_num_wfm_buffers-1 downto 0);
+signal internal_clear_buffer 			: std_logic_vector(define_num_wfm_buffers-1 downto 0);
+signal internal_write_busy				: std_logic_vector(define_num_wfm_buffers-1 downto 0);
+signal internal_event_busy				: std_logic_vector(define_num_wfm_buffers-1 downto 0);
 		
 signal internal_beam_ram_8 		: array_of_beams_type;
 signal internal_beam_ram_4a 		: array_of_beams_type;
@@ -109,6 +114,7 @@ end component;
 --//note saving beam/power sum info mainly for debugging. Might chop this out once things confirmed working
 begin
 --////////////////////////////////////////////////////////////////////////////////
+--//THIS DOES NOTHING AS OF 7/7/17
 --//chop off some of the pow_sum_data in order to fit in 16 bit word for readout
 process(clk_i, powsum_data_i)
 begin
@@ -137,13 +143,15 @@ port map(
 --/////////////////////////////////////////////////////////
 
 --//sync buffer clear flag
-xCLEARBUFSYNC : flag_sync
-port map(
+ClearBufSync : for i in 0 to define_num_wfm_buffers-1 generate
+	xCLEARBUFSYNC : flag_sync
+	port map(
 		clkA 			=> clk_iface_i,
 		clkB			=> clk_i,
-		in_clkA		=> reg_i(base_adrs_rdout_cntrl+13)(0),
+		in_clkA		=> reg_i(base_adrs_rdout_cntrl+13)(i),
 		busy_clkA	=> open,
-		out_clkB		=> internal_clear_buffer);
+		out_clkB		=> internal_clear_buffer(i));
+end generate;
 --/////////////////////////////////////////////////////////
 
 --//////////////////////////////////////
@@ -163,7 +171,7 @@ end generate;
 --//data manager status register
 internal_data_manager_status(3 downto 0) <= internal_buffer_full;
 internal_data_manager_status(4) <= internal_buffer_full(0) or internal_buffer_full(1) or internal_buffer_full(2) or internal_buffer_full(3);
-internal_data_manager_status(7 downto 5) <= internal_next_buffer_count;
+internal_data_manager_status(7 downto 5) <= next_write_buffer;
 
 StatRegSync : for i in 0 to 23 generate
 	xSTATREGSYNC : signal_sync 
@@ -175,78 +183,135 @@ StatRegSync : for i in 0 to 23 generate
 end generate;
 --//////////////////////////////////////
 
+--////////////////////
+proc_manage_buffers : process(rst_i, clk_i, internal_event_busy, internal_buffer_full)
+begin
+	if rst_i = '0' then
+		wr_busy_o <= '0';
+		next_write_buffer <= (others=>'0');
+	elsif rising_edge(clk_i) then
+	
+		--//assign the next buffer to write when the trig_busy (waiting for trig) line goes high
+		--//otherwise, wait for buffer(0) to clear (see "others=>" declaration)
+		case internal_event_busy is
+			when "0001" =>
+				next_write_buffer <= "001"; --// 1
+			when "0010" =>
+				if internal_buffer_full(0) = '0' then --//check if 1st buffer is clear, if not increment the buffer
+					next_write_buffer <= "000"; --// 0
+				else
+					next_write_buffer <= "010"; --// 2
+				end if;
+			when "0100" =>
+				if internal_buffer_full(0) = '0' then
+					next_write_buffer <= "000";
+				else
+					next_write_buffer <= "011";	--// 3
+				end if;
+			when "1000" =>
+				if internal_buffer_full(0) = '0' then
+					next_write_buffer <= "000";
+				else
+					next_write_buffer <= "100"; --// 4 : not a valid buffer, will prevent further data-taking	
+				end if;
+			when "0000" =>
+				if internal_buffer_full(0) = '0' then
+					next_write_buffer <= "000"; --// back to 0
+				else
+					next_write_buffer <= next_write_buffer;
+				end if;
+			when others=>
+				next_write_buffer <= next_write_buffer;
+
+		end case;
+
+		wr_busy_o <= 	internal_write_busy(0) or internal_write_busy(1) or 
+							internal_write_busy(2) or internal_write_busy(3);  
+	end if;
+end process;
+--/////////////////
 
 --/////////////////////////////////////////////////////////	
 --//if trigger, write to data ram
-proc_save_triggered_event : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i, internal_clear_buffer)
+proc_save_triggered_event : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i, internal_clear_buffer, next_write_buffer)
 begin
-	if rst_i = '1' then
-		for j in 0 to define_num_wfm_buffers-1 loop
-			internal_wfm_ram_write_en(j) <= '0';
-		end loop;
-		internal_ram_write_adrs <= (others=>'0');
-		internal_next_buffer_count <= (others=>'0');
-		internal_buffer_full <= (others=>'0');
-		wr_busy_o <= '0';
-		save_event_state <= idle_st;
 	
-	elsif rising_edge(clk_i) then
+	for j in 0 to define_num_wfm_buffers-1 loop
+
+		if rst_i = '1' then
+			internal_wfm_ram_write_en(j) 	<= '0';
+			internal_ram_write_adrs(j) 	<= (others=>'0');
+			internal_buffer_full(j) 		<= '0';
+			internal_write_busy(j)			<= '0';
+			internal_event_busy(j)			<= '0';
+			save_event_state(j) 				<= idle_st;
+	
+		elsif rising_edge(clk_i) then
+			
+			--//clear buffer full signal, but only if write busy is not active
+			if internal_clear_buffer(j) = '1' and internal_write_busy(j) = '0' then
+					internal_buffer_full(j) <= '0';	
+			end if;
+				
+			case save_event_state(j) is
 		
-		case save_event_state is
-		
-			--//idle state, sit around wait for forced or beam trigger
-			when idle_st =>
-				for j in 0 to define_num_wfm_buffers-1 loop
-					internal_wfm_ram_write_en(j) <= '0';
-				end loop;
-				internal_ram_write_adrs <= (others=>'0');
-				wr_busy_o <= '0';
+				--//idle
+				when idle_st =>
 				
-				--//clear buffers from software
-				if internal_clear_buffer = '1' then
-					internal_next_buffer_count <= (others=>'0');
-					internal_buffer_full <= (others=>'0');
-				end if;
-				
-				--//can't save data if buffer is full
-				if internal_next_buffer_count = 4 then
-					save_event_state <= idle_st;
-				--//otherwise, look for trigger
-				elsif internal_forced_trigger = '1' or phased_trig_i = '1' then
-					save_event_state <= switch_buf_st;
-				else
-					save_event_state <= idle_st;
-				end if;
+					internal_wfm_ram_write_en(j) 	<= '0';
+					internal_ram_write_adrs(j) 	<= (others=>'0');
+					internal_write_busy(j)	 		<= '0';
+					internal_event_busy(j)	 		<= '0';
+
+					--//go to trig state, if buffer is assigned and buffer is empty
+					if next_write_buffer = std_logic_vector(to_unsigned(j, next_write_buffer'length)) and internal_buffer_full(j) = '0' then 
+						save_event_state(j) <= trig_st;
+					else
+						save_event_state(j) <= idle_st;
+					end if;
 			
-			--//pick which RAM buffer to push wfm data to. Beam/powsum data only pushed if buffer=0
-			when switch_buf_st=>
-				wr_busy_o <= '1';
-				internal_next_buffer_count <= internal_next_buffer_count + 1;
-				save_event_state <= adr_inc_st;
+				--//wait for trigger
+				when trig_st=>
+					internal_wfm_ram_write_en(j) 	<= '0';
+					internal_ram_write_adrs(j) 	<= (others=>'0');
+					internal_write_busy(j)	 		<= '0';
+					internal_event_busy(j)			<= '1';
+					internal_buffer_full(j) 		<= '0';
+					
+					if internal_forced_trigger = '1' or phased_trig_i = '1' then
+						save_event_state(j) <= adr_inc_st;
+					else
+						save_event_state(j) <= trig_st;
+					end if;
 			
-			--//push data to RAM block, increment address until max address is reached
-			when adr_inc_st=>
-				internal_wfm_ram_write_en(to_integer(unsigned(internal_next_buffer_count))-1) <= '1';
-				internal_ram_write_adrs <= internal_ram_write_adrs + 1;
-				wr_busy_o <= '1';
+				--//push data to RAM block, increment address until max address is reached
+				when adr_inc_st=>
+					internal_wfm_ram_write_en(j) 	<= '1';
+					internal_ram_write_adrs(j) 	<= internal_ram_write_adrs(j) + 1;
+					internal_write_busy(j) 			<= '1';
+					internal_event_busy(j)			<= '1';
+					internal_buffer_full(j) 		<= '0';
 				
-				if internal_ram_write_adrs = internal_address_max then 
-					save_event_state <= done_st;
-				else
-					save_event_state <= adr_inc_st;
-				end if;
+					if internal_ram_write_adrs(j) = internal_address_max then 
+						save_event_state(j) <= done_st;
+					else
+						save_event_state(j) <= adr_inc_st;
+					end if;
 			
-			--//saving is done, relax the wr_busy signal and go back to idle state 		
-			when done_st =>
-					internal_wfm_ram_write_en(to_integer(unsigned(internal_next_buffer_count))-1) <= '0';
-					internal_buffer_full(to_integer(unsigned(internal_next_buffer_count))-1) <= '1';
-					internal_ram_write_adrs <= internal_address_max;
-					wr_busy_o <= '0';
-					save_event_state <= idle_st;
+				--//saving is done, relax the wr_busy signal and go back to idle state 		
+				when done_st =>
+					internal_wfm_ram_write_en(j) 	<= '0';
+					internal_ram_write_adrs(j) 	<= internal_address_max;
+					internal_write_busy(j) 			<= '0';
+					internal_event_busy(j)			<= '1';
+					internal_buffer_full(j) 		<= '1';
+					save_event_state(j) 				<= idle_st;
 				
-		end case;
-	end if;
+			end case;
+		end if;
+	end loop;
 end process;
+
 
 --//simple block that interprets register to pick which data buffer is being read out
 proc_select_wfm_ram : process(reg_i(78))
@@ -263,6 +328,7 @@ begin
 	end case;
 end process;
 
+--//AS OF 7/11/17 this process does not do anything - beam RAM removed --//
 --//simple block that interprets register to pick which beam RAM block to readout 
 proc_select_beam_ram : process(reg_i(base_adrs_rdout_cntrl+2))
 begin
@@ -304,7 +370,7 @@ DataRamBlock_0 : for i in 0 to 7 generate
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,
 		rden			=> data_ram_read_en_i(i),
-		wraddress	=> internal_ram_write_adrs, 
+		wraddress	=> internal_ram_write_adrs(0), 
 		wrclock		=> clk_i,
 		wren			=>	internal_wfm_ram_write_en(0),
 		q				=>	internal_wfm_ram_0(i));
@@ -317,7 +383,7 @@ DataRamBlock_1 : for i in 0 to 7 generate
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,
 		rden			=> data_ram_read_en_i(i),
-		wraddress	=> internal_ram_write_adrs, 
+		wraddress	=> internal_ram_write_adrs(1), 
 		wrclock		=> clk_i,
 		wren			=>	internal_wfm_ram_write_en(1),
 		q				=>	internal_wfm_ram_1(i));
@@ -330,7 +396,7 @@ DataRamBlock_2 : for i in 0 to 7 generate
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,
 		rden			=> data_ram_read_en_i(i),
-		wraddress	=> internal_ram_write_adrs, 
+		wraddress	=> internal_ram_write_adrs(2), 
 		wrclock		=> clk_i,
 		wren			=>	internal_wfm_ram_write_en(2),
 		q				=>	internal_wfm_ram_2(i));
@@ -343,7 +409,7 @@ DataRamBlock_3 : for i in 0 to 7 generate
 		rdaddress	=> read_ram_adr_i,
 		rdclock		=> read_clk_i,
 		rden			=> data_ram_read_en_i(i),
-		wraddress	=> internal_ram_write_adrs, 
+		wraddress	=> internal_ram_write_adrs(3), 
 		wrclock		=> clk_i,
 		wren			=>	internal_wfm_ram_write_en(3),
 		q				=>	internal_wfm_ram_3(i));

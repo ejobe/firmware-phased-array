@@ -284,7 +284,7 @@ begin
 		for j in 0 to 7 loop
 			delay_en(j) 	<= '0';
 			delay_chan(j)  <= (others=>'0');
-			channel_mask(j)<= (others=>'0'); --(others=> not reg_i(48)(j));
+			channel_mask(j)<= (others=>'1'); --(others=> not reg_i(48)(j));
 		end loop;
 		
 	elsif rising_edge(clk_core_i) then
@@ -300,7 +300,7 @@ begin
 		--////////////////
 		
 		for j in 0 to 7 loop
-			channel_mask(j)<= (others=> not reg_i(48)(j));
+			channel_mask(j)<= (others=> reg_i(48)(j));
 		end loop;
 		
 		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & internal_data_valid;

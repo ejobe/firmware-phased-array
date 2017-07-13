@@ -193,6 +193,10 @@ architecture rtl of top_level is
 	
 	--//signals driven from the data manager module
 	signal data_manager_write_busy : std_logic;
+	--//signals for scalers
+	signal scalers_beam_trigs	: std_logic_vector(define_num_beams-1 downto 0);
+	signal scalers_trig			: std_logic;
+	signal scaler_to_read		: std_logic_vector(23 downto 0);
 	
 begin
 	--//pin to signal assignments
@@ -237,7 +241,7 @@ begin
 		CLK_1kHz_o		=> clock_1kHz,	
 		CLK_100kHz_o	=> clock_100kHz,
 		refresh_1Hz_o		=> clock_rfrsh_pulse_1Hz,
-		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz,
+		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz, --//scaler refresh clock
 		fpga_pllLock_o => clock_FPGA_PLLlock);
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block
@@ -289,10 +293,10 @@ begin
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
 		data_write_busy_i => data_manager_write_busy,
-		trig_beam_o			=> open,  				--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
+		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
 		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
 		last_trig_beam_clk_data_o => open,
-		trig_clk_iface_o	=> open);            --//trig_clk_data_o synced to 7p5 MHz clock
+		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to 7p5 MHz clock
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
@@ -453,6 +457,17 @@ begin
 		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
 		rdout_adr_o				=> ram_read_address,
 		rdout_fpga_data_o		=> rdout_data);
+	--///////////////////////////////////////	
+	xSCALERS : entity work.scalers_top
+	port map(
+		rst_i				=>	reset_global or reset_global_except_registers,	
+		clk_i				=> clock_7p5MHz,
+		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
+		gate_i			=> '1',
+		reg_i				=> registers,
+		trigger_i		=> scalers_trig,
+		beam_trig_i		=> scalers_beam_trigs,
+		scaler_to_read_o  => scaler_to_read);
 	--///////////////////////////////////////		
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
@@ -460,6 +475,7 @@ begin
 		clk_i				=> clock_7p5MHz,  --//clock for register interface
 		--//////////////////////////
 		--//status registers
+		scaler_to_read_i => scaler_to_read,
 		status_data_manager_i => status_reg_data_manager,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
