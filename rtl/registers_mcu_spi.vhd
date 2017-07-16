@@ -26,6 +26,7 @@ entity registers_mcu_spi is
 		--//status/system read-only registers:
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
+		event_metadata_i					:	in		event_metadata_type;
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
@@ -61,8 +62,19 @@ begin
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
 		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
 		registers_io(7) <= x"000000"; 
-		
-		
+		registers_io(8) <= x"000000";
+		registers_io(9) <= x"000000";
+		registers_io(10) <= x"000000";
+		registers_io(11) <= x"000000";
+		registers_io(12) <= x"000000";
+		registers_io(13) <= x"000000";
+		registers_io(14) <= x"000000";
+		registers_io(15) <= x"000000";
+		registers_io(17) <= x"000000";
+		registers_io(18) <= x"000000";
+		registers_io(19) <= x"000000";
+		registers_io(20) <= x"000000";
+
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(0)  <= x"000001"; --//set read register
@@ -88,6 +100,7 @@ begin
 		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer [77]
 		registers_io(base_adrs_rdout_cntrl+14) <= x"000000"; --//select readout waveform buffer [78]
 
+		registers_io(126) <= x"000000"; --//reset event counter 
 		registers_io(127)	<= x"000000"; --//software global reset when LSB is toggled [127]
 		 
 		registers_io(base_adrs_adc_cntrl+0) <= x"000000"; --//nothing assigned yet (54)
@@ -153,12 +166,18 @@ begin
 	--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) then
 		address_o <= x"00";
-		--///////////////////////
+		--////////////////////////////////////////////////
 		--//update status/system read-only registers
 		registers_io(3) <= scaler_to_read_i;
 		registers_io(7) <= status_data_manager_i; 
-		--///////////////////////
+		--//assign event meta data
+		for j in 0 to 9 loop
+			registers_io(j+10) <= event_metadata_i(j);
+		end loop;
+		--////////////////////////////////////////////////
+		--//clear pulsed registers
 		registers_io(127) <= x"000000"; --//clear the reset register
+		registers_io(126) <= x"000000"; --//clear the event counter reset
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
 		registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
 		registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse

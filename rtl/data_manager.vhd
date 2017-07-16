@@ -24,16 +24,19 @@ entity data_manager is
 		rst_i					:	in	 std_logic;
 		clk_i					:  in	 std_logic; --//core data clock
 		clk_iface_i			:	in	 std_logic; --//slower interface clock
+		pulse_refrsh_i		:	in	 std_logic;
 		wr_busy_o			:	out std_logic; --//
-		buffer_full_o		:	out std_logic_vector(0 downto 0); --//single buffer, for now
 		
 		phased_trig_i		:	in	 std_logic; 
+		last_trig_beam_i	: 	in std_logic_vector(define_num_beams-1 downto 0); --//last beam trigger
+		ext_trig_i			:	in	 std_logic; --//external board trigger
 		reg_i					:	in	 register_array_type; --//forced trig sent in register array
 		
 		read_clk_i 			:	in		std_logic;
 		read_ram_adr_i		:	in  	std_logic_vector(define_data_ram_depth-1 downto 0);
 		
 		status_reg_o		:	out	std_logic_vector(23 downto 0);
+		event_meta_o		:	out	event_metadata_type;
 
 		--//waveform data	
 		wfm_data_i				:	in	 	full_data_type;
@@ -84,7 +87,8 @@ signal internal_buffer_full  			: std_logic_vector(define_num_wfm_buffers-1 down
 signal internal_clear_buffer 			: std_logic_vector(define_num_wfm_buffers-1 downto 0);
 signal internal_write_busy				: std_logic_vector(define_num_wfm_buffers-1 downto 0);
 signal internal_event_busy				: std_logic_vector(define_num_wfm_buffers-1 downto 0);
-		
+signal internal_get_event_metadata  : std_logic_vector(define_num_wfm_buffers-1 downto 0);
+
 signal internal_beam_ram_8 		: array_of_beams_type;
 signal internal_beam_ram_4a 		: array_of_beams_type;
 signal internal_beam_ram_4b 		: array_of_beams_type;
@@ -93,6 +97,11 @@ signal internal_beam_ram_en_4a	: std_logic_vector(define_num_beams-1 downto 0);
 signal internal_beam_ram_en_4b	: std_logic_vector(define_num_beams-1 downto 0);
 
 signal internal_data_manager_status : std_logic_vector(23 downto 0) := (others=>'0'); --//status register
+
+signal internal_last_trigger_type : std_logic_vector(1 downto 0) := "00"; --//record trigger type
+signal internal_last_beam_trigger : std_logic_vector(define_num_beams-1 downto 0);
+signal event_trigger : std_logic;
+signal buffers_full	: std_logic;
 
 --//declare components, since verilog modules:
 component flag_sync is
@@ -168,10 +177,28 @@ end generate;
 --//////////////////////////////////////
 
 --//////////////////////////////////////
---//data manager status register
-internal_data_manager_status(3 downto 0) <= internal_buffer_full;
-internal_data_manager_status(4) <= internal_buffer_full(0) or internal_buffer_full(1) or internal_buffer_full(2) or internal_buffer_full(3);
-internal_data_manager_status(7 downto 5) <= next_write_buffer;
+--//clock trigger 
+proc_reg_trig : process(rst_i, clk_i)
+begin
+	if rst_i = '1' then
+		event_trigger <= '0';
+		internal_last_beam_trigger <= (others=>'0');
+		internal_last_trigger_type <= (others=>'0');
+	elsif rising_edge(clk_i) and internal_forced_trigger = '1' then
+		event_trigger <= '1';
+		internal_last_trigger_type <= "01";
+	elsif rising_edge(clk_i) and phased_trig_i = '1' then 
+		event_trigger <= '1';
+		internal_last_beam_trigger <= last_trig_beam_i; --//update the beam trigger info
+		internal_last_trigger_type <= "10";
+	elsif rising_edge(clk_i) and ext_trig_i = '1' then 
+		event_trigger <= '1';
+		internal_last_trigger_type <= "11";
+	elsif rising_edge(clk_i) then
+		event_trigger <= '0';
+		internal_last_trigger_type <= internal_last_trigger_type;
+	end if;
+end process;
 
 StatRegSync : for i in 0 to 23 generate
 	xSTATREGSYNC : signal_sync 
@@ -184,13 +211,25 @@ end generate;
 --//////////////////////////////////////
 
 --////////////////////
-proc_manage_buffers : process(rst_i, clk_i, internal_event_busy, internal_buffer_full)
+proc_manage_buffers : process(rst_i, clk_i, internal_event_busy, internal_buffer_full(0))
 begin
 	if rst_i = '0' then
 		wr_busy_o <= '0';
 		next_write_buffer <= (others=>'0');
+		internal_data_manager_status <= (others=>'0');
+		buffers_full <= '0';
+		
 	elsif rising_edge(clk_i) then
 	
+		internal_data_manager_status(3 downto 0) <= internal_buffer_full;
+		internal_data_manager_status(4) <= internal_buffer_full(0) or internal_buffer_full(1) or internal_buffer_full(2) or internal_buffer_full(3);
+		internal_data_manager_status(7 downto 5) <= next_write_buffer;
+		
+		buffers_full <= internal_buffer_full(0) and internal_buffer_full(1) and internal_buffer_full(2) and internal_buffer_full(3); --//deadtime
+		
+		wr_busy_o <= 	internal_write_busy(0) or internal_write_busy(1) or 
+							internal_write_busy(2) or internal_write_busy(3);
+		
 		--//assign the next buffer to write when the trig_busy (waiting for trig) line goes high
 		--//otherwise, wait for buffer(0) to clear (see "others=>" declaration)
 		case internal_event_busy is
@@ -224,16 +263,13 @@ begin
 				next_write_buffer <= next_write_buffer;
 
 		end case;
-
-		wr_busy_o <= 	internal_write_busy(0) or internal_write_busy(1) or 
-							internal_write_busy(2) or internal_write_busy(3);  
 	end if;
 end process;
 --/////////////////
 
 --/////////////////////////////////////////////////////////	
 --//if trigger, write to data ram
-proc_save_triggered_event : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i, internal_clear_buffer, next_write_buffer)
+proc_save_triggered_event : process(rst_i, clk_i, event_trigger, internal_clear_buffer, next_write_buffer)
 begin
 	
 	for j in 0 to define_num_wfm_buffers-1 loop
@@ -244,6 +280,7 @@ begin
 			internal_buffer_full(j) 		<= '0';
 			internal_write_busy(j)			<= '0';
 			internal_event_busy(j)			<= '0';
+			internal_get_event_metadata(j)<= '0';
 			save_event_state(j) 				<= idle_st;
 	
 		elsif rising_edge(clk_i) then
@@ -262,7 +299,8 @@ begin
 					internal_ram_write_adrs(j) 	<= (others=>'0');
 					internal_write_busy(j)	 		<= '0';
 					internal_event_busy(j)	 		<= '0';
-
+					internal_get_event_metadata(j)<= '0';
+					
 					--//go to trig state, if buffer is assigned and buffer is empty
 					if next_write_buffer = std_logic_vector(to_unsigned(j, next_write_buffer'length)) and internal_buffer_full(j) = '0' then 
 						save_event_state(j) <= trig_st;
@@ -277,8 +315,10 @@ begin
 					internal_write_busy(j)	 		<= '0';
 					internal_event_busy(j)			<= '1';
 					internal_buffer_full(j) 		<= '0';
+					internal_get_event_metadata(j)<= '0';
 					
-					if internal_forced_trigger = '1' or phased_trig_i = '1' then
+					if event_trigger = '1' then
+						internal_wfm_ram_write_en(j) 	<= '1';
 						save_event_state(j) <= adr_inc_st;
 					else
 						save_event_state(j) <= trig_st;
@@ -291,10 +331,15 @@ begin
 					internal_write_busy(j) 			<= '1';
 					internal_event_busy(j)			<= '1';
 					internal_buffer_full(j) 		<= '0';
-				
+					
 					if internal_ram_write_adrs(j) = internal_address_max then 
+						internal_get_event_metadata(j) <= '0';
 						save_event_state(j) <= done_st;
+					elsif internal_ram_write_adrs(j) = 3 then
+						internal_get_event_metadata(j) <= '1';
+						save_event_state(j) <= adr_inc_st;
 					else
+						internal_get_event_metadata(j) <= '0';
 						save_event_state(j) <= adr_inc_st;
 					end if;
 			
@@ -305,6 +350,7 @@ begin
 					internal_write_busy(j) 			<= '0';
 					internal_event_busy(j)			<= '1';
 					internal_buffer_full(j) 		<= '1';
+					internal_get_event_metadata(j)<= '0';
 					save_event_state(j) 				<= idle_st;
 				
 			end case;
@@ -327,6 +373,20 @@ begin
 			data_ram_o <= internal_wfm_ram_3;
 	end case;
 end process;
+
+xEVENTMETADATA : entity work.event_metadata
+port map(
+	rst_i					=> rst_i,
+	clk_i					=> clk_i,
+	clk_iface_i			=> clk_iface_i,
+	clk_refrsh_i		=> pulse_refrsh_i,
+	buffers_full_i		=> buffers_full,
+	trig_i				=> event_trigger,
+	trig_type_i			=> internal_last_trigger_type,
+	trig_last_beam_i 	=> internal_last_beam_trigger,
+	get_metadata_i	 	=> internal_get_event_metadata, 
+	reg_i				 	=> reg_i,		
+	event_header_o	 	=> event_meta_o);
 
 --//AS OF 7/11/17 this process does not do anything - beam RAM removed --//
 --//simple block that interprets register to pick which beam RAM block to readout 

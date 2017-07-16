@@ -48,6 +48,8 @@ type full_address_type	is array	(7 downto 0) of std_logic_vector(define_ram_dept
 type full_data_address_type	is array	(7 downto 0) of std_logic_vector(define_data_ram_depth-1 downto 0);	
 type aux_data_link_type is array (1 downto 0) of std_logic_vector(7 downto 0);
 
+type event_metadata_type is array(9 downto 0) of std_logic_vector(23 downto 0);
+
 type rx_data_delay_type is array (7 downto 0) of std_logic_vector(3 downto 0); --//delay range for rx data to align ADCs
 type buffered_data_type is array (7 downto 0) of std_logic_vector(2*define_ram_width-1 downto 0);
 

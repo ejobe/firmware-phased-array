@@ -188,11 +188,13 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	
 	--//signals driven from the data manager module
 	signal data_manager_write_busy : std_logic;
+	signal event_meta_data	: event_metadata_type;
 	--//signals for scalers
 	signal scalers_beam_trigs	: std_logic_vector(define_num_beams-1 downto 0);
 	signal scalers_trig			: std_logic;
@@ -295,7 +297,7 @@ begin
 		data_write_busy_i => data_manager_write_busy,
 		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
 		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
-		last_trig_beam_clk_data_o => open,
+		last_trig_beam_clk_data_o => last_trig_beams,
 		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to 7p5 MHz clock
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
@@ -394,12 +396,15 @@ begin
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
 		clk_iface_i				=> clock_7p5MHz,
+		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
-		buffer_full_o			=> open,
 		phased_trig_i			=> the_phased_trigger,
+		last_trig_beam_i		=> last_trig_beams,
+		ext_trig_i				=> '0',
 		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  
 		read_ram_adr_i			=> ram_read_address,
+		event_meta_o			=> event_meta_data,
 		status_reg_o			=> status_reg_data_manager,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
@@ -477,6 +482,7 @@ begin
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
 		status_data_manager_i => status_reg_data_manager,
+		event_metadata_i => event_meta_data,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
