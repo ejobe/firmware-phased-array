@@ -176,26 +176,26 @@ end process;
 				--/////////////////////////////////////////////////////////
 				--//this is for the full 7 bits, 8-bit word size:
 				--/////////////////////////////////////////////////////////
---					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
---												'0'  & data_p(define_serdes_factor*6+j+iq_split*i) & 
---												data_p(define_serdes_factor*5+j+iq_split*i) & data_p(define_serdes_factor*4+j+iq_split*i) & 
---												data_p(define_serdes_factor*3+j+iq_split*i) & data_p(define_serdes_factor*2+j+iq_split*i) & 
---												data_p(define_serdes_factor*1 +j+iq_split*i) & data_p(0+j+iq_split*i) &
---												'0'  & data_p(define_serdes_factor*13+j+iq_split*i) & 
---												data_p(define_serdes_factor*12+j+iq_split*i) & data_p(define_serdes_factor*11+j+iq_split*i) & 
---												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
---												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
+					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
+												'0'  & data_p(define_serdes_factor*6+j+iq_split*i) & 
+												data_p(define_serdes_factor*5+j+iq_split*i) & data_p(define_serdes_factor*4+j+iq_split*i) & 
+												data_p(define_serdes_factor*3+j+iq_split*i) & data_p(define_serdes_factor*2+j+iq_split*i) & 
+												data_p(define_serdes_factor*1 +j+iq_split*i) & data_p(0+j+iq_split*i) &
+												'0'  & data_p(define_serdes_factor*13+j+iq_split*i) & 
+												data_p(define_serdes_factor*12+j+iq_split*i) & data_p(define_serdes_factor*11+j+iq_split*i) & 
+												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
+												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
 
 				--/////////////////////////////////////////////////////////
 				--//this is for 5-bit operation (8-bit word size):
 				--/////////////////////////////////////////////////////////
-					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
-												"000" &  data_p(define_serdes_factor*4+j+iq_split*i) & 
-												data_p(define_serdes_factor*3+j+iq_split*i) & data_p(define_serdes_factor*2+j+iq_split*i) & 
-												data_p(define_serdes_factor*1 +j+iq_split*i) & data_p(0+j+iq_split*i) &
-												"000" &  data_p(define_serdes_factor*11+j+iq_split*i) &
-												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
-												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
+--					data_two_chan(i)(16*(j+1)-1 downto 16*j) <= 	
+--												"000" &  data_p(define_serdes_factor*4+j+iq_split*i) & 
+--												data_p(define_serdes_factor*3+j+iq_split*i) & data_p(define_serdes_factor*2+j+iq_split*i) & 
+--												data_p(define_serdes_factor*1 +j+iq_split*i) & data_p(0+j+iq_split*i) &
+--												"000" &  data_p(define_serdes_factor*11+j+iq_split*i) &
+--												data_p(define_serdes_factor*10+j+iq_split*i) &  data_p(define_serdes_factor*9+j+iq_split*i) & 
+--												data_p(define_serdes_factor*8+j+iq_split*i) &	data_p(define_serdes_factor*7+j+iq_split*i);
 
 				end loop;		
 			end loop;

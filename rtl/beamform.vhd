@@ -474,7 +474,7 @@ begin
 				std_logic_vector(resize(signed(dat(6)((i-14)*define_word_size+slice_hi-1 downto (i-14)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(7)((i-21)*define_word_size+slice_hi-1 downto (i-21)*define_word_size+slice_lo )),define_beam_bits));	
 				
-			beam_8_p8(i) <= --//8 antenna, -8 delay
+			beam_8_p8(i) <= --//8 antenna, +8 delay
 				std_logic_vector(resize(signed(dat(0)((i+32)*define_word_size+slice_hi-1 downto (i+32)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(1)((i+24)*define_word_size+slice_hi-1 downto (i+24)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(2)((i+16)*define_word_size+slice_hi-1 downto (i+16)*define_word_size+slice_lo )),define_beam_bits)) +

@@ -265,21 +265,21 @@ begin
 		event_header_o(8) <= internal_header_8(to_integer(unsigned(reg_i(78)(1 downto 0))));
 		event_header_o(9) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
 		
-		event_header_o(10) <= internal_header_0(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(11) <= internal_header_1(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(12) <= internal_header_2(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(13) <= internal_header_3(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(14) <= internal_header_4(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(15) <= internal_header_5(to_integer(unsigned(reg_i(78)(1 downto 0))));	
-		event_header_o(16) <= internal_header_6(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(17) <= internal_header_7(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(18) <= internal_header_8(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(19) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(20) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(21) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(22) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(23) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
-		event_header_o(24) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(10) <= internal_header_10(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(11) <= internal_header_11(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(12) <= internal_header_12(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(13) <= internal_header_13(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(14) <= internal_header_14(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(15) <= internal_header_15(to_integer(unsigned(reg_i(78)(1 downto 0))));	
+		event_header_o(16) <= internal_header_16(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(17) <= internal_header_17(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(18) <= internal_header_18(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(19) <= internal_header_19(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(20) <= internal_header_20(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(21) <= internal_header_21(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(22) <= internal_header_22(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(23) <= internal_header_23(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(24) <= internal_header_24(to_integer(unsigned(reg_i(78)(1 downto 0))));
 --		case reg_i(78)(1 downto 0) is
 --			when "00" =>
 --				event_header_0 <= internal_header_0(0);
