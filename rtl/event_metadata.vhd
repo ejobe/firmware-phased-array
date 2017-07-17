@@ -31,6 +31,7 @@ entity event_metadata is
 		trig_i			:	in		std_logic; --//for event counting and time-stamping
 		trig_type_i		:	in		std_logic_vector(1 downto 0);
 		trig_last_beam_i :  in		std_logic_vector(define_num_beams-1 downto 0);
+		last_trig_pow_i : in	average_power_16samp_type;
 		
 		get_metadata_i	:	in		std_logic_vector(define_num_wfm_buffers-1 downto 0); --//pulse determines when to register metadata 
 		
@@ -54,6 +55,23 @@ signal internal_header_6 : internal_header_type;
 signal internal_header_7 : internal_header_type;
 signal internal_header_8 : internal_header_type;
 signal internal_header_9 : internal_header_type;
+--//power:
+signal internal_header_10 : internal_header_type;
+signal internal_header_11 : internal_header_type;
+signal internal_header_12 : internal_header_type;
+signal internal_header_13 : internal_header_type;
+signal internal_header_14 : internal_header_type;
+signal internal_header_15 : internal_header_type;
+signal internal_header_16 : internal_header_type;
+signal internal_header_17 : internal_header_type;
+signal internal_header_18 : internal_header_type;
+signal internal_header_19 : internal_header_type;
+signal internal_header_20 : internal_header_type;
+signal internal_header_21 : internal_header_type;
+signal internal_header_22 : internal_header_type;
+signal internal_header_23 : internal_header_type;
+signal internal_header_24 : internal_header_type;
+--//
 
 signal internal_buffer_full : std_logic; 
 signal internal_deadtime_counter : std_logic_vector(23 downto 0);
@@ -185,7 +203,23 @@ begin
 			internal_header_7(i) <= (others=>'0');
 			internal_header_8(i) <= (others=>'0');
 			internal_header_9(i) <= (others=>'0');
-			
+
+			internal_header_10(i) <= (others=>'0');
+			internal_header_11(i) <= (others=>'0');
+			internal_header_12(i) <= (others=>'0');
+			internal_header_13(i) <= (others=>'0');
+			internal_header_14(i) <= (others=>'0');
+			internal_header_15(i) <= (others=>'0');			
+			internal_header_16(i) <= (others=>'0');			
+			internal_header_17(i) <= (others=>'0');
+			internal_header_18(i) <= (others=>'0');
+			internal_header_19(i) <= (others=>'0');
+			internal_header_20(i) <= (others=>'0');
+			internal_header_21(i) <= (others=>'0');
+			internal_header_22(i) <= (others=>'0');
+			internal_header_23(i) <= (others=>'0');
+			internal_header_24(i) <= (others=>'0');
+	
 		elsif rising_edge(clk_iface_i) and internal_get_meta_data(i)= '1' then
 			internal_header_0(i) <= internal_next_event_counter(23 downto 0);
 			internal_header_1(i) <= internal_next_event_counter(47 downto 24);
@@ -194,8 +228,25 @@ begin
 			internal_header_4(i) <= internal_event_timestamp(23 downto 0);
 			internal_header_5(i) <= internal_event_timestamp(47 downto 24);
 			internal_header_6(i) <= internal_deadtime_counter;
-			internal_header_7(i) <= std_logic_vector(to_unsigned(i,2)) & "00000" & trig_type_i & trig_last_beam_i;
+			internal_header_7(i) <= std_logic_vector(to_unsigned(i,2)) & reg_i(42)(1) & '0' & reg_i(76)(2 downto 0) & trig_type_i & trig_last_beam_i;
 			internal_header_8(i) <= '0' & reg_i(48)(7 downto 0) & reg_i(80)(define_num_beams-1 downto 0);
+			
+			internal_header_10(i) <= x"0" & last_trig_pow_i(0);
+			internal_header_11(i) <= x"0" & last_trig_pow_i(1);
+			internal_header_12(i) <= x"0" & last_trig_pow_i(2);
+			internal_header_13(i) <= x"0" & last_trig_pow_i(3);
+			internal_header_14(i) <= x"0" & last_trig_pow_i(4);
+			internal_header_15(i) <= x"0" & last_trig_pow_i(5);		
+			internal_header_16(i) <= x"0" & last_trig_pow_i(6);			
+			internal_header_17(i) <= x"0" & last_trig_pow_i(7);
+			internal_header_18(i) <= x"0" & last_trig_pow_i(8);
+			internal_header_19(i) <= x"0" & last_trig_pow_i(9);
+			internal_header_20(i) <= x"0" & last_trig_pow_i(10);
+			internal_header_21(i) <= x"0" & last_trig_pow_i(11);
+			internal_header_22(i) <= x"0" & last_trig_pow_i(12);
+			internal_header_23(i) <= x"0" & last_trig_pow_i(13);
+			internal_header_24(i) <= x"0" & last_trig_pow_i(14);
+			
 		end if;
 	end loop;
 end process;
@@ -214,6 +265,21 @@ begin
 		event_header_o(8) <= internal_header_8(to_integer(unsigned(reg_i(78)(1 downto 0))));
 		event_header_o(9) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
 		
+		event_header_o(10) <= internal_header_0(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(11) <= internal_header_1(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(12) <= internal_header_2(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(13) <= internal_header_3(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(14) <= internal_header_4(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(15) <= internal_header_5(to_integer(unsigned(reg_i(78)(1 downto 0))));	
+		event_header_o(16) <= internal_header_6(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(17) <= internal_header_7(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(18) <= internal_header_8(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(19) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(20) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(21) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(22) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(23) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
+		event_header_o(24) <= internal_header_9(to_integer(unsigned(reg_i(78)(1 downto 0))));
 --		case reg_i(78)(1 downto 0) is
 --			when "00" =>
 --				event_header_0 <= internal_header_0(0);

@@ -32,6 +32,8 @@ entity trigger is
 		
 		data_write_busy_i	:	in	std_logic; --//prevent triggers if triggered event is already being written to ram
 		 
+		last_trig_pow_o	:	out	average_power_16samp_type; 
+		 
 		trig_beam_o						:	out	std_logic_vector(define_num_beams-1 downto 0); --//for scalers
 		trig_clk_data_o				:	inout	std_logic;  --//trig flag on faster clock
 		last_trig_beam_clk_data_o 	: 	out 	std_logic_vector(define_num_beams-1 downto 0); --//register the beam trigger 
@@ -48,6 +50,9 @@ signal buffered_powersum : buffered_powersum_type;
 signal instantaneous_avg_power_0 : average_power_16samp_type;  --//defined in defs.vhd
 signal instantaneous_avg_power_1 : average_power_16samp_type;  --//defined in defs.vhd
 
+signal instant_power_0_buf : average_power_16samp_type;
+signal instant_power_1_buf : average_power_16samp_type;
+
 signal instantaneous_above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check if beam above threshold at each clk_data_i edge
 signal instantaneous_above_threshold_buf	:	std_logic_vector(define_num_beams-1 downto 0); 
 signal instantaneous_above_threshold_buf2	:	std_logic_vector(define_num_beams-1 downto 0); 
@@ -59,8 +64,9 @@ type trigger_state_machine_state_type is (idle_st, trig_hold_st, trig_done_st);
 type trigger_state_machine_state_array_type is array(define_num_beams-1 downto 0) of trigger_state_machine_state_type;
 signal trigger_state_machine_state : trigger_state_machine_state_array_type;
 
-type trig_hold_counter_type is array(define_num_beams-1 downto 0) of std_logic_vector(7 downto 0);
+type trig_hold_counter_type is array(define_num_beams-1 downto 0) of std_logic_vector(11 downto 0);
 signal trigger_holdoff_counter		:	trig_hold_counter_type;
+signal internal_trig_holdoff : std_logic_vector(11 downto 0);
 
 signal internal_trigger_beam_mask :  std_logic_vector(define_num_beams-1 downto 0);
 
@@ -93,6 +99,16 @@ TrigMaskSync : for i in 0 to define_num_beams-1 generate
 		SignalOut_clkB	=> internal_trigger_beam_mask(i));
 end generate;
 
+TrigHoldoffSync : for i in 0 to 11 generate
+	xTRIGHOLDOFFSYNC : signal_sync
+	port map(
+		clkA				=> clk_iface_i,
+		clkB				=> clk_data_i,
+		SignalIn_clkA	=> reg_i(81)(i), --//reg 80 has the beam mask
+		SignalOut_clkB	=> internal_trig_holdoff(i));
+end generate;
+
+
 proc_get_thresholds : process(clk_data_i, reg_i)
 begin
 	for i in 0 to define_num_beams-1 loop
@@ -108,6 +124,9 @@ begin
 		if rst_i = '1' then
 			instantaneous_avg_power_0(i) <= (others=>'0');
 			instantaneous_avg_power_1(i) <= (others=>'0');
+			instant_power_0_buf(i) <= (others=>'0');
+			instant_power_1_buf(i) <= (others=>'0');
+			last_trig_pow_o(i) <= (others=>'0');
 			
 			last_trig_beam_clk_data_o(i) <= '0';
 			
@@ -124,6 +143,8 @@ begin
 		--//So that's two power calculations every clk_data_i cycle
 		elsif rising_edge(clk_data_i) then
 		
+			instant_power_0_buf(i) <= instantaneous_avg_power_0(i);
+			instant_power_1_buf(i) <= instantaneous_avg_power_1(i);
 			--//calculate first 16-sample power
 			--//note that buffered_powersum already contains 2 samples, so we need to sum over 8 of these
 			instantaneous_avg_power_0(i) <= 
@@ -161,8 +182,14 @@ begin
 						instantaneous_above_threshold(i) <= '0';
 						trigger_state_machine_state(i) <= idle_st;
 					
-					elsif (instantaneous_avg_power_0(i) > thresholds(i)) or (instantaneous_avg_power_1(i) > thresholds(i)) then
+					elsif instant_power_0_buf(i) > thresholds(i) then
 						instantaneous_above_threshold(i) <= '1'; --// high for one clk_data_i cycle
+						last_trig_pow_o(i) <= instantaneous_avg_power_0(i);
+						trigger_state_machine_state(i) <= trig_hold_st;
+						
+					elsif instant_power_1_buf(i) > thresholds(i) then
+						instantaneous_above_threshold(i) <= '1'; --// high for one clk_data_i cycle
+						last_trig_pow_o(i) <= instantaneous_avg_power_1(i);
 						trigger_state_machine_state(i) <= trig_hold_st;
 						
 					else
@@ -179,7 +206,11 @@ begin
 					instantaneous_above_threshold(i) <= '0';
 					
 					--//need to limit trigger burst rate in order to register on 15MHz interface clock
-					if trigger_holdoff_counter(i) = x"0F" then
+					if trigger_holdoff_counter(i) = internal_trig_holdoff then
+						trigger_holdoff_counter(i) <= (others=>'0');
+						trigger_state_machine_state(i) <= trig_done_st;
+						
+					elsif trigger_holdoff_counter(i) = x"FFF" then
 						trigger_holdoff_counter(i) <= (others=>'0');
 						trigger_state_machine_state(i) <= trig_done_st;
 						

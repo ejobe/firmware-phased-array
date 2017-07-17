@@ -70,15 +70,30 @@ begin
 		registers_io(13) <= x"000000";
 		registers_io(14) <= x"000000";
 		registers_io(15) <= x"000000";
+		registers_io(16) <= x"000000";
 		registers_io(17) <= x"000000";
 		registers_io(18) <= x"000000";
 		registers_io(19) <= x"000000";
 		registers_io(20) <= x"000000";
-
+		registers_io(21) <= x"000000";
+		registers_io(22) <= x"000000";
+		registers_io(23) <= x"000000";
+		registers_io(24) <= x"000000";
+		registers_io(25) <= x"000000";
+		registers_io(26) <= x"000000";
+		registers_io(27) <= x"000000";
+		registers_io(28) <= x"000000";
+		registers_io(29) <= x"000000";
+		registers_io(30) <= x"000000";
+		registers_io(31) <= x"000000";
+		registers_io(32) <= x"000000";
+		registers_io(33) <= x"000000";
+		registers_io(34) <= x"000000";
+		
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(0)  <= x"000001"; --//set read register
-		registers_io(32) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
+		registers_io(120) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -128,7 +143,8 @@ begin
 		--//masking:
 		registers_io(48) <= x"0000FF";   --//channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
-		
+		registers_io(81) <= x"00000F";   --// trig holdoff [80]
+
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
 		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]
@@ -152,7 +168,7 @@ begin
 	--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) and write_rdy_i= '1' then --write_rdy_i is sync with clk_i with newer spi_slave code
 		--//write registers, but exclude read-only registers
-		if write_reg_i(31 downto 24) > x"1F" then 
+		if write_reg_i(31 downto 24) > x"22" then 
 		
 			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
 			address_o <= write_reg_i(31 downto 24);
@@ -171,7 +187,7 @@ begin
 		registers_io(3) <= scaler_to_read_i;
 		registers_io(7) <= status_data_manager_i; 
 		--//assign event meta data
-		for j in 0 to 9 loop
+		for j in 0 to 24 loop
 			registers_io(j+10) <= event_metadata_i(j);
 		end loop;
 		--////////////////////////////////////////////////

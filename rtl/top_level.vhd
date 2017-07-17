@@ -189,6 +189,7 @@ architecture rtl of top_level is
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
+	signal last_trig_power			: average_power_16samp_type;
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	
@@ -222,8 +223,8 @@ begin
 	proc_set_clock_ref : process(reset_global)
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
-			CLK_select(0) <= registers(32)(0);   --//board clock
-			CLK_select(1) <= not registers(32)(0);  --//input clock
+			CLK_select(0) <= registers(120)(0);   --//board clock
+			CLK_select(1) <= not registers(120)(0);  --//input clock
 		end if;
 	end process;
 	--///////////////////////////////////////
@@ -295,6 +296,7 @@ begin
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
 		data_write_busy_i => data_manager_write_busy,
+		last_trig_pow_o	=> last_trig_power,
 		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
 		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
 		last_trig_beam_clk_data_o => last_trig_beams,
@@ -400,6 +402,7 @@ begin
 		wr_busy_o				=> data_manager_write_busy,
 		phased_trig_i			=> the_phased_trigger,
 		last_trig_beam_i		=> last_trig_beams,
+		last_trig_pow_i		=> last_trig_power,
 		ext_trig_i				=> '0',
 		reg_i						=> registers,
 		read_clk_i 				=> rdout_clock,  

@@ -29,6 +29,7 @@ entity data_manager is
 		
 		phased_trig_i		:	in	 std_logic; 
 		last_trig_beam_i	: 	in std_logic_vector(define_num_beams-1 downto 0); --//last beam trigger
+		last_trig_pow_i	:	in	 average_power_16samp_type; 
 		ext_trig_i			:	in	 std_logic; --//external board trigger
 		reg_i					:	in	 register_array_type; --//forced trig sent in register array
 		
@@ -384,6 +385,7 @@ port map(
 	trig_i				=> event_trigger,
 	trig_type_i			=> internal_last_trigger_type,
 	trig_last_beam_i 	=> internal_last_beam_trigger,
+	last_trig_pow_i	=> last_trig_pow_i,
 	get_metadata_i	 	=> internal_get_event_metadata, 
 	reg_i				 	=> reg_i,		
 	event_header_o	 	=> event_meta_o);
