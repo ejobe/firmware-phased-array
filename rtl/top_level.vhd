@@ -114,7 +114,7 @@ architecture rtl of top_level is
 	--//the following signals to/from Clock_Manager--
 	signal clock_250MHz			:	std_logic;		
 	signal clock_93MHz			:	std_logic;		
-	signal clock_7p5MHz			:	std_logic;  
+	signal clock_15MHz			:	std_logic;  
 	signal clock_1MHz				:	std_logic;		
 	signal clock_1Hz				:	std_logic;		
 	signal clock_10Hz				:	std_logic;		
@@ -237,7 +237,7 @@ begin
 		PLL_reset_i		=>	'0',--clock_FPGA_PLLrst,		
 		CLK_250MHz_o 	=> clock_250MHz,
 		CLK_93MHz_o		=> clock_93MHz,
-		CLK_7p5MHz_o 	=> clock_7p5MHz,
+		CLK_15MHz_o 	=> clock_15MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
 		CLK_1Hz_o		=> clock_1Hz,
 		CLK_10Hz_o		=> clock_10Hz,
@@ -252,7 +252,7 @@ begin
 	port map(
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
-		clk_iface_i			=> clock_7p5MHz,
+		clk_iface_i			=> clock_15MHz,
 		clk_fast_i			=> clock_250MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
@@ -292,7 +292,7 @@ begin
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
 		clk_data_i			=> clock_93MHz,
-		clk_iface_i			=> clock_7p5MHz,
+		clk_iface_i			=> clock_15MHz,
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
 		data_write_busy_i => data_manager_write_busy,
@@ -397,7 +397,7 @@ begin
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
-		clk_iface_i				=> clock_7p5MHz,
+		clk_iface_i				=> clock_15MHz,
 		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
 		phased_trig_i			=> the_phased_trigger,
@@ -448,7 +448,7 @@ begin
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
-		clk_i						=> clock_7p5MHz,
+		clk_i						=> clock_15MHz,
 		rdout_reg_i				=> register_to_read,  --//read register
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
@@ -469,7 +469,7 @@ begin
 	xSCALERS : entity work.scalers_top
 	port map(
 		rst_i				=>	reset_global or reset_global_except_registers,	
-		clk_i				=> clock_7p5MHz,
+		clk_i				=> clock_15MHz,
 		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
 		gate_i			=> '1',
 		reg_i				=> registers,
@@ -480,7 +480,7 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
 		rst_i				=> reset_global,
-		clk_i				=> clock_7p5MHz,  --//clock for register interface
+		clk_i				=> clock_15MHz,  --//clock for register interface
 		--//////////////////////////
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
@@ -496,7 +496,7 @@ begin
 	--///////////////////////////////////////	
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
-		clk_i			 => clock_7p5MHz,
+		clk_i			 => clock_15MHz,
 		rst_i			 => reset_global or reset_global_except_registers,	
 		mcu_fpga_io	 => uC_dig,
 		data_i		 => rdout_data,
@@ -590,10 +590,10 @@ begin
 	--//debug headers & LEDs
 	--///////////////////////////////////////////////////////////////
 	--DEBUG(0) <=  '0'; --LMK_DAT_uWire;
-	DEBUG(1) <=  clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
-	DEBUG(2) <=  clock_7p5MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
+	DEBUG(1) <=  '0'; --clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
+	DEBUG(2) <=  '0'; --clock_15MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
 	DEBUG(3) <=  '0';--ram_write_address(3)(0); --lmk_start_write;
-	DEBUG(4) <=  registers(base_adrs_rdout_cntrl+0)(0); --'0';--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
+	DEBUG(4) <=  '0';--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
 	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
 	DEBUG(6) <=  ram_read_address(0);--adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
 	DEBUG(7) <=  '0';--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
@@ -601,9 +601,14 @@ begin
 	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
 	DEBUG(10)<=  '0';--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
+	--/////////////////////////////////
 	
-	LED(0) <= not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
-	LED(1) <= not USB_WAKEUP;
+	
+	
+	
+	
+	LED(0) <= '1'; --not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
+	LED(1) <= '1';
 	LED(2) <= '1';
 	
 	LED(3) <= '1';

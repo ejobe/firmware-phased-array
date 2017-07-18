@@ -51,8 +51,8 @@ port map(
 	clk_i 			=> clk_i,             -- internal interface clock (clocks di/do registers)
 	spi_ssel_i   	=> mcu_fpga_io(7) or rst_i, -- spi bus slave select line
 	spi_sck_i      => mcu_fpga_io(3),    -- spi bus sck clock (clocks the shift register core)
-	spi_mosi_i     => mcu_fpga_io(1),    -- spi bus mosi input
-	spi_miso_o     => mcu_fpga_io(2),    -- spi bus spi_miso_o output
+	spi_mosi_i     => mcu_fpga_io(2),    -- spi bus mosi input
+	spi_miso_o     => mcu_fpga_io(1),    -- spi bus spi_miso_o output
 	di_req_o       => open,              -- preload lookahead data request line
 	di_i   			=> data_i,				 -- parallel load data in (clocked in on rising edge of clk_i)
 	wren_i         => tx_load_i,         -- user data write enable

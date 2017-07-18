@@ -169,9 +169,9 @@ begin
 	elsif rising_edge(clk_iface_i) and internal_trig = '1' then
 		internal_trig_counter <= internal_trig_counter + 1;
 		internal_event_timestamp <= internal_running_timestamp;
-	elsif rising_edge(clk_iface_i) then
-		internal_trig_counter <= internal_trig_counter;
-		internal_event_timestamp <= internal_event_timestamp;
+--	elsif rising_edge(clk_iface_i) then
+--		internal_trig_counter <= internal_trig_counter;
+--		internal_event_timestamp <= internal_event_timestamp;
 	end if;
 end process;
 
@@ -184,8 +184,8 @@ begin
 	elsif rising_edge(clk_iface_i) and (internal_get_meta_data(0) = '1' or internal_get_meta_data(1) = '1' or
 													internal_get_meta_data(2) = '1' or internal_get_meta_data(3) = '1') then
 		internal_next_event_counter <= internal_next_event_counter + 1;
-	elsif rising_edge(clk_iface_i) then
-		internal_next_event_counter <= internal_next_event_counter;
+--	elsif rising_edge(clk_iface_i) then
+--		internal_next_event_counter <= internal_next_event_counter;
 	end if;
 end process;
 

@@ -288,7 +288,7 @@ begin
 			
 			--//clear buffer full signal, but only if write busy is not active
 			if internal_clear_buffer(j) = '1' and internal_write_busy(j) = '0' then
-					internal_buffer_full(j) <= '0';	
+				internal_buffer_full(j) <= '0';	
 			end if;
 				
 			case save_event_state(j) is
@@ -336,7 +336,7 @@ begin
 					if internal_ram_write_adrs(j) = internal_address_max then 
 						internal_get_event_metadata(j) <= '0';
 						save_event_state(j) <= done_st;
-					elsif internal_ram_write_adrs(j) = 3 then
+					elsif internal_ram_write_adrs(j) = 32 then
 						internal_get_event_metadata(j) <= '1';
 						save_event_state(j) <= adr_inc_st;
 					else

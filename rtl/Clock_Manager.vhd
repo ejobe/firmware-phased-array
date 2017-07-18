@@ -25,7 +25,7 @@ entity Clock_Manager is
 		
 		CLK_250MHz_o 	:  out	std_logic;
 		CLK_93MHz_o		:  out	std_logic;  
-		CLK_7p5MHz_o	:  inout	std_logic;  --//main logic clock
+		CLK_15MHz_o		:  inout	std_logic;  --//main logic clock
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
 		CLK_10Hz_o		:  out	std_logic;
@@ -50,9 +50,13 @@ architecture rtl of Clock_Manager is
 	signal refresh_clk_1Hz				:	std_logic;
 	signal refresh_clk_100mHz			:	std_logic;
 	
-	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(23 downto 0) := x"7270E0";  --//7.5e6
-	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"47868C0";  --//7.5e7
-
+	--//for 7.5 MHz
+	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(23 downto 0) := x"7270E0";  --//7.5e6
+	--constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"47868C0";  --//7.5e7
+	--//for 15 MHz
+	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(23 downto 0) := x"E4E1C0";  --//7.5e6
+	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"8F0D180";  --//7.5e7
+	
 	component pll_block
 		port( refclk, rst			: in 	std_logic;
 				outclk_0, outclk_1, 
@@ -78,7 +82,7 @@ begin
 	refresh_100mHz_o	<=	refresh_clk_100mHz;
 	
 	xPLL_BLOCK : pll_block
-		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_7p5MHz_o, 
+		port map(CLK0_i, PLL_reset_i, CLK_93MHz_o, CLK_15MHz_o, 
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2
@@ -101,10 +105,10 @@ begin
 		port map(clk_1MHz_sig, Reset_i, CLK_1Hz_o);
 		
 	--/////////////////////////////////////////////////////////////////////////////////
-	--//make 1 Hz and 100mHz refresh pulses from the main iface clock (7.5 MHz)
-	proc_make_refresh_pulse : process(CLK_7p5MHz_o)
+	--//make 1 Hz and 100mHz refresh pulses from the main iface clock (7.5 OR 15 MHz)
+	proc_make_refresh_pulse : process(CLK_15MHz_o)
 	begin
-		if rising_edge(CLK_7p5MHz_o) then
+		if rising_edge(CLK_15MHz_o) then
 			
 			if refresh_clk_1Hz = '1' then
 				refresh_clk_counter_1Hz <= (others=>'0');
