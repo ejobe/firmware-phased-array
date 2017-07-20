@@ -192,6 +192,7 @@ architecture rtl of top_level is
 	signal last_trig_power			: average_power_16samp_type;
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
+	signal status_reg_adc	: std_logic_vector(23 downto 0);
 	
 	--//signals driven from the data manager module
 	signal data_manager_write_busy : std_logic;
@@ -248,6 +249,13 @@ begin
 		fpga_pllLock_o => clock_FPGA_PLLlock);
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block
+	
+	proc_stat_regs : process(clock_15MHz)
+	begin
+		status_reg_adc <= x"0" & "000" & startup_adc & x"0" & adc_pd_sig & x"0" & 
+								adc_rx_lvds_locked(3) & adc_rx_lvds_locked(2) & adc_rx_lvds_locked(1) & adc_rx_lvds_locked(0); 
+	end process;
+	
 	xADC_CONTROLLER : entity work.adc_controller
 	port map(
 		clk_i					=> clock_1MHz,
@@ -297,10 +305,10 @@ begin
 		powersums_i			=> powsum_ev2samples,
 		data_write_busy_i => data_manager_write_busy,
 		last_trig_pow_o	=> last_trig_power,
-		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on 7.5 MHz clock in each beam (for scalers, beam-tagging)
-		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz clock, maskable. Triggers event saving in data_manager module
+		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on sloower MHz clock in each beam (for scalers, beam-tagging)
+		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz data clock, maskable. Triggers event saving in data_manager module
 		last_trig_beam_clk_data_o => last_trig_beams,
-		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to 7p5 MHz clock
+		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to slower clock
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	port map(
@@ -411,15 +419,8 @@ begin
 		status_reg_o			=> status_reg_data_manager,
 		wfm_data_i				=> wfm_data,
 		data_ram_read_en_i	=> rdout_ram_rd_en,
-		data_ram_o				=> ram_data,
-		beam_data_i				=> beam_data_8,
-		beam_data_4a_i			=> beam_data_4a,
-		beam_data_4b_i 		=> beam_data_4b,
-		beam_ram_read_en_i	=> rdout_beam_rd_en,
-		beam_ram_o				=> beam_ram_data,
-		powsum_data_i			=> powsum_ev2samples, --powsum_ev2samples,
-		powsum_ram_read_en_i	=> rdout_powsum_rd_en,
-		powsum_ram_o			=> powsum_ram_data);
+		data_ram_o				=> ram_data);
+		
 	--///////////////////////////////////////
 	--//readout controller using USB
 	--//allows something like dynamic mem access (start + stop readout address)
@@ -453,16 +454,12 @@ begin
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
 		ram_data_i				=> ram_data, 
-		ram_beam_i				=> beam_ram_data, 
-		ram_powsum_i			=> powsum_ram_data, 
 		read_clk_o				=> rdout_clock,
 		tx_rdy_o					=> mcu_tx_flag, 
 		--tx_rdy_spi_i			=> mcu_tx_rdy,
 		tx_ack_i					=> mcu_spi_tx_ack,
 		tx_rdy_spi_i			=> '0', --newer spi_slave code
 		rdout_ram_rd_en_o 	=> rdout_ram_rd_en, 
-		rdout_beam_rd_en_o	=> rdout_beam_rd_en, 
-		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
 		rdout_adr_o				=> ram_read_address,
 		rdout_fpga_data_o		=> rdout_data);
 	--///////////////////////////////////////	
@@ -485,6 +482,7 @@ begin
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
 		status_data_manager_i => status_reg_data_manager,
+		status_adc_i	  => status_reg_adc,
 		event_metadata_i => event_meta_data,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
@@ -608,8 +606,8 @@ begin
 	
 	
 	LED(0) <= '1'; --not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
-	LED(1) <= '1';
-	LED(2) <= '1';
+	LED(1) <= not reset_global;
+	LED(2) <= not reset_global;
 	
 	LED(3) <= '1';
 	LED(4) <= '1';

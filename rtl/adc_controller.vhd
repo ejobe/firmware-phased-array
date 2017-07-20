@@ -224,7 +224,7 @@ dat_valid_o <= internal_data_valid;
 --////////////////////////////////////////////////////////////////////////////////
 --//NOTE + REMINDER: dclk_rst_lvds_o is active LOW due to schematic error switching lvds pairs
 --////////////////////////////////////////////////////////////////////////////////
-proc_dclk_rst : process(rst_i, clk_fast_i, internal_dclk_rst, internal_data_valid, rx_locked_i)
+proc_dclk_rst : process(rst_i, clk_fast_i, internal_dclk_rst, internal_data_valid, rx_locked_i, pwr_up_i)
 variable i : integer range 1000 downto 0 := 0;
 begin
 	if rst_i = '1' or pwr_up_i='0' then
@@ -232,7 +232,7 @@ begin
 		internal_data_valid_fast_clk <= '0';
 		dclk_rst_lvds_o <= "1111"; --//dclk should not be asserted when CAL is running (blocks cal cycle)
 		adc_dclk_rst_state <= idle_st;
-	elsif rising_edge(clk_fast_i) then
+	elsif rising_edge(clk_fast_i) and pwr_up_i = '1' then
 	
 		case adc_dclk_rst_state is
 			when idle_st=>

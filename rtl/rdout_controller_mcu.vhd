@@ -31,25 +31,22 @@ entity rdout_controller_mcu is
 		reg_adr_i				:	in		std_logic_vector(define_address_size-1 downto 0);  --//firmware register addresses
 		registers_i				:	in		register_array_type;   --//firmware register array      
 		ram_data_i				:	in		full_data_type; --//data stored in fpga ram
-		ram_beam_i				:	in		array_of_beams_type; --//data stored in fpga ram
-		ram_powsum_i			:  in		array_of_beams_type; --//data stored in powersum ram
 		read_clk_o				:	out	std_logic;
 		
 		tx_rdy_o					:	out	std_logic;  --// tx ready flag
 		tx_rdy_spi_i			:	in		std_logic;  --// spi_slave tx_rdy signal
 		tx_ack_i					:	in		std_logic;  --//tx ack from spi_slave (newer spi_slave module ONLY)
 		
-		rdout_ram_rd_en_o		:	out	std_logic_vector(7 downto 0); --//read enable for ram blocks holding waveforms (1 per channel)
-		rdout_beam_rd_en_o	:  out	std_logic_vector(define_num_beams-1 downto 0); --//read enable for ram blocks holding beamforms (1 per beam)
-		rdout_powsum_rd_en_o : 	out   std_logic_vector(define_num_beams-1 downto 0); --//read enable for ram blocks holding power info (1 per beam)
-		
+		rdout_ram_rd_en_o		:	out		std_logic_vector(7 downto 0); --//read enable for ram blocks holding waveforms (1 per channel)		
 		rdout_adr_o				:	buffer	std_logic_vector(define_data_ram_depth-1 downto 0);
 		rdout_fpga_data_o		:	out		std_logic_vector(d_width-1 downto 0)); --//data to send off-fpga
 		
 end rdout_controller_mcu;
 
 architecture rtl of rdout_controller_mcu is
-type readout_state_type is (idle_st, set_readout_reg_st, tx_st);
+constant word_size : integer := 8;
+
+type readout_state_type is (idle_st, set_readout_reg_st, tx_st, wait_for_ack_st);
 signal readout_state : readout_state_type;
 
 --//masks to choose readout data type
@@ -62,9 +59,9 @@ signal read_ch : integer range 0 to 7 := 0;
 signal beam_ch : integer range 0 to 10 := 0; --update this when changing the number of beams
 signal ram_chunk : integer range 0 to 3 := 0; --needs updating if spi_slave d_width changes, or ram_width changes
 
+signal readout_timeout : std_logic_vector(11 downto 0) := (others=>'0');
+
 begin
-
-
 --//////////////////////////////////////////////
 --//update readout parameters from registers on clk_i
 --//
@@ -83,8 +80,6 @@ begin
 		pow_mask 		<= (others=>'0');
 		
 		rdout_ram_rd_en_o 	<= (others=>'0'); --/wfm ram read en
-		rdout_beam_rd_en_o 	<= (others=>'0'); --/beamform ram read en
-		rdout_powsum_rd_en_o <= (others=>'0'); --/powsum ram read en
 		
 	elsif rising_edge(clk_i) then
 		--//////////////////////////////////////
@@ -161,36 +156,31 @@ begin
 				data_mask 		<= (others=>'0');
 				beam_mask 		<= (others=>'0');
 				pow_mask 		<= (others=>'1');
-			when others=>
-				register_mask 	<= (others=>'0');
-				data_mask 		<= (others=>'0');
-				beam_mask 		<= (others=>'0');
-				pow_mask 		<= (others=>'0');
 		end case;
 		--//////////////////////////////////////
 		--//update ram address and ram read enables
 		rdout_adr_o 			<= registers_i(base_adrs_rdout_cntrl+5)(define_data_ram_depth-1 downto 0);
 		rdout_ram_rd_en_o  	<= registers_i(base_adrs_rdout_cntrl+1)(7 downto 0) and data_mask(7 downto 0);
-		rdout_beam_rd_en_o 	<= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and beam_mask(define_num_beams-1 downto 0);
-		rdout_powsum_rd_en_o <= registers_i(base_adrs_rdout_cntrl+1)(define_num_beams-1 downto 0) and pow_mask(define_num_beams-1 downto 0);
 	end if;
 end process;
 --///////////////////////////////
 --//readout process	
 proc_read : process(rst_i, clk_i, reg_adr_i, tx_rdy_spi_i)
 begin
-	if rst_i = '1' or reg_adr_i = std_logic_vector(to_unsigned(base_adrs_rdout_cntrl+8, define_address_size)) then
+	if rst_i = '1' then --or reg_adr_i = std_logic_vector(to_unsigned(base_adrs_rdout_cntrl+8, define_address_size)) then
 		rdout_fpga_data_o		<= (others=>'0'); --/fpga readout data
 		tx_rdy_o <= '0'; 								--//tx flag to spi_slave
-		readout_state <= idle_st;
 		read_clk_o <= '0';
+		readout_timeout <= (others=>'0');
+		readout_state <= idle_st;
 		
 	elsif rising_edge(clk_i) then
+		
 		case readout_state is
 			--// wait for start-readout register to be written
 			when idle_st =>
 				read_clk_o <= '0';
-
+				readout_timeout <= (others=>'0');
 				tx_rdy_o <= '0';
 				rdout_fpga_data_o		<= x"1234DEAD"; --dummy data
 				--///////////////////////////////////////////////
@@ -206,32 +196,42 @@ begin
 			--//assign the readout register to the appropriate data
 			when set_readout_reg_st =>
 				--//real data assigned here:
-				rdout_fpga_data_o <= (ram_data_i(read_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and data_mask) or  --//readout wfm
-											(ram_beam_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and beam_mask) or  --//readout beamform
-											(ram_powsum_i(beam_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and pow_mask) or --//readout power sum
+				--rdout_fpga_data_o <= (ram_data_i(read_ch)((ram_chunk+1)*d_width-1 downto ram_chunk*d_width) and data_mask) or  --//readout wfm
+				--							(rdout_reg_i and register_mask); --//readout register value
+				--//
+				--//actually, re-order bytes to make software-world easier:
+				rdout_fpga_data_o <= ((ram_data_i(read_ch)(word_size-1+ram_chunk*d_width downto ram_chunk*d_width) &  --//earliest sample at MSB
+											ram_data_i(read_ch)(2*word_size-1+ram_chunk*d_width downto ram_chunk*d_width+word_size) &
+											ram_data_i(read_ch)(3*word_size-1+ram_chunk*d_width downto ram_chunk*d_width+word_size*2) &
+											ram_data_i(read_ch)(4*word_size-1+ram_chunk*d_width downto ram_chunk*d_width+word_size*3)) and data_mask) or
 											(rdout_reg_i and register_mask); --//readout register value
-				tx_rdy_o <= '1';
+											
+				tx_rdy_o <= '0';
 				readout_state <= tx_st;
 				
---			when tx_st =>
---				read_clk_o <= '0';
---				if i > 2 then
---					tx_rdy_o <= '0';
---					i := 0;
---					readout_state <= idle_st;
---				else
---					i := i+1;
---					tx_rdy_o <= '1';
---				end if;
+			
 
 			when tx_st =>
 				read_clk_o <= '0';
+				tx_rdy_o <= '1';
+				readout_state <= wait_for_ack_st;
+			
+			when wait_for_ack_st =>
+				tx_rdy_o <= '0';
+				rdout_fpga_data_o <= x"DEADBEEF";
+				readout_timeout <= readout_timeout + 1;
 				if tx_ack_i = '1' then
-					tx_rdy_o <= '0';
+					readout_state <= idle_st;
+				--//timeout waiting for an ack:
+				elsif readout_timeout = x"FFF" then
 					readout_state <= idle_st;
 				else
-					tx_rdy_o <= '1';
+					readout_state <= wait_for_ack_st;
 				end if;
+				
+			when others=>
+				readout_state <= idle_st;
+				
 		end case;
 	end if;
 end process;

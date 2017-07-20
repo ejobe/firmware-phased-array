@@ -26,6 +26,7 @@ entity registers_mcu_spi is
 		--//status/system read-only registers:
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
+		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
@@ -50,45 +51,45 @@ signal unique_chip_id_rdy	: std_logic;
 begin
 --/////////////////////////////////////////////////////////////////
 --//write registers: 
-proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i)
+proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i, registers_io)
 begin
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
 		--//read-only registers:
 		registers_io(1) <= firmware_version; --//firmware version (see defs.vhd)
 		registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
-		registers_io(3) <= x"000000";       --//status register
+		--registers_io(3) <= x"000000";       --//status register
 		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
 		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
-		registers_io(7) <= x"000000"; 
-		registers_io(8) <= x"000000";
-		registers_io(9) <= x"000000";
-		registers_io(10) <= x"000000";
-		registers_io(11) <= x"000000";
-		registers_io(12) <= x"000000";
-		registers_io(13) <= x"000000";
-		registers_io(14) <= x"000000";
-		registers_io(15) <= x"000000";
-		registers_io(16) <= x"000000";
-		registers_io(17) <= x"000000";
-		registers_io(18) <= x"000000";
-		registers_io(19) <= x"000000";
-		registers_io(20) <= x"000000";
-		registers_io(21) <= x"000000";
-		registers_io(22) <= x"000000";
-		registers_io(23) <= x"000000";
-		registers_io(24) <= x"000000";
-		registers_io(25) <= x"000000";
-		registers_io(26) <= x"000000";
-		registers_io(27) <= x"000000";
-		registers_io(28) <= x"000000";
-		registers_io(29) <= x"000000";
-		registers_io(30) <= x"000000";
-		registers_io(31) <= x"000000";
-		registers_io(32) <= x"000000";
-		registers_io(33) <= x"000000";
-		registers_io(34) <= x"000000";
+--		registers_io(7) <= x"000000"; 
+--		registers_io(8) <= x"000000";
+--		registers_io(9) <= x"000000";
+--		registers_io(10) <= x"000000";
+--		registers_io(11) <= x"000000";
+--		registers_io(12) <= x"000000";
+--		registers_io(13) <= x"000000";
+--		registers_io(14) <= x"000000";
+--		registers_io(15) <= x"000000";
+--		registers_io(16) <= x"000000";
+--		registers_io(17) <= x"000000";
+--		registers_io(18) <= x"000000";
+--		registers_io(19) <= x"000000";
+--		registers_io(20) <= x"000000";
+--		registers_io(21) <= x"000000";
+--		registers_io(22) <= x"000000";
+--		registers_io(23) <= x"000000";
+--		registers_io(24) <= x"000000";
+--		registers_io(25) <= x"000000";
+--		registers_io(26) <= x"000000";
+--		registers_io(27) <= x"000000";
+--		registers_io(28) <= x"000000";
+--		registers_io(29) <= x"000000";
+--		registers_io(30) <= x"000000";
+--		registers_io(31) <= x"000000";
+--		registers_io(32) <= x"000000";
+--		registers_io(33) <= x"000000";
+--		registers_io(34) <= x"000000";
 		
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
@@ -186,6 +187,8 @@ begin
 		--//update status/system read-only registers
 		registers_io(3) <= scaler_to_read_i;
 		registers_io(7) <= status_data_manager_i; 
+		registers_io(8) <= status_adc_i; 
+		registers_io(9) <= x"AAAAAA"; 
 		--//assign event meta data
 		for j in 0 to 24 loop
 			registers_io(j+10) <= event_metadata_i(j);
