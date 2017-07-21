@@ -150,7 +150,8 @@ architecture rtl of top_level is
 	--//fpga RAM data
 	signal powsum_ram_data		:  array_of_beams_type; --sum_power_type;
 	signal beam_ram_data			:  array_of_beams_type;
-	signal ram_data				:	full_data_type;
+	--signal ram_data				:	full_data_type;
+	signal ram_data				:	ram_adr_chunked_data_type;
 	signal ram_read_address		:  std_logic_vector(define_data_ram_depth-1 downto 0);
 	--//signal to/from rx RAM
 	signal rx_ram_data			:	full_data_type;
@@ -413,13 +414,11 @@ begin
 		last_trig_pow_i		=> last_trig_power,
 		ext_trig_i				=> '0',
 		reg_i						=> registers,
-		read_clk_i 				=> rdout_clock,  
-		read_ram_adr_i			=> ram_read_address,
+		reg_adr_i				=> register_adr,
 		event_meta_o			=> event_meta_data,
 		status_reg_o			=> status_reg_data_manager,
 		wfm_data_i				=> wfm_data,
-		data_ram_read_en_i	=> rdout_ram_rd_en,
-		data_ram_o				=> ram_data);
+		data_ram_at_current_adr_o => ram_data);
 		
 	--///////////////////////////////////////
 	--//readout controller using USB
@@ -453,15 +452,12 @@ begin
 		rdout_reg_i				=> register_to_read,  --//read register
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
-		ram_data_i				=> ram_data, 
-		read_clk_o				=> rdout_clock,
 		tx_rdy_o					=> mcu_tx_flag, 
 		--tx_rdy_spi_i			=> mcu_tx_rdy,
 		tx_ack_i					=> mcu_spi_tx_ack,
 		tx_rdy_spi_i			=> '0', --newer spi_slave code
-		rdout_ram_rd_en_o 	=> rdout_ram_rd_en, 
-		rdout_adr_o				=> ram_read_address,
 		rdout_fpga_data_o		=> rdout_data);
+		
 	--///////////////////////////////////////	
 	xSCALERS : entity work.scalers_top
 	port map(
@@ -484,6 +480,7 @@ begin
 		status_data_manager_i => status_reg_data_manager,
 		status_adc_i	  => status_reg_adc,
 		event_metadata_i => event_meta_data,
+		current_ram_adr_data_i => ram_data,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,

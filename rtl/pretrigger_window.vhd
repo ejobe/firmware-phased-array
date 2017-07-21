@@ -69,7 +69,8 @@ begin
 	end if;
 end process;
 
-proc_assign_data_o : process(rst_i, clk_i, reg_i(76))
+proc_assign_data_o : process(rst_i, clk_i, reg_i(76), internal_data_buffer_0, internal_data_buffer_1,
+										internal_data_buffer_2, internal_data_buffer_3)
 begin
 	case reg_i(76)(2 downto 0) is
 		

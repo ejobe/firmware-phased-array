@@ -44,6 +44,7 @@ constant define_register_size				:	integer := 32;
 
 type adc_output_data_type is array (3 downto 0) of std_logic_vector(define_adc_data_width-1 downto 0);
 type full_data_type	is array	(7 downto 0) of std_logic_vector(define_ram_width-1 downto 0);	
+type ram_adr_chunked_data_type is array(3 downto 0) of std_logic_vector(31 downto 0);
 type full_address_type	is array	(7 downto 0) of std_logic_vector(define_ram_depth-1 downto 0);	
 type full_data_address_type	is array	(7 downto 0) of std_logic_vector(define_data_ram_depth-1 downto 0);	
 type aux_data_link_type is array (1 downto 0) of std_logic_vector(7 downto 0);

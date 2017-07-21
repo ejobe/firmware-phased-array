@@ -92,7 +92,7 @@ GatedBeamTrigScalers : for i in 0 to define_num_beams-1 generate
 		scaler_o => internal_scaler_array(i+1+16));
 end generate;
 
-proc_save_scalers : process(rst_i, clk_i, reg_i(40), reg_i(41))
+proc_save_scalers : process(rst_i, clk_i, reg_i)
 begin
 	if rst_i = '1' then
 		for i in 0 to num_scalers-1 loop

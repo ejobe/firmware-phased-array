@@ -28,6 +28,7 @@ entity registers_mcu_spi is
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
+		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
@@ -167,48 +168,60 @@ begin
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 	--////////////////////////////////////////////////////////////////////////////
-	elsif rising_edge(clk_i) and write_rdy_i= '1' then --write_rdy_i is sync with clk_i with newer spi_slave code
-		--//write registers, but exclude read-only registers
-		if write_reg_i(31 downto 24) > x"22" then 
+	elsif rising_edge(clk_i) then 
 		
+		if write_rdy_i = '1' and write_reg_i(31 downto 24) = x"00" then
+			read_reg_o <=  write_reg_i(7 downto 0) & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
+			address_o <= x"47";  --//initiate a read	
+		
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"23" then
+			read_reg_o <= current_ram_adr_data_i(0);
+			address_o <= x"47";  --//initiate a read
+		
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"24" then
+			read_reg_o <= current_ram_adr_data_i(1);
+			address_o <= x"47";  --//initiate a read			
+
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"25" then
+			read_reg_o <= current_ram_adr_data_i(2);
+			address_o <= x"47";  --//initiate a read				
+			
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
+			read_reg_o <= current_ram_adr_data_i(3);
+			address_o <= x"47";  --//initiate a read	
+
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) > x"26" then  --//read/write registers
 			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
 			address_o <= write_reg_i(31 downto 24);
-		
+
+		else
+			address_o <= x"00";
+			--////////////////////////////////////////////////
+			--//update status/system read-only registers
+			registers_io(3) <= scaler_to_read_i;
+			registers_io(7) <= status_data_manager_i; 
+			registers_io(8) <= status_adc_i; 
+			registers_io(9) <= x"AAAAAA"; 
+			--//assign event meta data
+			for j in 0 to 24 loop
+				registers_io(j+10) <= event_metadata_i(j);
+			end loop;
+			--////////////////////////////////////////////////
+			--//clear pulsed registers
+			registers_io(127) <= x"000000"; --//clear the reset register
+			registers_io(126) <= x"000000"; --//clear the event counter reset
+			registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
+			registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
+			registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse
+			registers_io(40) <= x"000000"; --//clear the update scalers pulse
+			--////////////////////////////////////////////////////////////////////////////	
+			--//these should be static, but keep updating every clk_i cycle
+			if unique_chip_id_rdy = '1' then
+				registers_io(4) <= unique_chip_id(23 downto 0);
+				registers_io(5) <= unique_chip_id(47 downto 24);
+				registers_io(6) <= x"00" & unique_chip_id(63 downto 48);	
+			end if;
 		end if;
-		
-		if write_reg_i(31 downto 24) = x"00" then
-			read_reg_o <= x"00" & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
-		end if;
-		
-	--////////////////////////////////////////////////////////////////////////////
-	elsif rising_edge(clk_i) then
-		address_o <= x"00";
-		--////////////////////////////////////////////////
-		--//update status/system read-only registers
-		registers_io(3) <= scaler_to_read_i;
-		registers_io(7) <= status_data_manager_i; 
-		registers_io(8) <= status_adc_i; 
-		registers_io(9) <= x"AAAAAA"; 
-		--//assign event meta data
-		for j in 0 to 24 loop
-			registers_io(j+10) <= event_metadata_i(j);
-		end loop;
-		--////////////////////////////////////////////////
-		--//clear pulsed registers
-		registers_io(127) <= x"000000"; --//clear the reset register
-		registers_io(126) <= x"000000"; --//clear the event counter reset
-		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
-		registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
-		registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse
-		registers_io(40) <= x"000000"; --//clear the update scalers pulse
-		--////////////////////////////////////////////////////////////////////////////	
-		--//these should be static, but keep updating every clk_i cycle
-		if unique_chip_id_rdy = '1' then
-			registers_io(4) <= unique_chip_id(23 downto 0);
-			registers_io(5) <= unique_chip_id(47 downto 24);
-			registers_io(6) <= x"00" & unique_chip_id(63 downto 48);	
-		end if;
-		--////////////////////////////////////////////////////////////////////////////
 	end if;
 end process;
 --/////////////////////////////////////////////////////////////////
