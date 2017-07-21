@@ -210,8 +210,8 @@ ADC1in[24](n)                : AC24      : input  : LVDS              :         
 ADC1in[24]                   : AC25      : input  : LVDS              :         : 3B        : Y              
 VCCPGM                       : AC26      : power  :                   : 3.0V/3.3V :           :                
 VCCPD3                       : AC27      : power  :                   : 2.5V    : 3A, 3B, 3C, 3D :                
-TDO                          : AC28      : output :                   :         : 3A        :                
-TDI                          : AC29      : input  :                   :         : 3A        :                
+altera_reserved_tdo          : AC28      : output : 2.5 V             :         : 3A        : Y              
+altera_reserved_tdi          : AC29      : input  : 2.5 V             :         : 3A        : Y              
 GND                          : AC30      : gnd    :                   :         :           :                
 GXB_NC                       : AC31      :        :                   :         : B0L       :                
 GXB_NC                       : AC32      :        :                   :         : B0L       :                
@@ -314,7 +314,7 @@ address[22]                  : AF26      : bidir  : 2.5 V             :         
 VCCIO3A                      : AF27      : power  :                   : 2.5V    : 3A        :                
 address[25]                  : AF28      : bidir  : 2.5 V             :         : 3A        : Y              
 address[23]                  : AF29      : bidir  : 2.5 V             :         : 3A        : Y              
-TMS                          : AF30      : input  :                   :         : 3A        :                
+altera_reserved_tms          : AF30      : input  : 2.5 V             :         : 3A        : Y              
 GND                          : AF31      : gnd    :                   :         :           :                
 GND                          : AF32      : gnd    :                   :         :           :                
 GND                          : AF33      :        :                   :         : B0L       :                
@@ -554,7 +554,7 @@ GND                          : AN28      : gnd    :                   :         
 ADC1in[10](n)                : AN29      : input  : LVDS              :         : 3A        : Y              
 ADC1in[11](n)                : AN30      : input  : LVDS              :         : 3A        : Y              
 GND                          : AN31      : gnd    :                   :         :           :                
-TCK                          : AN32      : input  :                   :         : 3A        :                
+altera_reserved_tck          : AN32      : input  : 2.5 V             :         : 3A        : Y              
 AS_DATA1, DATA1              : AN33      :        :                   :         : 3A        :                
 AS_DATA0, ASDO, DATA0        : AN34      :        :                   :         : 3A        :                
 master_clock1(n)             : AP2       : input  : LVDS              :         : 4A        : Y              

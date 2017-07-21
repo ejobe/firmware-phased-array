@@ -82,7 +82,7 @@ begin
 			when set_readout_reg_st =>
 				tx_rdy_o <= '0';
 				rdout_fpga_data_o <= rdout_reg_i;
-				if i >= 6 then
+				if i > 1 then
 					i := 0;
 					readout_state <= tx_st;
 				else 
@@ -96,13 +96,15 @@ begin
 				readout_state <= wait_for_ack_st;
 			
 			when wait_for_ack_st =>
+				i := 0;
 				tx_rdy_o <= '0';
 				rdout_fpga_data_o <= x"DEADBEEF";
 				readout_timeout <= readout_timeout + 1;
-				if tx_ack_i = '1' then
-					readout_state <= idle_st;
+				--if tx_ack_i = '1' then
+				--	readout_state <= idle_st;
 				--//timeout waiting for an ack:
-				elsif readout_timeout = x"FFF" then
+				if readout_timeout = x"F" then --//wait 16 clock cycles
+					readout_timeout <= (others=>'0');
 					readout_state <= idle_st;
 				else
 					readout_state <= wait_for_ack_st;

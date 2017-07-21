@@ -83,9 +83,9 @@ signal buffers_full	: std_logic;
 
 --//ram read signals
 signal internal_ram_read_en : std_logic_vector(7 downto 0);
-signal internal_ram_read_clk_reg	: std_logic_vector(1 downto 0);
+signal internal_ram_read_adr : std_logic_vector(define_data_ram_depth-1 downto 0);
+signal internal_ram_read_clk_reg	: std_logic_vector(3 downto 0);
 signal read_ch : integer range 0 to 7 := 0;
-signal beam_ch : integer range 0 to 10 := 0; --update this when changing the number of beams
 constant d_width : integer := 32;
 constant word_size : integer := 8;
 
@@ -310,14 +310,18 @@ begin
 
 	if rst_i = '1' then
 		read_ch <= 0;
-		beam_ch <= 0;
 		internal_ram_read_en <= (others=>'0'); --/wfm ram read en	
 		internal_ram_read_clk_reg <= (others=>'0');
 	elsif rising_edge(clk_iface_i) then
 	
+		--///////////////////
+		--//update read address and pulse the read clk
+		--------------------------------------------------
 		--//delay the ram read clock by one clock cycle after the address is set
-		internal_ram_read_clk_reg(1) <= internal_ram_read_clk_reg(0);
-		--//update readout address
+		internal_ram_read_clk_reg(3 downto 1) <= internal_ram_read_clk_reg(2 downto 0);
+		if internal_ram_read_clk_reg(0) = '1' then
+			internal_ram_read_adr <= reg_i(69)(define_data_ram_depth-1 downto 0);
+		end if;
 		case reg_adr_i is
 			when x"45" =>
 				internal_ram_read_clk_reg(0) <= '1';
@@ -330,137 +334,125 @@ begin
 		case reg_i(base_adrs_rdout_cntrl+1)(7 downto 0) is
 			when "00000001" => 
 				read_ch <= 0;
-				beam_ch <= 0;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "00000010" =>
 				read_ch <= 1;
-				beam_ch <= 1;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "00000100" =>
 				read_ch <= 2;
-				beam_ch <= 2;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "00001000" => 
 				read_ch <= 3;
-				beam_ch <= 3;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
-			when "00010000" => 
+			when "00010000" =>
 				read_ch <= 4;
-				beam_ch <= 4;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "00100000" => 
 				read_ch <= 5;
-				beam_ch <= 5;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "01000000" => 
 				read_ch <= 6;
-				beam_ch <= 6;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when "10000000" => 
 				read_ch <= 7;
-				beam_ch <= 7;
 				internal_ram_read_en <= reg_i(base_adrs_rdout_cntrl+1)(7 downto 0);
 			when others=>
 				read_ch <= 0;
-				beam_ch <= 0;
 				internal_ram_read_en <= (others=>'0');
 		end case;
 	end if;
 end process;
 
 --//interpret register to assign data buffer to readout
-proc_select_wfm_ram : process(reg_i(78), read_ch, internal_wfm_ram_0, internal_wfm_ram_1, internal_wfm_ram_2, internal_wfm_ram_3)
+proc_select_wfm_ram : process(reg_i(78), read_ch, internal_wfm_ram_0, internal_wfm_ram_1, internal_wfm_ram_2, internal_wfm_ram_3, internal_ram_read_clk_reg)
 begin
-	case reg_i(78)(1 downto 0) is
-		--//NOTE: byte reordering in each 'chunk' to make software-world easier
-		-----------------------------
-		--//1st buffer:
-		when "00" =>
-			data_ram_at_current_adr_o(0) <= internal_wfm_ram_0(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
-											internal_wfm_ram_0(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
-											internal_wfm_ram_0(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
-											internal_wfm_ram_0(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
-			data_ram_at_current_adr_o(1) <= internal_wfm_ram_0(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
-											internal_wfm_ram_0(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
-											internal_wfm_ram_0(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
-											internal_wfm_ram_0(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
-			data_ram_at_current_adr_o(2) <= internal_wfm_ram_0(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
-											internal_wfm_ram_0(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
-											internal_wfm_ram_0(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
-											internal_wfm_ram_0(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
-			data_ram_at_current_adr_o(3) <= internal_wfm_ram_0(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
-											internal_wfm_ram_0(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
-											internal_wfm_ram_0(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
-											internal_wfm_ram_0(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk   
-		--//2nd buffer:
-		when "01" =>
-			data_ram_at_current_adr_o(0) <= internal_wfm_ram_1(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
-											internal_wfm_ram_1(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
-											internal_wfm_ram_1(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
-											internal_wfm_ram_1(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
-			data_ram_at_current_adr_o(1) <= internal_wfm_ram_1(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
-											internal_wfm_ram_1(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
-											internal_wfm_ram_1(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
-											internal_wfm_ram_1(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
-			data_ram_at_current_adr_o(2) <= internal_wfm_ram_1(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
-											internal_wfm_ram_1(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
-											internal_wfm_ram_1(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
-											internal_wfm_ram_1(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
-			data_ram_at_current_adr_o(3) <= internal_wfm_ram_1(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
-											internal_wfm_ram_1(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
-											internal_wfm_ram_1(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
-											internal_wfm_ram_1(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk  
-		--//3rd buffer:
-		when "10" =>
-			data_ram_at_current_adr_o(0) <= internal_wfm_ram_2(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
-											internal_wfm_ram_2(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
-											internal_wfm_ram_2(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
-											internal_wfm_ram_2(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
-			data_ram_at_current_adr_o(1) <= internal_wfm_ram_2(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
-											internal_wfm_ram_2(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
-											internal_wfm_ram_2(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
-											internal_wfm_ram_2(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
-			data_ram_at_current_adr_o(2) <= internal_wfm_ram_2(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
-											internal_wfm_ram_2(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
-											internal_wfm_ram_2(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
-											internal_wfm_ram_2(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
-			data_ram_at_current_adr_o(3) <= internal_wfm_ram_2(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
-											internal_wfm_ram_2(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
-											internal_wfm_ram_2(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
-											internal_wfm_ram_2(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk 
-		--//4th buffer:
-		when "11" =>
-			data_ram_at_current_adr_o(0) <= internal_wfm_ram_3(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
-											internal_wfm_ram_3(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
-											internal_wfm_ram_3(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
-											internal_wfm_ram_3(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
-			data_ram_at_current_adr_o(1) <= internal_wfm_ram_3(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
-											internal_wfm_ram_3(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
-											internal_wfm_ram_3(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
-											internal_wfm_ram_3(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
-			data_ram_at_current_adr_o(2) <= internal_wfm_ram_3(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
-											internal_wfm_ram_3(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
-											internal_wfm_ram_3(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
-											internal_wfm_ram_3(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
-			data_ram_at_current_adr_o(3) <= internal_wfm_ram_3(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
-											internal_wfm_ram_3(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
-											internal_wfm_ram_3(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
-											internal_wfm_ram_3(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk  	
-	
-		when others=>
-			for j in 0 to 3 loop
-				data_ram_at_current_adr_o(j) <= (others=>'0');
-			end loop;
-	
---		when "00" =>
---			data_ram_o <= internal_wfm_ram_0;
---		when "01" =>
---			data_ram_o <= internal_wfm_ram_1;
---		when "10" =>
---			data_ram_o <= internal_wfm_ram_2;
---		when "11" =>
---			data_ram_o <= internal_wfm_ram_3;
-	end case;
+	----------------------------------------------
+	--//read clk was pulsed at internal_ram_read_clk_reg(2),
+	--//so data should be valid at the next clock cycle
+	----------------------------------------------
+	if rising_edge(clk_iface_i) and internal_ram_read_clk_reg(3) = '1' then 
+		case reg_i(78)(1 downto 0) is
+			--//NOTE: byte reordering in each 'chunk' to make software-world easier
+			-----------------------------
+			--//1st buffer:
+			when "00" =>
+				data_ram_at_current_adr_o(0) <= internal_wfm_ram_0(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
+												internal_wfm_ram_0(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
+												internal_wfm_ram_0(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
+												internal_wfm_ram_0(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
+				data_ram_at_current_adr_o(1) <= internal_wfm_ram_0(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
+												internal_wfm_ram_0(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
+												internal_wfm_ram_0(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
+												internal_wfm_ram_0(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
+				data_ram_at_current_adr_o(2) <= internal_wfm_ram_0(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
+												internal_wfm_ram_0(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
+												internal_wfm_ram_0(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
+												internal_wfm_ram_0(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
+				data_ram_at_current_adr_o(3) <= internal_wfm_ram_0(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
+												internal_wfm_ram_0(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
+												internal_wfm_ram_0(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
+												internal_wfm_ram_0(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk   
+			--//2nd buffer:
+			when "01" =>
+				data_ram_at_current_adr_o(0) <= internal_wfm_ram_1(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
+												internal_wfm_ram_1(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
+												internal_wfm_ram_1(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
+												internal_wfm_ram_1(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
+				data_ram_at_current_adr_o(1) <= internal_wfm_ram_1(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
+												internal_wfm_ram_1(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
+												internal_wfm_ram_1(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
+												internal_wfm_ram_1(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
+				data_ram_at_current_adr_o(2) <= internal_wfm_ram_1(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
+												internal_wfm_ram_1(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
+												internal_wfm_ram_1(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
+												internal_wfm_ram_1(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
+				data_ram_at_current_adr_o(3) <= internal_wfm_ram_1(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
+												internal_wfm_ram_1(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
+												internal_wfm_ram_1(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
+												internal_wfm_ram_1(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk  
+			--//3rd buffer:
+			when "10" =>
+				data_ram_at_current_adr_o(0) <= internal_wfm_ram_2(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
+												internal_wfm_ram_2(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
+												internal_wfm_ram_2(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
+												internal_wfm_ram_2(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
+				data_ram_at_current_adr_o(1) <= internal_wfm_ram_2(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
+												internal_wfm_ram_2(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
+												internal_wfm_ram_2(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
+												internal_wfm_ram_2(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
+				data_ram_at_current_adr_o(2) <= internal_wfm_ram_2(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
+												internal_wfm_ram_2(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
+												internal_wfm_ram_2(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
+												internal_wfm_ram_2(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
+				data_ram_at_current_adr_o(3) <= internal_wfm_ram_2(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
+												internal_wfm_ram_2(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
+												internal_wfm_ram_2(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
+												internal_wfm_ram_2(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk 
+			--//4th buffer:
+			when "11" =>
+				data_ram_at_current_adr_o(0) <= internal_wfm_ram_3(read_ch)(word_size-1+0*d_width downto 0*d_width) &  
+												internal_wfm_ram_3(read_ch)(2*word_size-1+0*d_width downto 0*d_width+word_size) &
+												internal_wfm_ram_3(read_ch)(3*word_size-1+0*d_width downto 0*d_width+word_size*2) &
+												internal_wfm_ram_3(read_ch)(4*word_size-1+0*d_width downto 0*d_width+word_size*3);   --//1st chunk
+				data_ram_at_current_adr_o(1) <= internal_wfm_ram_3(read_ch)(word_size-1+1*d_width downto 1*d_width) &  
+												internal_wfm_ram_3(read_ch)(2*word_size-1+1*d_width downto 1*d_width+word_size) &
+												internal_wfm_ram_3(read_ch)(3*word_size-1+1*d_width downto 1*d_width+word_size*2) &
+												internal_wfm_ram_3(read_ch)(4*word_size-1+1*d_width downto 1*d_width+word_size*3);   --//2nd chunk  							
+				data_ram_at_current_adr_o(2) <= internal_wfm_ram_3(read_ch)(word_size-1+2*d_width downto 2*d_width) &  
+												internal_wfm_ram_3(read_ch)(2*word_size-1+2*d_width downto 2*d_width+word_size) &
+												internal_wfm_ram_3(read_ch)(3*word_size-1+2*d_width downto 2*d_width+word_size*2) &
+												internal_wfm_ram_3(read_ch)(4*word_size-1+2*d_width downto 2*d_width+word_size*3);   --//3rd chunk    							
+				data_ram_at_current_adr_o(3) <= internal_wfm_ram_3(read_ch)(word_size-1+3*d_width downto 3*d_width) &  
+												internal_wfm_ram_3(read_ch)(2*word_size-1+3*d_width downto 3*d_width+word_size) &
+												internal_wfm_ram_3(read_ch)(3*word_size-1+3*d_width downto 3*d_width+word_size*2) &
+												internal_wfm_ram_3(read_ch)(4*word_size-1+3*d_width downto 3*d_width+word_size*3);   --//4th chunk  	
+		
+			when others=>
+				for j in 0 to 3 loop
+					data_ram_at_current_adr_o(j) <= (others=>'0');
+				end loop;
+		end case;
+	end if;
 end process;
 
 xEVENTMETADATA : entity work.event_metadata
@@ -488,8 +480,8 @@ DataRamBlock_0 : for i in 0 to 7 generate
 	port map(
 		data			=> internal_wfm_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
-		rdaddress	=> reg_i(69)(define_data_ram_depth-1 downto 0),
-		rdclock		=> internal_ram_read_clk_reg(1),
+		rdaddress	=> internal_ram_read_adr,
+		rdclock		=> internal_ram_read_clk_reg(2),
 		rden			=> internal_ram_read_en(i),
 		wraddress	=> internal_ram_write_adrs, 
 		wrclock		=> clk_i,
@@ -501,8 +493,8 @@ DataRamBlock_1 : for i in 0 to 7 generate
 	port map(
 		data			=> internal_wfm_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
-		rdaddress	=> reg_i(69)(define_data_ram_depth-1 downto 0),
-		rdclock		=> internal_ram_read_clk_reg(1),
+		rdaddress	=> internal_ram_read_adr,
+		rdclock		=> internal_ram_read_clk_reg(2),
 		rden			=> internal_ram_read_en(i),
 		wraddress	=> internal_ram_write_adrs, 
 		wrclock		=> clk_i,
@@ -514,8 +506,8 @@ DataRamBlock_2 : for i in 0 to 7 generate
 	port map(
 		data			=> internal_wfm_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
-		rdaddress	=> reg_i(69)(define_data_ram_depth-1 downto 0),
-		rdclock		=> internal_ram_read_clk_reg(1),
+		rdaddress	=> internal_ram_read_adr,
+		rdclock		=> internal_ram_read_clk_reg(2),
 		rden			=> internal_ram_read_en(i),
 		wraddress	=> internal_ram_write_adrs, 
 		wrclock		=> clk_i,
@@ -527,8 +519,8 @@ DataRamBlock_3 : for i in 0 to 7 generate
 	port map(
 		data			=> internal_wfm_data(i), 
 		rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
-		rdaddress	=> reg_i(69)(define_data_ram_depth-1 downto 0),
-		rdclock		=> internal_ram_read_clk_reg(1),
+		rdaddress	=> internal_ram_read_adr,
+		rdclock		=> internal_ram_read_clk_reg(2),
 		rden			=> internal_ram_read_en(i),
 		wraddress	=> internal_ram_write_adrs, 
 		wrclock		=> clk_i,

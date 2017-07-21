@@ -94,7 +94,7 @@ begin
 		
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
-		registers_io(0)  <= x"000001"; --//set read register
+		registers_io(109)  <= x"000001"; --//set read register
 		registers_io(120) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
@@ -170,7 +170,7 @@ begin
 	--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) then 
 		
-		if write_rdy_i = '1' and write_reg_i(31 downto 24) = x"00" then
+		if write_rdy_i = '1' and write_reg_i(31 downto 24) = x"6D" then
 			read_reg_o <=  write_reg_i(7 downto 0) & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
 			address_o <= x"47";  --//initiate a read	
 		

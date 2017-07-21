@@ -114,7 +114,7 @@ architecture rtl of top_level is
 	--//the following signals to/from Clock_Manager--
 	signal clock_250MHz			:	std_logic;		
 	signal clock_93MHz			:	std_logic;		
-	signal clock_15MHz			:	std_logic;  
+	signal clock_25MHz			:	std_logic;  
 	signal clock_1MHz				:	std_logic;		
 	signal clock_1Hz				:	std_logic;		
 	signal clock_10Hz				:	std_logic;		
@@ -239,7 +239,7 @@ begin
 		PLL_reset_i		=>	'0',--clock_FPGA_PLLrst,		
 		CLK_250MHz_o 	=> clock_250MHz,
 		CLK_93MHz_o		=> clock_93MHz,
-		CLK_15MHz_o 	=> clock_15MHz,
+		CLK_25MHz_o 	=> clock_25MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
 		CLK_1Hz_o		=> clock_1Hz,
 		CLK_10Hz_o		=> clock_10Hz,
@@ -251,17 +251,15 @@ begin
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block
 	
-	proc_stat_regs : process(clock_15MHz)
-	begin
-		status_reg_adc <= x"0" & "000" & startup_adc & x"0" & adc_pd_sig & x"0" & 
+	proc_stat_reg_adc : status_reg_adc <= x"0" & "000" & startup_adc & x"0" & adc_pd_sig & x"0" & 
 								adc_rx_lvds_locked(3) & adc_rx_lvds_locked(2) & adc_rx_lvds_locked(1) & adc_rx_lvds_locked(0); 
-	end process;
+
 	
 	xADC_CONTROLLER : entity work.adc_controller
 	port map(
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
-		clk_iface_i			=> clock_15MHz,
+		clk_iface_i			=> clock_25MHz,
 		clk_fast_i			=> clock_250MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
@@ -301,7 +299,7 @@ begin
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
 		clk_data_i			=> clock_93MHz,
-		clk_iface_i			=> clock_15MHz,
+		clk_iface_i			=> clock_25MHz,
 		reg_i					=> registers,
 		powersums_i			=> powsum_ev2samples,
 		data_write_busy_i => data_manager_write_busy,
@@ -406,7 +404,7 @@ begin
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
-		clk_iface_i				=> clock_15MHz,
+		clk_iface_i				=> clock_25MHz,
 		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
 		phased_trig_i			=> the_phased_trigger,
@@ -448,7 +446,7 @@ begin
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
-		clk_i						=> clock_15MHz,
+		clk_i						=> clock_25MHz,
 		rdout_reg_i				=> register_to_read,  --//read register
 		reg_adr_i				=> register_adr,
 		registers_i				=> registers,         
@@ -462,7 +460,7 @@ begin
 	xSCALERS : entity work.scalers_top
 	port map(
 		rst_i				=>	reset_global or reset_global_except_registers,	
-		clk_i				=> clock_15MHz,
+		clk_i				=> clock_25MHz,
 		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
 		gate_i			=> '1',
 		reg_i				=> registers,
@@ -473,7 +471,7 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	port map(
 		rst_i				=> reset_global,
-		clk_i				=> clock_15MHz,  --//clock for register interface
+		clk_i				=> clock_25MHz,  --//clock for register interface
 		--//////////////////////////
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
@@ -491,7 +489,7 @@ begin
 	--///////////////////////////////////////	
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
-		clk_i			 => clock_15MHz,
+		clk_i			 => clock_25MHz,
 		rst_i			 => reset_global or reset_global_except_registers,	
 		mcu_fpga_io	 => uC_dig,
 		data_i		 => rdout_data,
