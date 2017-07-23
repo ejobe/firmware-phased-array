@@ -251,7 +251,7 @@ begin
 	--///////////////////////////////////////
 	--//adc configuration and data-handling block
 	
-	proc_stat_reg_adc : status_reg_adc <= x"0" & "000" & startup_adc & x"0" & adc_pd_sig & x"0" & 
+	proc_stat_reg_adc : status_reg_adc <= x"0" & clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & x"0" & 
 								adc_rx_lvds_locked(3) & adc_rx_lvds_locked(2) & adc_rx_lvds_locked(1) & adc_rx_lvds_locked(0); 
 
 	
@@ -418,30 +418,6 @@ begin
 		wfm_data_i				=> wfm_data,
 		data_ram_at_current_adr_o => ram_data);
 		
-	--///////////////////////////////////////
-	--//readout controller using USB
-	--//allows something like dynamic mem access (start + stop readout address)
---	xREADOUT_CONTROLLER : entity work.rdout_controller
---	port map(
---		--rst_i					=> reset_global or usb_done_write or reset_global_except_registers, --//for USB operation
---		rst_i					=> reset_global or reset_global_except_registers,
---		clk_i					=> usb_slwr,
---		clk_interface_i	=> USB_IFCLK,
---		rdout_reg_i			=> register_to_read,  --//read register
---		reg_adr_i			=> register_adr,
---		registers_i			=> registers,         
---		ram_data_i			=> ram_data, 
---		ram_beam_i			=> beam_ram_data, 
---		ram_powsum_i		=> powsum_ram_data, 
---		rdout_start_o		=> rdout_start_flag,
---		rdout_ram_rd_en_o => rdout_ram_rd_en, 
---		rdout_beam_rd_en_o=> rdout_beam_rd_en, 
---		rdout_powsum_rd_en_o => rdout_powsum_rd_en,
---		rdout_pckt_size_o	=> rdout_pckt_size,
---		rdout_adr_o			=> ram_read_address,
---		rdout_fpga_data_o	=> rdout_data_16bit);
---
-
 	--//readout controller using MCU/BeagleBone
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
@@ -500,19 +476,8 @@ begin
 		tx_ack_o		 => mcu_spi_tx_ack,
 		rx_rdy_o		 => mcu_rx_rdy);
 		--tx_rdy_o		 => mcu_tx_rdy);
-	
---	xPCINTERFACE : entity work.mcu_interface
---	port map(
---		rst_i			 => reset_global or reset_global_except_registers,	
---		mcu_fpga_io	 => uC_dig,
---		data_i		 => rdout_data,
---		tx_load_i	 => mcu_tx_flag,
---		data_o   	 => mcu_data_pkt_32bit,
---		rx_req_i		 => mcu_rx_req,
---		spi_busy_o	 => mcu_spi_busy,
---		rx_rdy_o		 => mcu_rx_rdy,
---		tx_rdy_o		 => mcu_tx_rdy);
-	--///////////////////////////////////////	
+
+--///////////////////////////////////////	
 --	xUSB	:	entity work.usb_32bit(Behavioral)
 --	port map(
 --		USB_IFCLK		=> USB_IFCLK,

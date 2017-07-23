@@ -68,8 +68,7 @@ signal internal_wfm_ram_write_en 	: std_logic_vector(define_num_wfm_buffers-1 do
 signal internal_buffer_full  			: std_logic_vector(define_num_wfm_buffers-1 downto 0);
 signal internal_clear_buffer 			: std_logic_vector(define_num_wfm_buffers-1 downto 0);
 signal internal_write_busy				: std_logic_vector(define_num_wfm_buffers-1 downto 0);
-signal internal_event_busy				: std_logic;
-signal internal_get_event_metadata  : std_logic_vector(define_num_wfm_buffers-1 downto 0);
+signal internal_get_event_metadata  : std_logic;
 signal internal_next_buffer			: std_logic_vector(1 downto 0);
 signal next_write_buffer				: std_logic_vector(1 downto 0);
 signal internal_current_buffer		: std_logic_vector(1 downto 0);
@@ -88,7 +87,6 @@ signal internal_ram_read_clk_reg	: std_logic_vector(3 downto 0);
 signal read_ch : integer range 0 to 7 := 0;
 constant d_width : integer := 32;
 constant word_size : integer := 8;
-
 
 --//declare components, since verilog modules:
 component flag_sync is
@@ -200,7 +198,7 @@ begin
 		internal_ram_write_adrs 		<= (others=>'0');
 		internal_buffer_full		 		<= (others=>'0');
 		internal_write_busy 				<= (others=>'0');
-		internal_event_busy 				<= '0';
+		internal_get_event_metadata	<= '0';
 		internal_current_buffer 		<= "00";
 		buf 									:= 0;
 		internal_next_buffer 			<= "00";
@@ -231,7 +229,7 @@ begin
 				internal_wfm_ram_write_en     <= (others=>'0'); --//ram write enable off
 				internal_ram_write_adrs		 	<= (others=>'0'); --//ram write address at 0x0
 				internal_write_busy		 		<= (others=>'0');	--//write NOT busy
-				internal_event_busy		 		<= '0';				--//event NOT busy
+				internal_get_event_metadata	<= '0';				--//save metadata flag
 				
 				--///////////////////////////////////////
 				--//check buffer full flags
@@ -259,7 +257,7 @@ begin
 				internal_wfm_ram_write_en(buf)	<= '0';
 				internal_ram_write_adrs 			<= (others=>'0');
 				internal_write_busy(buf)	 		<= '0';
-				internal_event_busy					<= '0'; --//event is busy
+				internal_get_event_metadata		<= '0'; --//
 				internal_buffer_full(buf) 		  	<= '0'; --//buffer is empty
 				
 				if event_trigger = '1' then
@@ -274,14 +272,16 @@ begin
 				internal_wfm_ram_write_en(buf)<= '1';
 				internal_ram_write_adrs 		<= internal_ram_write_adrs + 1;
 				internal_write_busy(buf) 		<= '1';
-				internal_event_busy				<= '1';
 				internal_buffer_full(buf) 		<= '0';
 				
 				if internal_ram_write_adrs = internal_address_max then 
-					internal_get_event_metadata(buf) <= '0';
+					internal_get_event_metadata <= '0';
 					save_event_state <= done_st;
+				elsif internal_ram_write_adrs = x"0F" then
+					internal_get_event_metadata <= '1';     --//assert the get_event_metadata flag
+					save_event_state <= adr_inc_st;
 				else
-					internal_get_event_metadata(buf) <= '0';
+					internal_get_event_metadata <= '0';
 					save_event_state <= adr_inc_st;
 				end if;
 		
@@ -289,8 +289,8 @@ begin
 			when done_st =>
 				internal_wfm_ram_write_en(buf)	<= '0'; --//disable ram_wr_en
 				internal_ram_write_adrs		 		<= internal_address_max;
-				internal_write_busy(buf)			<= '0';
-				internal_event_busy					<= '1';
+				internal_write_busy(buf)			<= '1';
+				internal_get_event_metadata		<= '0';
 				internal_buffer_full(buf) 			<= '1';  --//buffer full!
 				save_event_state						<= buffer_sel_st; --//back to buffer sel state
 					
@@ -466,7 +466,7 @@ port map(
 	trig_type_i			=> internal_last_trigger_type,
 	trig_last_beam_i 	=> internal_last_beam_trigger,
 	last_trig_pow_i	=> last_trig_pow_i,
-	get_metadata_i	 	=> internal_event_busy, 
+	get_metadata_i	 	=> internal_get_event_metadata, 
 	current_buffer_i	=> internal_current_buffer,
 	reg_i				 	=> reg_i,		
 	event_header_o	 	=> event_meta_o);

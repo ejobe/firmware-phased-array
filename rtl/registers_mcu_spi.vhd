@@ -143,10 +143,11 @@ begin
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, dunno maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
 		
 		--//masking:
-		registers_io(48) <= x"0000FF";   --//channel masking [48]
+		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		registers_io(81) <= x"00000F";   --// trig holdoff [80]
-
+		registers_io(82) <= x"000003";	--// trigger enables
+		
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
 		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]

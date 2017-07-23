@@ -1,5 +1,6 @@
 par/db/**
 par/incremental_db/**
+par/simluation/**
 rtl/altera_ip/*sim*/**
 rtl/altera_ip/RxTx*/**
 rtl/altera_ip/*.bsf
@@ -18,8 +19,7 @@ rtl/altera_ip/*.f
 **.cmp
 **.jdi
 
-**.sof
-**.pof
+
 
 
 

@@ -99,7 +99,7 @@ end architecture rtl; -- of pll_block
 -- Retrieval info: 	<generic name="gui_actual_phase_shift0" value="0" />
 -- Retrieval info: 	<generic name="gui_duty_cycle0" value="50" />
 -- Retrieval info: 	<generic name="gui_cascade_counter1" value="false" />
--- Retrieval info: 	<generic name="gui_output_clock_frequency1" value="15.0" />
+-- Retrieval info: 	<generic name="gui_output_clock_frequency1" value="25.0" />
 -- Retrieval info: 	<generic name="gui_divide_factor_c1" value="1" />
 -- Retrieval info: 	<generic name="gui_actual_output_clock_frequency1" value="10.096153 MHz" />
 -- Retrieval info: 	<generic name="gui_ps_units1" value="ps" />
