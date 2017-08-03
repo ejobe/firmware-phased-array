@@ -33,8 +33,8 @@ constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; 
 
 --//waveform acq RAM:
 constant define_ram_width  				: 	integer := 128;
-constant define_ram_depth					: 	integer := 3; --// words for Rx receiving RAM
-constant define_data_ram_depth			: 	integer := 7; --// words for block RAM
+constant define_ram_depth					: 	integer := 5; --// words for Rx receiving RAM
+constant define_data_ram_depth			: 	integer := 7; --// words for block RAM -- sets time window for triggered and saved event
 constant define_num_wfm_buffers			:	integer := 4; --// number of independent buffers for event waveform data
 
 --//firmware registers:
@@ -46,6 +46,8 @@ type adc_output_data_type is array (3 downto 0) of std_logic_vector(define_adc_d
 type full_data_type	is array	(7 downto 0) of std_logic_vector(define_ram_width-1 downto 0);	
 type ram_adr_chunked_data_type is array(3 downto 0) of std_logic_vector(31 downto 0);
 type full_address_type	is array	(7 downto 0) of std_logic_vector(define_ram_depth-1 downto 0);	
+type half_address_type  is array	(3 downto 0) of std_logic_vector(define_ram_depth-1 downto 0);	
+type two_chan_address_type is array	(1 downto 0) of std_logic_vector(define_ram_depth-1 downto 0);
 type full_data_address_type	is array	(7 downto 0) of std_logic_vector(define_data_ram_depth-1 downto 0);	
 type aux_data_link_type is array (1 downto 0) of std_logic_vector(7 downto 0);
 
@@ -105,6 +107,12 @@ type average_power_16samp_type is array(define_num_beams-1 downto 0) of std_logi
 	
 --//scalers array
 type scaler_array_type is array(31 downto 0) of std_logic_vector(15 downto 0);
+
+
+--//assign rx data a specific value when deactivating the rx fifo read request (read clk > write clk)
+constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80808080808080808080808080808080";
+constant rx_adc_data_hold_value : full_data_type := (RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,
+																		RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD);
 
 end defs;
 

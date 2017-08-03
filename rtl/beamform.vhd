@@ -40,6 +40,7 @@ end beamform;
 
 architecture rtl of beamform is
 
+signal data_pipe			:  full_data_type;
 signal buf_data_0 		: 	full_data_type;
 signal buf_data_1 		: 	full_data_type;
 signal buf_data_2 		: 	full_data_type;
@@ -137,7 +138,8 @@ begin
 			buf_data_2(i)<= (others=>'0');
 			buf_data_3(i)<= (others=>'0');		
 			buf_data_4(i)<= (others=>'0');		
-
+			data_pipe(i) <= (others=>'0');
+			
 			dat(i) <= (others=>'0');
 			
 		elsif rising_edge(clk_i) then
@@ -148,7 +150,8 @@ begin
 			buf_data_3(i) <= buf_data_2(i);
 			buf_data_2(i) <= buf_data_1(i);
 			buf_data_1(i) <= buf_data_0(i);			
-			buf_data_0(i) <= data_i(i);			
+			buf_data_0(i) <= data_pipe(i);		
+			data_pipe(i)  <= data_i(i);
 
 		end if;
 	end loop;

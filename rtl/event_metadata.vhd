@@ -232,7 +232,7 @@ begin
 			internal_header_4(buf) <= internal_event_timestamp(23 downto 0);
 			internal_header_5(buf) <= internal_event_timestamp(47 downto 24);
 			internal_header_6(buf) <= internal_deadtime_counter;
-			internal_header_7(buf) <= current_buffer_i & reg_i(42)(1) & '0' & reg_i(76)(2 downto 0) & trig_type_i & trig_last_beam_i;
+			internal_header_7(buf) <= current_buffer_i & reg_i(42)(0) & '0' & reg_i(76)(2 downto 0) & trig_type_i & trig_last_beam_i;
 			internal_header_8(buf) <= '0' & reg_i(48)(7 downto 0) & reg_i(80)(define_num_beams-1 downto 0);
 			internal_header_9(buf) <= (others=>'0'); 
 			internal_header_10(buf) <= x"0" & last_trig_pow_i(0);

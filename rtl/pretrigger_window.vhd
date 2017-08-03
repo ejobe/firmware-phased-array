@@ -22,7 +22,7 @@ entity pretrigger_window is
 	port(
 		rst_i					:	in	 std_logic;
 		clk_i					:  in	 std_logic;
-		reg_i					:	in	 register_array_type; 	
+		pretrig_sel_i		:	in	 std_logic_vector(2 downto 0);
 		data_i				:	in	 std_logic_vector(127 downto 0);
 		data_o				:	out std_logic_vector(127 downto 0));
 	end pretrigger_window;
@@ -38,10 +38,19 @@ architecture rtl of pretrigger_window is
 	signal internal_data_buffer_2 : internal_data_buffer_type;
 	signal internal_data_buffer_3 : internal_data_buffer_type;
 	signal internal_data_buffer_4 : internal_data_buffer_type;
+	
+	signal internal_data_buffer_pickoff_0 : std_logic_vector(127 downto 0);
+	signal internal_data_buffer_pickoff_1 : std_logic_vector(127 downto 0);
+	signal internal_data_buffer_pickoff_2 : std_logic_vector(127 downto 0);
+	signal internal_data_buffer_pickoff_3 : std_logic_vector(127 downto 0);
+	signal internal_data_buffer_pickoff_4 : std_logic_vector(127 downto 0);
+	signal internal_data_buffer_pickoff_5 : std_logic_vector(127 downto 0);
+	signal internal_data_pipe : std_logic_vector(127 downto 0);
 
 begin
 
-proc_buf_dat : process(rst_i, clk_i)
+proc_buf_dat : process(rst_i, clk_i, data_i, internal_data_buffer_0, internal_data_buffer_1,
+								internal_data_buffer_2, internal_data_buffer_3, internal_data_buffer_4)
 begin
 	if rst_i = '1' then
 		for i in 0 to 7 loop
@@ -51,6 +60,15 @@ begin
 			internal_data_buffer_3(i) <= (others=>'0');
 			internal_data_buffer_4(i) <= (others=>'0');
 		end loop;
+		
+		internal_data_buffer_pickoff_0 <= (others=>'0');
+		internal_data_buffer_pickoff_1 <= (others=>'0');
+		internal_data_buffer_pickoff_2 <= (others=>'0');
+		internal_data_buffer_pickoff_3 <= (others=>'0');
+		internal_data_buffer_pickoff_4 <= (others=>'0');
+		internal_data_buffer_pickoff_5 <= (others=>'0');
+		internal_data_pipe <= (others=>'0');
+	
 	elsif rising_edge(clk_i) then
 		
 		for i in 1 to 7 loop
@@ -61,33 +79,45 @@ begin
 			internal_data_buffer_0(i) <= internal_data_buffer_0(i-1);
 		end loop;
 		
+		--//keep max fanout to two:
+		internal_data_buffer_pickoff_5  <= internal_data_buffer_4(7);
 		internal_data_buffer_4(0) <= internal_data_buffer_3(7);
+		internal_data_buffer_pickoff_4  <= internal_data_buffer_3(7);
 		internal_data_buffer_3(0) <= internal_data_buffer_2(7);
+		internal_data_buffer_pickoff_3  <= internal_data_buffer_2(7);
 		internal_data_buffer_2(0) <= internal_data_buffer_1(7);
+		internal_data_buffer_pickoff_2  <= internal_data_buffer_1(7);
 		internal_data_buffer_1(0) <= internal_data_buffer_0(7);
-		internal_data_buffer_0(0) <= data_i;
+		internal_data_buffer_pickoff_1  <= internal_data_buffer_0(7);
+		internal_data_buffer_0(0) <= internal_data_pipe;
+		internal_data_buffer_pickoff_0  <=internal_data_pipe;
+		internal_data_pipe <= data_i;
+	
 	end if;
 end process;
 
-proc_assign_data_o : process(rst_i, clk_i, reg_i(76), internal_data_buffer_0, internal_data_buffer_1,
-										internal_data_buffer_2, internal_data_buffer_3)
+proc_assign_data_o : process(rst_i, clk_i, pretrig_sel_i, internal_data_buffer_pickoff_0, internal_data_buffer_pickoff_1,
+										internal_data_buffer_pickoff_2, internal_data_buffer_pickoff_3,
+										internal_data_buffer_pickoff_4, internal_data_buffer_pickoff_5)
 begin
-	case reg_i(76)(2 downto 0) is
+	if rising_edge(clk_i) then
+		case pretrig_sel_i is
 		
-		when "000"=>
-			data_o <= data_i; --//0 pre-trigger delay
-		when "001"=> 
-			data_o <= internal_data_buffer_0(7);
-		when "010"=>
-			data_o <= internal_data_buffer_1(7);
-		when "011"=>
-			data_o <= internal_data_buffer_2(7);
-		when "100"=>
-			data_o <= internal_data_buffer_3(7);
-		when "101"=>
-			data_o <= internal_data_buffer_4(7);
-		when others=>
-			data_o <= data_i;
-	end case;
+			when "000"=>
+				data_o <= internal_data_buffer_pickoff_0; --//"0" pre-trigger delay (actually, 1 clk cycle)
+			when "001"=> 
+				data_o <= internal_data_buffer_pickoff_1;
+			when "010"=>
+				data_o <= internal_data_buffer_pickoff_2;
+			when "011"=>
+				data_o <= internal_data_buffer_pickoff_3;
+			when "100"=>
+				data_o <= internal_data_buffer_pickoff_4;
+			when "101"=>
+				data_o <= internal_data_buffer_pickoff_5;
+			when others=>
+				data_o <= internal_data_buffer_pickoff_0;
+		end case;
+	end if;
 end process;
 end rtl;

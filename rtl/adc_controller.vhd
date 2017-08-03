@@ -46,10 +46,10 @@ entity adc_controller is
 		reg_addr_i			:  in 	std_logic_vector(define_address_size-1 downto 0);
 		reg_i					: 	in		register_array_type; --//phased_array programmable registers
 
-		--//write to data ram:
+		--//rx fifo managment:
 		rx_adc_data_i		:  in  full_data_type;
-		rx_ram_rd_adr_o	:	inout std_logic_vector(define_ram_depth-1 downto 0);
 		rx_ram_rd_en_o    :	out std_logic;
+		rx_fifo_usedwrd_i	:	in	 full_address_type;
 	
 		--//timestream data to beamform module
 		timestream_data_o		:	out full_data_type;
@@ -77,6 +77,9 @@ signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfe
 --//signals for adding relative delays between ADCs in order to align data
 signal delay_en   	: std_logic_vector(7 downto 0);
 signal delay_chan 	: rx_data_delay_type;
+signal rxdatapipe1   	: full_data_type; --//initial handle on rx data
+signal rxdatapipe2   	: full_data_type; --//initial handle on rx data
+
 signal data_pipe   	: buffered_data_type;
 signal data_pipe_2 	: full_data_type;
 signal channel_mask	: full_data_type;
@@ -270,16 +273,33 @@ begin
 	end if;
 end process;
 
+--////////////////////////////////////////////////////////////////////////
+--//MANAGE the Rx FIFO; which transfers the pdata between the ADC DCLK and the core clock of the FPGA
+proc_manage_rx_fifo : process(rst_i, clk_core_i, rx_fifo_usedwrd_i, rx_adc_data_i)
+begin
+	if rst_i = '1' then
+		rx_ram_rd_en_o <= '0';
+		for i in 0 to 7 loop
+			rxdatapipe1(i) <= (others=>'0');
+			rxdatapipe2(i) <= (others=>'0');
 
-proc_read_adr : process(rst_i, clk_core_i, internal_data_valid)
+		end loop;
+	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
+		rx_ram_rd_en_o <= '1';
+		rxdatapipe2 <= rx_adc_data_i;
+	
+	elsif rising_edge(clk_core_i) then --//shouldn't reach here, unless clocks aren't frequency matched.
+		rx_ram_rd_en_o <= '0';
+		rxdatapipe2 <= rx_adc_data_hold_value;
+	end if;
+end process;
+--////////////////////////////////////////////////////////////////////////
+
+proc_dat_valid : process(rst_i, clk_core_i, internal_data_valid, internal_rx_dat_valid)
 begin
 	if rst_i = '1' or internal_data_valid = '0' then	
 	
-		--//define initial rx ram read address as mid-scale
-		rx_ram_rd_adr_o(rx_ram_rd_adr_o'length-1) <= '1';
-		rx_ram_rd_adr_o(rx_ram_rd_adr_o'length-2 downto 0) <=  (others=>'0');
 		internal_rx_dat_valid <= (others=>'0'); 
-		rx_ram_rd_en_o <= '0';
 		
 		for j in 0 to 7 loop
 			delay_en(j) 	<= '0';
@@ -298,17 +318,12 @@ begin
 			delay_chan(2*j+1) <= reg_i(base_adrs_adc_cntrl+2+j)(8 downto 5);
 		end loop;
 		--////////////////
-		
 		for j in 0 to 7 loop
 			channel_mask(j)<= (others=> reg_i(48)(j));
 		end loop;
 		
 		internal_rx_dat_valid <= internal_rx_dat_valid(internal_rx_dat_valid'length-2 downto 0) & internal_data_valid;
 		
-		if internal_rx_dat_valid(internal_rx_dat_valid'length-1) = '1' then
-			rx_ram_rd_en_o <= '1';
-			rx_ram_rd_adr_o <= rx_ram_rd_adr_o + 1;
-		end if;
 	end if;
 end process;
 
@@ -316,7 +331,7 @@ end process;
 --////////////////////////////////////////////////////////////////////////////
 
 --//apply relative delays to data_pipe_2 
-proc_align_samples : process(rst_i, clk_core_i, delay_en)
+proc_align_samples : process(rst_i, clk_core_i, delay_en, rxdatapipe2)
 begin
 	for i in 0 to 7 loop
 		
@@ -379,7 +394,7 @@ begin
 			--//first pipeline stage
 			data_pipe(i)(define_ram_width-1 downto 0) <= data_pipe(i)(2*define_ram_width-1 downto define_ram_width);
 			--//apply channel-level mask here
-			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rx_adc_data_i(i) and channel_mask(i); 
+			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i) and channel_mask(i); 
 			
 		end if;
 	end loop;

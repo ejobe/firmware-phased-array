@@ -156,6 +156,8 @@ architecture rtl of top_level is
 	--//signal to/from rx RAM
 	signal rx_ram_data			:	full_data_type;
 	signal rx_ram_read_address	:	std_logic_vector(define_ram_depth-1 downto 0);
+	signal rx_fifo_usedwords	:  full_address_type;
+	signal rx_ram_wr_address	:  half_address_type;
 	signal rx_ram_rd_en			:	std_logic;
 	--//pll control signals
 	signal lmk_start_write		:	std_logic := '0';
@@ -193,6 +195,7 @@ architecture rtl of top_level is
 	signal last_trig_power			: average_power_16samp_type;
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
+	signal status_reg_latched_data_manager :  std_logic_vector(23 downto 0);
 	signal status_reg_adc	: std_logic_vector(23 downto 0);
 	
 	--//signals driven from the data manager module
@@ -218,17 +221,17 @@ begin
 	--//master 100 MHz clock input
 	--///////////////////////////////////////
 	--// hardcode default constant clock mux selection:
-	--CLK_select(0) <= '1'; --// board block selection: 1= use local oscillator
-	--CLK_select(1) <= '0'; --// PLL clock selection: 0= one PLL mode, use ref clock 
+	CLK_select(0) <= '0'; --// board block selection: 1= use local oscillator
+	CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
 	--///////////////////////////////////////
 	--//allow clock selection to be programmable:
-	proc_set_clock_ref : process(reset_global)
-	begin
-		if reset_global = '1' or reset_global_except_registers = '1' then
-			CLK_select(0) <= registers(120)(0);   --//board clock
-			CLK_select(1) <= not registers(120)(0);  --//input clock
-		end if;
-	end process;
+--	proc_set_clock_ref : process(reset_global, reset_global_except_registers)
+--	begin
+--		if reset_global = '1' or reset_global_except_registers = '1' then
+--			CLK_select(0) <= registers(120)(0);   --//board clock
+--			--CLK_select(1) <= registers(120)(1);  --//PLL clock source
+--		end if;
+--	end process;
 	--///////////////////////////////////////
 	--//system-wide clocks
 	xCLOCKS : entity work.Clock_Manager
@@ -248,13 +251,14 @@ begin
 		refresh_1Hz_o		=> clock_rfrsh_pulse_1Hz,
 		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz, --//scaler refresh clock
 		fpga_pllLock_o => clock_FPGA_PLLlock);
-	--///////////////////////////////////////
-	--//adc configuration and data-handling block
-	
-	proc_stat_reg_adc : status_reg_adc <= x"0" & clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & x"0" & 
+
+	--//status register for ADC and PLL chip stuff:
+	proc_stat_reg_adc : status_reg_adc <= LMK_Stat_Hldov & LMK_Stat_LD & LMK_Stat_Clk0 & LMK_Stat_Clk1 & 
+								clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & x"0" & 
 								adc_rx_lvds_locked(3) & adc_rx_lvds_locked(2) & adc_rx_lvds_locked(1) & adc_rx_lvds_locked(0); 
 
-	
+		--///////////////////////////////////////
+	--//adc configuration and data-handling block
 	xADC_CONTROLLER : entity work.adc_controller
 	port map(
 		clk_i					=> clock_1MHz,
@@ -279,8 +283,8 @@ begin
 		reg_addr_i			=> register_adr,
 		reg_i					=> registers,
 		rx_adc_data_i		=> rx_ram_data,
-		rx_ram_rd_adr_o 	=> rx_ram_read_address,
 		rx_ram_rd_en_o 	=> rx_ram_rd_en,
+		rx_fifo_usedwrd_i => rx_fifo_usedwords,
 		timestream_data_o	=> wfm_data,
 		dat_valid_o			=> adc_data_valid);
 	--///////////////////////////////////////	
@@ -314,8 +318,8 @@ begin
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_250MHz,
 		reg_i			=> registers,
-		pulse_o		=> SMA_out1, --//pulse out in 'TRIG_OUT_AUX' SMA connector
-		rf_switch_o => SMA_in);                      --DEBUG(0)); --//RF switch select wired to GPIO Pin
+		pulse_o		=> SMA_out0, --//pulse out in 'TRIG_OUT' SMA connector
+		rf_switch_o => SMA_in);    
 	--///////////////////////////////////////	
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
@@ -346,9 +350,8 @@ begin
 	--//system resets and power-on cycle
 	xGLOBAL_RESET : entity work.sys_reset
 	port map( 
-		clk_i				=> clock_1MHz,
+		clk_i				=> clock_25MHz,
 		clk_rdy_i		=> clock_FPGA_PLLlock,
-		user_wakeup_i	=> not USB_WAKEUP, --//set this to 0 eventually when no longer using USB
 		reg_i				=> registers,
 		reset_sys_o		=> reset_global_except_registers,
 		reset_o			=> reset_global,
@@ -366,10 +369,12 @@ begin
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
 			adc_ovrange_i	 	=> ADC_OvRange(i),
-			ram_read_Clk_i		=> clock_93MHz,   
-			ram_read_Adrs_i	=> rx_ram_read_address, 
-			ram_read_en_i		=> rx_ram_rd_en,
+			rx_fifo_read_clk_i		=> clock_93MHz,   
+			rx_fifo_read_req_i		=> rx_ram_rd_en,
+			rx_fifo_used_words0_o	=> rx_fifo_usedwords(2*i),
+			rx_fifo_used_words1_o   => rx_fifo_usedwords(2*i+1),
 			ram_wr_adr_rst_i	=> '0', --usb_done_write, --/restart ram write address
+			rx_ram_write_adr_o=> rx_ram_wr_address(i),
 			rx_locked_o		   => adc_rx_lvds_locked(i),
 			data_ram_ch0_o		=> rx_ram_data(2*i), 
 			data_ram_ch1_o		=> rx_ram_data(2*i+1));
@@ -415,6 +420,7 @@ begin
 		reg_adr_i				=> register_adr,
 		event_meta_o			=> event_meta_data,
 		status_reg_o			=> status_reg_data_manager,
+		status_reg_latched_o => status_reg_latched_data_manager,
 		wfm_data_i				=> wfm_data,
 		data_ram_at_current_adr_o => ram_data);
 		
@@ -452,6 +458,7 @@ begin
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
 		status_data_manager_i => status_reg_data_manager,
+		status_data_manager_latched_i => status_reg_latched_data_manager,
 		status_adc_i	  => status_reg_adc,
 		event_metadata_i => event_meta_data,
 		current_ram_adr_data_i => ram_data,
@@ -539,31 +546,40 @@ begin
 	
 	--//USB
 	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
-	USB_RDY(1) <= '0';
+	USB_RDY <= (others=>'0');
+	USB_FD <= (others=>'X');
+	USB_PA <= (others=>'X');
 	
 	--//ADC
 	ADC_Cal 		<= adc_cal_sig; --//adc calibration init pulse
 	ADC_PD		<= adc_pd_sig;	 --//adc power-down
+	
+	
+	--//delete this, quick debug:
+	process(clock_93MHz)
+	begin
+		if reset_global = '1' then
+			rx_ram_read_address <= (others=>'0');
+		elsif rising_edge(clock_93MHz) then
+			rx_ram_read_address <= rx_ram_read_address + 1;
+		end if;
+	end process;
 	--///////////////////////////////////////////////////////////////
 	--//debug headers & LEDs
 	--///////////////////////////////////////////////////////////////
 	--DEBUG(0) <=  '0'; --LMK_DAT_uWire;
-	DEBUG(1) <=  '0'; --clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
-	DEBUG(2) <=  '0'; --clock_15MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
-	DEBUG(3) <=  '0';--ram_write_address(3)(0); --lmk_start_write;
-	DEBUG(4) <=  '0';--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
+	DEBUG(1) <=  rx_ram_wr_address(0)(0); --clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
+	DEBUG(2) <=  rx_ram_wr_address(0)(1); --clock_15MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
+	DEBUG(3) <=  rx_ram_wr_address(2)(0);--ram_write_address(3)(0); --lmk_start_write;
+	DEBUG(4) <=  rx_ram_wr_address(3)(0);--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
 	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
-	DEBUG(6) <=  ram_read_address(0);--adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
-	DEBUG(7) <=  '0';--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
-	DEBUG(8) <=  rdout_start_flag;
-	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
-	DEBUG(10)<=  '0';--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
+	DEBUG(6) <=  rx_ram_read_address(0); --adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
+	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
+	DEBUG(8) <=  clock_93MHz;
+	DEBUG(9) <=  clock_rfrsh_pulse_1Hz; --DSA_LE;--usb_read_packet_rdy;
+	DEBUG(10)<=  clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
-	
-	
-	
-	
 	
 	LED(0) <= '1'; --not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
 	LED(1) <= not reset_global;

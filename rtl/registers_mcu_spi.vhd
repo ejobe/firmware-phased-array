@@ -26,6 +26,7 @@ entity registers_mcu_spi is
 		--//status/system read-only registers:
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
+		status_data_manager_latched_i :  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
 		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
@@ -95,7 +96,7 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(109)  <= x"000001"; --//set read register
-		registers_io(120) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator
+		registers_io(120) <= x"000000"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -114,7 +115,7 @@ begin
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
 		registers_io(base_adrs_rdout_cntrl+11) <= x"000004"; --//length of register readout (NOT USED, only signal word readouts) (75)
 		registers_io(base_adrs_rdout_cntrl+12) <= x"000000"; --//readout pre-trig window [76]
-		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer [77]
+		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer + Reset Buffer Number to 0 [77]
 		registers_io(base_adrs_rdout_cntrl+14) <= x"000000"; --//select readout waveform buffer [78]
 
 		registers_io(126) <= x"000000"; --//reset event counter 
@@ -171,26 +172,29 @@ begin
 	--////////////////////////////////////////////////////////////////////////////
 	elsif rising_edge(clk_i) then 
 		
+		--//read register command
 		if write_rdy_i = '1' and write_reg_i(31 downto 24) = x"6D" then
 			read_reg_o <=  write_reg_i(7 downto 0) & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
 			address_o <= x"47";  --//initiate a read	
 		
+		--//read data chunk 0
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"23" then
 			read_reg_o <= current_ram_adr_data_i(0);
 			address_o <= x"47";  --//initiate a read
-		
+		--//read data chunk 1
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"24" then
 			read_reg_o <= current_ram_adr_data_i(1);
 			address_o <= x"47";  --//initiate a read			
-
+		--//read data chunk 2
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"25" then
 			read_reg_o <= current_ram_adr_data_i(2);
 			address_o <= x"47";  --//initiate a read				
-			
+		--//read data chunk 3	
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
 			read_reg_o <= current_ram_adr_data_i(3);
 			address_o <= x"47";  --//initiate a read	
 
+		--//write register value
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) > x"26" then  --//read/write registers
 			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
 			address_o <= write_reg_i(31 downto 24);
@@ -202,7 +206,7 @@ begin
 			registers_io(3) <= scaler_to_read_i;
 			registers_io(7) <= status_data_manager_i; 
 			registers_io(8) <= status_adc_i; 
-			registers_io(9) <= x"AAAAAA"; 
+			registers_io(9) <= status_data_manager_latched_i; 
 			--//assign event meta data
 			for j in 0 to 24 loop
 				registers_io(j+10) <= event_metadata_i(j);

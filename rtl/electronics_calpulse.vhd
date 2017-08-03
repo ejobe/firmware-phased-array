@@ -41,7 +41,7 @@ signal data_out_current_value : std_logic_vector(0 downto 0);
 begin
 data_h(0) <= '1'; --//single hi bit for pulse
 ----///////////
-rf_switch_o <= reg_i(42)(1); --//set rf switch input selection
+rf_switch_o <= not (reg_i(42)(1)); --//set rf switch input selection [reg(42)(1) = 1 --> switch to pulse ;; reg(42)(1) = 0 --> switch to signal chain] 
 --/////////////
 pulse_o <= data_out_current_value(0);
 --/////////////

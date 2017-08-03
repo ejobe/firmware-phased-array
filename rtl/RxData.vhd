@@ -27,12 +27,15 @@ entity RxData is
 			adc_data_i			:  in		std_logic_vector(27 downto 0);
 			adc_ovrange_i		:  in		std_logic;
 			
-			ram_read_Clk_i		:  in		std_logic;  --//core clock
-			ram_read_Adrs_i	:	in		std_logic_vector(define_ram_depth-1 downto 0);
-			ram_read_en_i		:	in		std_logic;
+			rx_fifo_read_clk_i:  in		std_logic;  --//core clock
+			rx_fifo_read_req_i:	in		std_logic;
+			rx_fifo_used_words0_o	:	out std_logic_vector(define_ram_depth-1 downto 0);
+			rx_fifo_used_words1_o	:	out std_logic_vector(define_ram_depth-1 downto 0);
+
 			ram_wr_adr_rst_i	: 	in		std_logic;
 			
 			rx_locked_o			:	out	std_logic;
+			rx_ram_write_adr_o:	out	std_logic_vector(define_ram_depth-1 downto 0);  --//for debugging
 			data_ram_ch0_o		:	out	std_logic_vector(define_ram_width-1 downto 0);
 			data_ram_ch1_o		:	out	std_logic_vector(define_ram_width-1 downto 0));
 
@@ -55,8 +58,9 @@ architecture rtl of RxData is
 
 	type internal_ram_data_type is array (1 downto 0 ) of std_logic_vector(define_ram_width-1 downto 0);
 	signal internal_ram_data : internal_ram_data_type;
-	signal internal_ram_rd_en	: std_logic_vector(1 downto 0);
 	signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfer
+	
+	signal internal_rx_fifo_used_words : two_chan_address_type;
 	
 	constant iq_split : integer := 112; --// = 28 * serdes_factor / 2 
 	
@@ -76,8 +80,8 @@ architecture rtl of RxData is
 begin
 	data_ram_ch0_o <= internal_ram_data(0);
 	data_ram_ch1_o <= internal_ram_data(1);
-	internal_ram_rd_en(0) <= ram_read_en_i; 
-	internal_ram_rd_en(1) <= ram_read_en_i; 
+	rx_fifo_used_words0_o <= internal_rx_fifo_used_words(0);
+	rx_fifo_used_words1_o <= internal_rx_fifo_used_words(1);
 	
 	----//receiver block for a single 7-bit ADC SDR
 	----//no DPA 
@@ -104,25 +108,40 @@ begin
 --			rx_locked	=> rx_locked_o,
 --			rx_out		=> data,
 --			rx_outclock	=> rx_out_clk);
-		
-	-- //altera megafunction RAM (`RAM 2-PORT')
-	TwoChanRamBlock : for i in 0 to 1 generate
-		xRxRAM 	:	entity work.RxRAM(syn)
+			
+	TwoChanFIFOBlock : for i in 0 to 1 generate
+		xRXFIFO : entity work.rx_fifo(syn)
 		port map(
-			data			=>	data_two_chan_p(i),--//pipelined data, split into 2 channels
-			rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
-			rdaddress	=> ram_read_Adrs_i,
-			rdclock		=> ram_read_Clk_i,
-			rden			=> internal_ram_rd_en(i),
-			wraddress	=> ram_write_adrs_rising_edge, --ram_write_adrs_falling_edge,
-			wrclock		=> rx_out_clk,
-			wren			=>	ram_write_en,
-			q				=>	internal_ram_data(i));
-	end generate TwoChanRamBlock;
+			aclr			=> rst_i or (not internal_rx_dat_valid(1)),
+			data			=> data_two_chan_p(i),
+			rdclk			=> rx_fifo_read_clk_i,
+			rdreq			=> rx_fifo_read_req_i,
+			wrclk			=> rx_out_clk,
+			wrreq			=> ram_write_en,
+			q				=> internal_ram_data(i),
+			rdempty		=> open,
+			rdusedw		=> internal_rx_fifo_used_words(i),
+			wrfull		=> open,
+			wrusedw		=> open);
+	end generate;
+	-- //altera megafunction RAM (`RAM 2-PORT')
+--	TwoChanRamBlock : for i in 0 to 1 generate
+--		xRxRAM 	:	entity work.RxRAM(syn)
+--		port map(
+--			data			=>	data_two_chan_p(i),--//pipelined data, split into 2 channels
+--			rd_aclr		=>	rst_i,  --//this clears the registered data output (not the RAM itself)
+--			rdaddress	=> ram_read_Adrs_i,
+--			rdclock		=> ram_read_Clk_i,
+--			rden			=> internal_ram_rd_en(i),
+--			wraddress	=> ram_write_adrs_rising_edge, --ram_write_adrs_falling_edge,
+--			wrclock		=> rx_out_clk,
+--			wren			=>	ram_write_en,
+--			q				=>	internal_ram_data(i));
+--	end generate TwoChanRamBlock;
 	
 	xDATVALIDSYNC : signal_sync
 	port map(
-		clkA				=> ram_read_Clk_i,
+		clkA				=> rx_fifo_read_clk_i,
 		clkB				=> rx_out_clk,
 		SignalIn_clkA	=> rx_dat_valid_i,
 		SignalOut_clkB	=> internal_rx_dat_valid(0));
@@ -210,12 +229,14 @@ end process;
 	begin	
 		if rst_i = '1' or internal_rx_dat_valid(0) = '0' or ram_wr_adr_rst_i = '1' then
 			ram_write_adrs_rising_edge 	<= (others => '0');
+			rx_ram_write_adr_o <= (others=>'0');
 			ram_write_en						<= '0';
 					
 		elsif rising_edge(rx_out_clk) and internal_rx_dat_valid(internal_rx_dat_valid'length-1) = '1' then
 		--elsif rising_edge(rx_out_clk) then --and rx_dat_valid_i = '1' then
 		--elsif rising_edge(rx_out_clk) then
 			ram_write_en	<= '1';
+			rx_ram_write_adr_o <= ram_write_adrs_rising_edge;
 			ram_write_adrs_rising_edge <= ram_write_adrs_rising_edge + 1;
 		end if;		
 	end process;

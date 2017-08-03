@@ -1,6 +1,5 @@
 --//pulse-stretcher
 --//ejo 5/2015
---//latch on rise/fall edge, stretch pulse based on clk_i ticks
 library IEEE;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -10,10 +9,10 @@ entity pulse_stretcher is
 		stretch	:	integer;
 		edge		:	std_logic := '1'); --//1=rising edge, 0=falling
 	port(
-		rst_i		:	in		std_logic;
-		clk_i		:	in		std_logic;
-		pulse_i	:	in		std_logic;
-		pulse_o	:	out	std_logic);
+		rst_i			:	in		std_logic;
+		clk_i			:	in		std_logic;
+		pulse_i		:	in		std_logic;
+		pulse_o		:	out	std_logic);
 		
 end pulse_stretcher;
 
