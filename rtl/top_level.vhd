@@ -75,7 +75,7 @@ entity top_level is
 		LOC_serial_out2:  out	std_logic;
 		LOC_serial_out3:  out	std_logic;
 		--//clk select mux
-		CLK_select 		:	out	std_logic_vector(1 downto 0);
+		CLK_select 		:	out	std_logic_vector(1 downto 0) := "00"; --//set defaults
 		--//uC
 		uC_dig    		:  inout std_logic_vector(11 downto 0);
 		--//Digital step-attenuator serial interface
@@ -221,17 +221,17 @@ begin
 	--//master 100 MHz clock input
 	--///////////////////////////////////////
 	--// hardcode default constant clock mux selection:
-	CLK_select(0) <= '0'; --// board block selection: 1= use local oscillator
-	CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
+	--CLK_select(0) <= '0'; --// board block selection: 1= use local oscillator
+	--CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
 	--///////////////////////////////////////
 	--//allow clock selection to be programmable:
---	proc_set_clock_ref : process(reset_global, reset_global_except_registers)
---	begin
---		if reset_global = '1' or reset_global_except_registers = '1' then
---			CLK_select(0) <= registers(120)(0);   --//board clock
---			--CLK_select(1) <= registers(120)(1);  --//PLL clock source
---		end if;
---	end process;
+	proc_set_clock_ref : process(reset_global, reset_global_except_registers)
+	begin
+		if reset_global = '1' or reset_global_except_registers = '1' then
+			CLK_select(0) <= registers(120)(0);   --//board clock
+			CLK_select(1) <= registers(120)(1);  --//PLL clock source
+		end if;
+	end process;
 	--///////////////////////////////////////
 	--//system-wide clocks
 	xCLOCKS : entity work.Clock_Manager
@@ -575,7 +575,7 @@ begin
 	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
 	DEBUG(6) <=  rx_ram_read_address(0); --adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
 	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
-	DEBUG(8) <=  clock_93MHz;
+	DEBUG(8) <=  '0';
 	DEBUG(9) <=  clock_rfrsh_pulse_1Hz; --DSA_LE;--usb_read_packet_rdy;
 	DEBUG(10)<=  clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
