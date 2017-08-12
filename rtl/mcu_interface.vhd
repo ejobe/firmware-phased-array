@@ -28,13 +28,16 @@ entity mcu_interface is
 	port(
 		clk_i			:	in		std_logic;											--//interface clock
 		rst_i			:	in		std_logic;	
-		mcu_fpga_io	:  inout	std_logic_vector(11 downto 0);  				--// FPGA pins to MCU header
+		spi_cs_i  	:	in		std_logic;
+		spi_sclk_i	:	in		std_logic;
+		spi_mosi_i	:  in		std_logic;
+		spi_miso_o	:  out	std_logic;
 		data_i		:  in		std_logic_vector(data_width-1 downto 0); 	--// tx data
 		tx_load_i	:	in		std_logic; 											--//tx data send
 		data_o   	:	out	std_logic_vector(data_width-1 downto 0); 	--// rx data
 		--rx_req_i		:	in		std_logic; 											--//rx data request (old spi_slave module ONLY)
 		--spi_busy_o	:	out	std_logic; 											--//interface is busy (old spi_slave module ONLY)
-		tx_ack_o		:	out	std_logic; 						--//new spi_slave module ONLY
+		tx_ack_o		:	out	std_logic; 						
 		rx_rdy_o		:	out	std_logic);                                --//rx data is ready
 		--tx_rdy_o		:	out	std_logic);											--//tx data is ready
 end mcu_interface;
@@ -42,17 +45,16 @@ end mcu_interface;
 architecture rtl of mcu_interface is
 begin
 --/////////////////////////////////////////////////////////
---//primary interface to MCU / BeagleBone is SPI coms
-
+--//interface to BeagleBone is SPI coms
 xSPI_SLAVE : entity work.spi_slave
 generic map(
 	N => 32)
 port map(	
 	clk_i 			=> clk_i,             -- internal interface clock (clocks di/do registers)
-	spi_ssel_i   	=> mcu_fpga_io(7) or rst_i, -- spi bus slave select line
-	spi_sck_i      => mcu_fpga_io(3),    -- spi bus sck clock (clocks the shift register core)
-	spi_mosi_i     => mcu_fpga_io(2),    -- spi bus mosi input
-	spi_miso_o     => mcu_fpga_io(1),    -- spi bus spi_miso_o output
+	spi_ssel_i   	=> spi_cs_i or rst_i, -- spi bus slave select line
+	spi_sck_i      => spi_sclk_i,		    -- spi bus sck clock (clocks the shift register core)
+	spi_mosi_i     => spi_mosi_i,		    -- spi bus mosi input
+	spi_miso_o     => spi_miso_o,			 -- spi bus spi_miso_o output
 	di_req_o       => open,              -- preload lookahead data request line
 	di_i   			=> data_i,				 -- parallel load data in (clocked in on rising edge of clk_i)
 	wren_i         => tx_load_i,         -- user data write enable

@@ -37,7 +37,7 @@ begin
 
 	OUT_CLK <= xOUT_CLK;
 
-	process(IN_CLK)
+	process(IN_CLK, Reset)
 	variable i: integer range clk_divide_by downto 0 := 0;
 	begin
 		

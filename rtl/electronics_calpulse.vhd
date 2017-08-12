@@ -10,7 +10,7 @@
 --
 -- DESCRIPTION:  Pulse and enable for plug-in-line cal pulse board, which
 --               allows user to line up ADC timestreams
---					  --//set by register 42
+--					  --//managed by register 42
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -19,6 +19,8 @@ use ieee.numeric_std.all;
 use work.defs.all;
 
 entity electronics_calpulse is
+	generic(
+		ENABLE_CALIBRATION_PULSE : std_logic := '1');
 	port(
 		rst_i			:	in		std_logic;  --//async reset
 		clk_i			: 	in		std_logic;  --//fast clock to run DDR output		
@@ -47,7 +49,7 @@ pulse_o <= data_out_current_value(0);
 --/////////////
 proc_cycle_data : process(rst_i, reg_i, clk_i)
 begin
-	if rst_i = '1' or reg_i(42)(0) = '0' then
+	if rst_i = '1' or reg_i(42)(0) = '0' or ENABLE_CALIBRATION_PULSE = '0' then
 		data_h_current_value(0) <= '0';
 		data_l_current_value(0) <= '0';
 		index <= (others=>'0');
@@ -61,10 +63,10 @@ end process;
 --//pulse generated using DDR output buffer
 xDDRPULSEGENERATOR : entity work.DDRout
 port map(
-	aclr			=>	rst_i,
+	aclr			=>	rst_i or (not ENABLE_CALIBRATION_PULSE),
 	datain_h		=> data_h_current_value,
 	datain_l		=> data_l_current_value,
 	outclock		=> clk_i,
-	outclocken	=> reg_i(42)(0),
+	outclocken	=> reg_i(42)(0) and ENABLE_CALIBRATION_PULSE,
 	dataout		=>	data_out_current_value);
 end rtl;

@@ -33,7 +33,7 @@ signal internal_wr	:	std_logic;
 
 begin
 
-proc_reg_data : process(rst_i, clk_i, write_i)
+proc_reg_data : process(rst_i, clk_i, write_i, spi_state)
 begin
 	if rst_i = '1' then
 		internal_reg <= (others=>'0');
@@ -47,7 +47,7 @@ begin
 	end if;
 end process;
 		
-proc_spi_write : process(rst_i, clk_i, write_i)
+proc_spi_write : process(rst_i, clk_i, write_i, internal_wr)
 	variable j : integer range 0 to data_length := 0;
 begin
 

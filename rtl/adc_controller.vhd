@@ -262,6 +262,9 @@ begin
 			when done_st=>
 				i:=0;
 				dclk_rst_lvds_o <= "1111";
+				------------------------------------------------
+				--//TODO: probably should not require 'lock' here, otherwise data not flow if no lock.
+				------------------------------------------------
 				if rx_locked_i = '1' then  --//then wait for data clocks to reappear and lock the serdes receiver
 					internal_data_valid_fast_clk <= '1';
 					adc_dclk_rst_state <= idle_st;

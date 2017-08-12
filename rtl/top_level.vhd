@@ -19,6 +19,12 @@ use work.defs.all;
 use work.register_map.all;
 
 entity top_level is
+	--//specify firmware type using compile time flag (FIRMWARE_DEVICE is never overloaded):
+	----- Master = 1 (all functionality) ; Slave = 0 (removes beamforming, the phased trigger, cal pulser output, ...)
+	----------------------------------
+	Generic(
+		FIRMWARE_DEVICE : std_logic := '1');
+	----------------------------------	
 	Port(
 		--//Master clocks (2 copies, 100 MHz)
 		MClk_0			:	in		std_logic;
@@ -44,9 +50,9 @@ entity top_level is
 		ADC_DCLK_RST	:	out	std_logic_vector(3 downto 0); --//ADC dclk sync, LVDS 
 		ADC_DRST_SEL	:	out	std_logic; 							--//selects ^ single-ended or LVDS
 		--//USB FX2 interface
-		USB_IFCLK		: 	in		std_logic;
-		USB_WAKEUP		:	in 	std_logic;
-		USB_CTL     	:	in		std_logic_vector(2 downto 0);
+		USB_IFCLK		: 	inout	std_logic;
+		USB_WAKEUP		:	inout std_logic;
+		USB_CTL     	:	inout	std_logic_vector(2 downto 0);
 		USB_PA			: 	inout std_logic_vector(7 downto 0);	
 		USB_FD			:	inout	std_logic_vector(15 downto 0);
 		USB_RDY			:	out	std_logic_vector(1 downto 0);
@@ -174,12 +180,6 @@ architecture rtl of top_level is
 	signal register_to_read		:	std_logic_vector(define_register_size-1 downto 0);
 	signal registers				:	register_array_type;
 	signal register_adr			:	std_logic_vector(define_address_size-1 downto 0);
-	--//serial links:
-	signal xAUX_0_tx_pin			: 	std_logic_vector(1 downto 0);
-	signal xAUX_1_tx_pin			: 	std_logic_vector(1 downto 0);
-	signal system_link_tx_data	:	std_logic_vector(7 downto 0);
-	signal aux0_link_tx_data	:	aux_data_link_type;
-	signal aux1_link_tx_data	:	aux_data_link_type;
 	--//unused vme pins (used to simply set to Hi-Z):
 	signal vme_unused_pins		: 	std_logic_vector(79 downto 0);
 	--//data
@@ -191,6 +191,7 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	signal external_trigger			: std_logic;
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
 	signal last_trig_power			: average_power_16samp_type;
 	--//module status registers
@@ -205,6 +206,7 @@ architecture rtl of top_level is
 	signal scalers_beam_trigs	: std_logic_vector(define_num_beams-1 downto 0);
 	signal scalers_trig			: std_logic;
 	signal scaler_to_read		: std_logic_vector(23 downto 0);
+	signal scalers_gate			: std_logic;
 	
 begin
 	--//pin to signal assignments
@@ -225,11 +227,11 @@ begin
 	--CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
 	--///////////////////////////////////////
 	--//allow clock selection to be programmable:
-	proc_set_clock_ref : process(reset_global, reset_global_except_registers)
+	proc_set_clock_ref : process(reset_global, reset_global_except_registers, registers)
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
 			CLK_select(0) <= registers(120)(0);   --//board clock
-			CLK_select(1) <= registers(120)(1);  --//PLL clock source
+			CLK_select(1) <= registers(120)(1);   --//PLL clock source
 		end if;
 	end process;
 	--///////////////////////////////////////
@@ -289,6 +291,7 @@ begin
 		dat_valid_o			=> adc_data_valid);
 	--///////////////////////////////////////	
 	xBEAMFORMER : entity work.beamform
+	generic map( ENABLE_BEAMFORMING => FIRMWARE_DEVICE)
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=>	clock_93MHz,		
@@ -299,7 +302,8 @@ begin
 		beams_8_o	=> beam_data_8,
 		sum_pow_o	=> powsum_ev2samples);
 	--///////////////////////////////////////
-	xTRIGGER : entity work.trigger
+	xPHASEDTRIGGER : entity work.trigger
+	generic map( ENABLE_PHASED_TRIGGER => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
 		clk_data_i			=> clock_93MHz,
@@ -313,7 +317,20 @@ begin
 		last_trig_beam_clk_data_o => last_trig_beams,
 		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to slower clock
 	--///////////////////////////////////////	
+	xEXT_TRIG_MANAGER : entity work.external_trigger_manager
+	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
+	port map(
+		rst_i			=> reset_global or reset_global_except_registers,
+		clk_i			=> clock_25MHz, --//clock
+		ext_i			=> SYS_serial_in, --//external gate/trigger input, distributed by clock fanout board over RJ45
+		sys_trig_i	=> scalers_trig, --//firmware generated phased trigger
+		reg_i			=> registers, --//programmable registers
+		sys_trig_o  => external_trigger, --//trigger to firmware
+		sys_gate_o	=> scalers_gate, --//scaler gate
+		ext_trig_o	=> uC_dig(9)); --//external trigger output
+	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
+	generic map( ENABLE_CALIBRATION_PULSE => FIRMWARE_DEVICE)
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_250MHz,
@@ -326,7 +343,7 @@ begin
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_1MHz,
-		reg_i			=> (others=>'0'), --//set registers manually
+		reg_i			=> (others=>'0'),
 		write_i		=> lmk_start_write or startup_pll,
 		done_o		=> lmk_done_write,
 		lmk_sdata_o	=> LMK_DAT_uWire,
@@ -373,7 +390,7 @@ begin
 			rx_fifo_read_req_i		=> rx_ram_rd_en,
 			rx_fifo_used_words0_o	=> rx_fifo_usedwords(2*i),
 			rx_fifo_used_words1_o   => rx_fifo_usedwords(2*i+1),
-			ram_wr_adr_rst_i	=> '0', --usb_done_write, --/restart ram write address
+			ram_wr_adr_rst_i	=> '0', 
 			rx_ram_write_adr_o=> rx_ram_wr_address(i),
 			rx_locked_o		   => adc_rx_lvds_locked(i),
 			data_ram_ch0_o		=> rx_ram_data(2*i), 
@@ -415,7 +432,7 @@ begin
 		phased_trig_i			=> the_phased_trigger,
 		last_trig_beam_i		=> last_trig_beams,
 		last_trig_pow_i		=> last_trig_power,
-		ext_trig_i				=> '0',
+		ext_trig_i				=> external_trigger,
 		reg_i						=> registers,
 		reg_adr_i				=> register_adr,
 		event_meta_o			=> event_meta_data,
@@ -444,13 +461,14 @@ begin
 		rst_i				=>	reset_global or reset_global_except_registers,	
 		clk_i				=> clock_25MHz,
 		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
-		gate_i			=> '1',
+		gate_i			=> scalers_gate,
 		reg_i				=> registers,
 		trigger_i		=> scalers_trig,
 		beam_trig_i		=> scalers_beam_trigs,
 		scaler_to_read_o  => scaler_to_read);
 	--///////////////////////////////////////		
 	xREGISTERS : entity work.registers_mcu_spi
+	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
 		rst_i				=> reset_global,
 		clk_i				=> clock_25MHz,  --//clock for register interface
@@ -465,16 +483,20 @@ begin
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
-		write_req_o		=> mcu_rx_req,
 		read_reg_o 		=> register_to_read,
 		registers_io	=> registers, --//system register space
 		address_o		=> register_adr);
 	--///////////////////////////////////////	
+	----------------------------------------------------------------
+	--General purpose interface using uC_dig bi-directional pins. Four assigned to dedicated SPI coms:
 	xPCINTERFACE : entity work.mcu_interface
 	port map(
 		clk_i			 => clock_25MHz,
 		rst_i			 => reset_global or reset_global_except_registers,	
-		mcu_fpga_io	 => uC_dig,
+		spi_cs_i	 	 => uC_dig(7),	
+		spi_sclk_i	 => uC_dig(4),	
+		spi_mosi_i	 => uC_dig(2),	
+		spi_miso_o	 => uC_dig(0),
 		data_i		 => rdout_data,
 		tx_load_i	 => mcu_tx_flag,
 		data_o   	 => mcu_data_pkt_32bit,
@@ -483,80 +505,40 @@ begin
 		tx_ack_o		 => mcu_spi_tx_ack,
 		rx_rdy_o		 => mcu_rx_rdy);
 		--tx_rdy_o		 => mcu_tx_rdy);
-
---///////////////////////////////////////	
---	xUSB	:	entity work.usb_32bit(Behavioral)
---	port map(
---		USB_IFCLK		=> USB_IFCLK,
---		USB_RESET    	=> '1', --(not USB_WAKEUP) or reset_global,
---		USB_BUS  		=> USB_FD,
---		FPGA_DATA		=> (others=>'0'), --rdout_data_16bit, 
---      USB_FLAGB    	=>	USB_CTL(1),
---      USB_FLAGC    	=> USB_CTL(2),
---		USB_START_WR	=> '0', --rdout_start_flag,--//start write to PC
---		USB_NUM_WORDS	=> rdout_pckt_size, --//num words in write
---      USB_DONE  		=> usb_done_write, --//usb done with write to PC
---      USB_PKTEND     => USB_PA(6),
---      USB_SLWR  		=> usb_slwr, --//USB write clock
---      USB_WBUSY 		=> usb_write_busy, --//USB writing
---      USB_FLAGA    	=> USB_CTL(0),
---      USB_FIFOADR  	=>	USB_PA(5 downto 4),
---      USB_SLOE     	=> USB_PA(2),
---      USB_SLRD     	=> USB_RDY(0),
---      USB_RBUSY 		=>	usb_read_busy, --//FPGA reading from PC
---      USB_INSTRUCTION=> usb_read_packet_32bit, --//FPGA read word
---		USB_INSTRUCT_RDY=>usb_read_packet_rdy);	
-
---	xSERIAL_LINKS	:	entity work.SerialLinks(Behavioral)
---	port map(
---		CLK					=> clock_75MHz,
---		reset					=> reset_global,
---		System_RX_pin		=> SYS_serial_in,
---		System_TX_pin		=> SYS_serial_out,	
---		System_RX_outclk	=> open,
---		System_RX_data		=> open,
---		System_TX_data		=> system_link_tx_data,
---		Sys_setup			=> '0',
---		Sys_aligned			=> open,
---		Sys_loopback		=> '0',
---		Aux0_RX_pin			=> LOC_serial_in1 &  LOC_serial_in0, 
---		Aux0_TX_pin		   => xAUX_0_tx_pin, 
---		Aux0_RX_outclk		=> open,
---		Aux0_RX_data		=> open,
---		Aux0_TX_data		=> aux0_link_tx_data,
---		Aux0_setup			=> '0',
---		Aux0_aligned		=> open,
---		Aux0_loopback		=> '0',
---		Aux1_RX_pin			=> LOC_serial_in3 &  LOC_serial_in2, 
---		Aux1_TX_pin		   => xAUX_1_tx_pin, 
---		Aux1_RX_outclk		=> open,
---		Aux1_RX_data		=> open,
---		Aux1_TX_data		=> aux1_link_tx_data,
---		Aux1_setup			=> '0',
---		Aux1_aligned		=> open,
---		Aux1_loopback		=> '0');
---	
-	--//output pin assignments
+		
+	--uC_dig(1) <= 'X';  --//GPIO to BBB, may be driven by BBB
+	--uC_dig(3) <= 'X';  --//GPIO to BBB, may be driven by BBB
+	uC_dig(5) <= 'X'; --//not connected
+	uC_dig(6) <= 'X'; --//not connected
+	uC_dig(8) <= 'X'; --//not connected
+	--uC_dig(9) <= clock_rfrsh_pulse_1Hz;  --//external trigger (boosted on SPI_linker board)
+	uC_dig(10) <= 'X'; --//not connected
+	uC_dig(11) <= 'X'; --//not connected
+   -----------------------------------------------------------------------------
+	
+	--//Other output pin assignments
 	-----------------------------------------------------------------------
 	--//serial links:
-	LOC_serial_out1  	<= xAUX_0_tx_pin(1); 
-	LOC_serial_out0	<= xAUX_0_tx_pin(0);
-	LOC_serial_out3  	<= xAUX_1_tx_pin(1); 
-	LOC_serial_out2	<= xAUX_1_tx_pin(0);
+	LOC_serial_out1  	<= 'X';
+	LOC_serial_out0	<= 'X';
+	LOC_serial_out3  	<= 'X';
+	LOC_serial_out2	<= 'X';
 	
 	--//USB
 	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
 	USB_RDY <= (others=>'0');
 	USB_FD <= (others=>'X');
 	USB_PA <= (others=>'X');
+	USB_IFCLK <= 'X';
+	USB_WAKEUP <= 'X';
+	USB_PA <= (others=>'X');
 	
 	--//ADC
 	ADC_Cal 		<= adc_cal_sig; --//adc calibration init pulse
 	ADC_PD		<= adc_pd_sig;	 --//adc power-down
 	
-	
-	--//delete this, quick debug:
-	process(clock_93MHz)
+	--//for debugging ADC/core clock syncing
+	process(clock_93MHz, reset_global)
 	begin
 		if reset_global = '1' then
 			rx_ram_read_address <= (others=>'0');
@@ -576,7 +558,7 @@ begin
 	DEBUG(6) <=  rx_ram_read_address(0); --adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
 	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
 	DEBUG(8) <=  '0';
-	DEBUG(9) <=  clock_rfrsh_pulse_1Hz; --DSA_LE;--usb_read_packet_rdy;
+	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
 	DEBUG(10)<=  clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
@@ -613,8 +595,4 @@ begin
 	vme_data		<= vme_unused_pins(79 downto 48);
    --/////////////////////////////////////////////////////////////////////////////
 
-end rtl;
-	
-	
-		
-			
+end rtl;	

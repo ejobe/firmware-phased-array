@@ -23,6 +23,8 @@ use work.defs.all;
 use work.register_map.all;
 
 entity beamform is
+	generic(
+		ENABLE_BEAMFORMING : std_logic := '1'); --//compile-time flag
 	port(
 		rst_i			:	in		std_logic;
 		clk_i			: 	in		std_logic;
@@ -132,7 +134,7 @@ proc_buffer_data : process(rst_i, clk_i)
 begin
 	for i in 0 to 7 loop
 		
-		if rst_i = '1' then
+		if rst_i = '1' or ENABLE_BEAMFORMING = '0' then
 			buf_data_0(i)<= (others=>'0');
 			buf_data_1(i)<= (others=>'0');
 			buf_data_2(i)<= (others=>'0');
@@ -161,7 +163,7 @@ end process;
 proc_pipe_beams : process(rst_i, clk_i)
 begin
 	for i in 0 to define_num_beams-1 loop
-		if rst_i = '1' then
+		if rst_i = '1' or ENABLE_BEAMFORMING = '0' then
 			internal_beams_8_pipe(i) <= (others=>'0');
 			beams_8_o(i) <= (others=>'0');
 			
@@ -194,7 +196,7 @@ begin
 	--//loop over individual samples
 	for i in 0 to 2*define_serdes_factor-1 loop
 	
-		if rst_i = '1' then
+		if rst_i = '1' or ENABLE_BEAMFORMING = '0' then
 		
 --			beam_8_m7(i) 	<= (others=>'0');
 			beam_8_m6(i) 	<= (others=>'0');
@@ -650,7 +652,7 @@ end process;
 	
 xPOWER_SUM_8 : entity work.power_detector
 	port map(
-		rst_i  	=> rst_i,
+		rst_i  	=> rst_i or (not ENABLE_BEAMFORMING),
 		clk_i	 	=> clk_i,
 		reg_i		=> reg_i,
 		beams_i	=> internal_beams_8_pipe,
@@ -658,7 +660,7 @@ xPOWER_SUM_8 : entity work.power_detector
 		
 xPOWER_SUM_4a : entity work.power_detector
 	port map(
-		rst_i  	=> rst_i,
+		rst_i  	=> rst_i or (not ENABLE_BEAMFORMING),
 		clk_i	 	=> clk_i,
 		reg_i		=> reg_i,
 		beams_i	=> internal_beams_4a_pipe,
@@ -666,7 +668,7 @@ xPOWER_SUM_4a : entity work.power_detector
 		
 xPOWER_SUM_4b : entity work.power_detector
 	port map(
-		rst_i  	=> rst_i,
+		rst_i  	=> rst_i or (not ENABLE_BEAMFORMING),
 		clk_i	 	=> clk_i,
 		reg_i		=> reg_i,
 		beams_i	=> internal_beams_4b_pipe,

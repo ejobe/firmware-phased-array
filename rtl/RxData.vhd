@@ -23,9 +23,9 @@ entity RxData is
 			rst_i					:	in		std_logic;
 			rx_dat_valid_i		:  in		std_logic;   --//flag from ADC program block
 			
-			adc_dclk_i			:	in		std_logic;		
-			adc_data_i			:  in		std_logic_vector(27 downto 0);
-			adc_ovrange_i		:  in		std_logic;
+			adc_dclk_i			:	in		std_logic;	--//adc data clock
+			adc_data_i			:  in		std_logic_vector(27 downto 0);  --//adc serial data
+			adc_ovrange_i		:  in		std_logic; --//adc overrange flag
 			
 			rx_fifo_read_clk_i:  in		std_logic;  --//core clock
 			rx_fifo_read_req_i:	in		std_logic;
@@ -35,7 +35,7 @@ entity RxData is
 			ram_wr_adr_rst_i	: 	in		std_logic;
 			
 			rx_locked_o			:	out	std_logic;
-			rx_ram_write_adr_o:	out	std_logic_vector(define_ram_depth-1 downto 0);  --//for debugging
+			rx_ram_write_adr_o:	out	std_logic_vector(define_ram_depth-1 downto 0);  --//for debugging clock syncing issues
 			data_ram_ch0_o		:	out	std_logic_vector(define_ram_width-1 downto 0);
 			data_ram_ch1_o		:	out	std_logic_vector(define_ram_width-1 downto 0));
 

@@ -62,7 +62,7 @@ begin
 			when CLEAR =>
 				fpga_reset_pwr <= '1';
 				
-				if fpga_reset_count >= x"018FFFE7" then --//about 1 sec at 25 MHz
+				if fpga_reset_count >= x"028FFFE7" then --//about 1.7 sec at 25 MHz
 					power_on_reset_state <= READY;
 				else
 					fpga_reset_count <= fpga_reset_count + 1;
@@ -107,7 +107,7 @@ port map(
 
 --//simple power-up sequence
 --//start PLL before ADC to make sure ADC has correct clock
-proc_power_sequence : process(clk_i, fpga_reset_pwr)
+proc_power_sequence : process(clk_i, fpga_reset_pwr, fpga_reset_usr)
 begin
 	if fpga_reset_pwr = '1' or fpga_reset_usr = '1' then	
 		power_seq_count <= (others=>'0');

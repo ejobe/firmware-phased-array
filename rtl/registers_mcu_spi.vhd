@@ -19,6 +19,8 @@ use work.defs.all;
 use work.register_map.all;
 
 entity registers_mcu_spi is
+	generic(
+		FIRMWARE_DEVICE : std_logic);
 	port(
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
@@ -33,7 +35,6 @@ entity registers_mcu_spi is
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
-		write_req_o		:	out	std_logic; --//request the data
 		read_reg_o 		:	out 	std_logic_vector(define_register_size-1 downto 0); --//set data here to be read out
 		registers_io	:	inout	register_array_type;
 		--registers_dclk_o		:	out	register_array_type;  --//copy of registers on clk_data_i
@@ -58,40 +59,40 @@ begin
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
 		--//read-only registers:
-		registers_io(1) <= firmware_version; --//firmware version (see defs.vhd)
+		registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or firmware_version; --//firmware version (see defs.vhd)
 		registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
-		--registers_io(3) <= x"000000";       --//status register
+		registers_io(3) <= x"000000";       --//status register
 		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
 		registers_io(6) <= x"000000";			--//chipID (bits 64 to 49)
---		registers_io(7) <= x"000000"; 
---		registers_io(8) <= x"000000";
---		registers_io(9) <= x"000000";
---		registers_io(10) <= x"000000";
---		registers_io(11) <= x"000000";
---		registers_io(12) <= x"000000";
---		registers_io(13) <= x"000000";
---		registers_io(14) <= x"000000";
---		registers_io(15) <= x"000000";
---		registers_io(16) <= x"000000";
---		registers_io(17) <= x"000000";
---		registers_io(18) <= x"000000";
---		registers_io(19) <= x"000000";
---		registers_io(20) <= x"000000";
---		registers_io(21) <= x"000000";
---		registers_io(22) <= x"000000";
---		registers_io(23) <= x"000000";
---		registers_io(24) <= x"000000";
---		registers_io(25) <= x"000000";
---		registers_io(26) <= x"000000";
---		registers_io(27) <= x"000000";
---		registers_io(28) <= x"000000";
---		registers_io(29) <= x"000000";
---		registers_io(30) <= x"000000";
---		registers_io(31) <= x"000000";
---		registers_io(32) <= x"000000";
---		registers_io(33) <= x"000000";
---		registers_io(34) <= x"000000";
+		registers_io(7) <= x"000000"; 
+		registers_io(8) <= x"000000";
+		registers_io(9) <= x"000000";
+		registers_io(10) <= x"000000";
+		registers_io(11) <= x"000000";
+		registers_io(12) <= x"000000";
+		registers_io(13) <= x"000000";
+		registers_io(14) <= x"000000";
+		registers_io(15) <= x"000000";
+		registers_io(16) <= x"000000";
+		registers_io(17) <= x"000000";
+		registers_io(18) <= x"000000";
+		registers_io(19) <= x"000000";
+		registers_io(20) <= x"000000";
+		registers_io(21) <= x"000000";
+		registers_io(22) <= x"000000";
+		registers_io(23) <= x"000000";
+		registers_io(24) <= x"000000";
+		registers_io(25) <= x"000000";
+		registers_io(26) <= x"000000";
+		registers_io(27) <= x"000000";
+		registers_io(28) <= x"000000";
+		registers_io(29) <= x"000000";
+		registers_io(30) <= x"000000";
+		registers_io(31) <= x"000000";
+		registers_io(32) <= x"000000";
+		registers_io(33) <= x"000000";
+		registers_io(34) <= x"000000";
 		
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
@@ -148,6 +149,8 @@ begin
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		registers_io(81) <= x"00000F";   --// trig holdoff [80]
 		registers_io(82) <= x"000003";	--// trigger enables
+		registers_io(83) <= x"000303";   --//external trigger configuration
+
 		
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
@@ -166,6 +169,10 @@ begin
 		registers_io(base_adrs_trig_thresh+13) <= x"0FFFFF";   --//[99]
 		registers_io(base_adrs_trig_thresh+14) <= x"0FFFFF";   --//[100]
 		registers_io(base_adrs_trig_thresh+15) <= x"0FFFFF";   --//[101]
+		
+		--//external trigger configuration
+		registers_io(106) <= x"000033";
+		
 		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";

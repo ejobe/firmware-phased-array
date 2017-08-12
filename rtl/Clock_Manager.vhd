@@ -35,7 +35,8 @@ entity Clock_Manager is
 		refresh_1Hz_o		:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o
 		refresh_100mHz_o 	:	out	std_logic;	--//refresh pulse derived from CLK_15MHz_o every 10 s
 
-		fpga_pllLock_o	:	out	std_logic);  --lock signal from PLL on fpga
+		fpga_fastpllLock_o : inout std_logic;
+		fpga_pllLock_o	:	inout	std_logic);  --lock signal from main PLL on fpga
 
 end Clock_Manager;
 
@@ -92,7 +93,7 @@ begin
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2
-		port map(CLK1_i, PLL_reset_i, CLK_250MHz_o, open);
+		port map(CLK1_i, PLL_reset_i, CLK_250MHz_o, fpga_fastpllLock_o);
 					
 	xCLK_GEN_100kHz : Slow_Clocks
 		generic map(clk_divide_by => 5)
