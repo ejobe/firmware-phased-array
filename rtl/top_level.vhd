@@ -192,6 +192,7 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	signal the_phased_trigger_from_master : std_logic := '0';
 	signal external_trigger			: std_logic;
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
 	signal last_trig_power			: average_power_16samp_type;
@@ -296,7 +297,8 @@ begin
 	generic map( ENABLE_BEAMFORMING => FIRMWARE_DEVICE)
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
-		clk_i			=>	clock_93MHz,		
+		clk_i			=>	clock_93MHz,
+		clk_iface_i	=> clock_25MHz,
 		reg_i			=> registers,
 		data_i		=>	wfm_data,
 		beams_4a_o	=> beam_data_4a,
@@ -431,7 +433,7 @@ begin
 		clk_iface_i				=> clock_25MHz,
 		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
-		phased_trig_i			=> the_phased_trigger,
+		phased_trig_i			=> the_phased_trigger or the_phased_trigger_from_master,
 		last_trig_beam_i		=> last_trig_beams,
 		last_trig_pow_i		=> last_trig_power,
 		ext_trig_i				=> external_trigger,
@@ -522,13 +524,25 @@ begin
 	
 	--//Other output pin assignments
 	-----------------------------------------------------------------------
-	--//serial links:
-	LOC_serial_out1  	<= '0';
+	proc_phased_trigger_master_to_slave : process(the_phased_trigger, LOC_serial_in3)
+	begin	
+		case FIRMWARE_DEVICE is
+			when '1' =>  --//master board
+				LOC_serial_out1 <= the_phased_trigger;
+				the_phased_trigger_from_master <= '0';
+			when '0' =>  --//slave board
+				LOC_serial_out0 <= '0';
+				the_phased_trigger_from_master <= LOC_serial_in3;
+			end case;
+	end process;
+				
+	--//unused RJ45 serial links:
+	--LOC_serial_out1  	<= '0'; --//used for sending phased trigger from master to slave
 	--LOC_serial_out0	<= 'X'; --//used for master sync signal
 	LOC_serial_out3  	<= '0';
 	LOC_serial_out2	<= '0';
 	
-	--//USB stuff
+	--//USB stuff:
 	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
 	USB_RDY <= (others=>'0');
 	USB_FD <= (others=>'0');

@@ -28,6 +28,7 @@ entity beamform is
 	port(
 		rst_i			:	in		std_logic;
 		clk_i			: 	in		std_logic;
+		clk_iface_i	:	in		std_logic;
 			
 		reg_i			: 	in		register_array_type;
 		data_i		:	in	   full_data_type;
@@ -127,9 +128,39 @@ signal internal_summed_power_8	:	sum_power_type;
 signal internal_summed_power_4a	:	sum_power_type;
 signal internal_summed_power_4b	:	sum_power_type;
 
+signal internal_beam8_enable 			: std_logic := '0';
+signal internal_beam4a_enable 		: std_logic := '0';
+signal internal_beam4b_enable 		: std_logic := '0';
+--//
+component signal_sync is
+port(
+	clkA			: in	std_logic;
+   clkB			: in	std_logic;
+   SignalIn_clkA	: in	std_logic;
+   SignalOut_clkB	: out	std_logic);
+end component;
 --//
 begin
-
+----------------------------------------------
+xBEAM8ENABLE : signal_sync
+port map(
+	clkA				=> clk_iface_i,
+	clkB				=> clk_i,
+	SignalIn_clkA	=> reg_i(82)(2), 
+	SignalOut_clkB	=> internal_beam8_enable);
+xBEAM4AENABLE : signal_sync
+port map(
+	clkA				=> clk_iface_i,
+	clkB				=> clk_i,
+	SignalIn_clkA	=> reg_i(82)(3), 
+	SignalOut_clkB	=> internal_beam4a_enable);
+xBEAM4BENABLE : signal_sync
+port map(
+	clkA				=> clk_iface_i,
+	clkB				=> clk_i,
+	SignalIn_clkA	=> reg_i(82)(4), 
+	SignalOut_clkB	=> internal_beam4b_enable);
+--------------------------------------------
 proc_buffer_data : process(rst_i, clk_i)
 begin
 	for i in 0 to 7 loop
@@ -160,7 +191,7 @@ begin
 end process;
 
 --//pipeline beams to output
-proc_pipe_beams : process(rst_i, clk_i)
+proc_pipe_beams : process(rst_i, clk_i, internal_beam4a_enable, internal_beam4b_enable, internal_beam8_enable)
 begin
 	for i in 0 to define_num_beams-1 loop
 		if rst_i = '1' or ENABLE_BEAMFORMING = '0' then
@@ -175,14 +206,27 @@ begin
 			
 		elsif rising_edge(clk_i) then
 			beams_8_o(i) <= internal_beams_8_pipe(i);
-			internal_beams_8_pipe(i) <= internal_beams_8(i);
-			
 			beams_4a_o(i) <= internal_beams_4a_pipe(i);
-			internal_beams_4a_pipe(i) <= internal_beams_4a(i);
-			
 			beams_4b_o(i) <= internal_beams_4b_pipe(i);
-			internal_beams_4b_pipe(i) <= internal_beams_4b(i);
-			
+			--------------------------------------------------------
+			if internal_beam8_enable = '1' then
+				internal_beams_8_pipe(i) <= internal_beams_8(i);
+			else
+				internal_beams_8_pipe(i) <= (others=>'0');
+			end if;
+			--------------------------------------------------------
+			if internal_beam4a_enable = '1' then
+				internal_beams_4a_pipe(i) <= internal_beams_4a(i);
+			else
+				internal_beams_4a_pipe(i) <= (others=>'0');
+			end if;
+			--------------------------------------------------------
+			if internal_beam4b_enable = '1' then
+				internal_beams_4b_pipe(i) <= internal_beams_4b(i);
+			else
+				internal_beams_4b_pipe(i) <= (others=>'0');
+			end if;
+			--------------------------------------------------------
 			--//output beam power. make effective beam using different baselines - for power-thresholding
 			sum_pow_o(i) <= 	std_logic_vector(unsigned(internal_summed_power_8(i))) +
 									std_logic_vector(unsigned(internal_summed_power_4a(i))) +

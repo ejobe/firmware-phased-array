@@ -162,7 +162,7 @@ begin
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		registers_io(81) <= x"00000F";   --// trig holdoff [80]
-		registers_io(82) <= x"000003";	--// trigger enables
+		registers_io(82) <= x"00001E";	--// trigger enables
 		registers_io(83) <= x"000303";   --//external trigger configuration
 
 		
@@ -229,6 +229,7 @@ begin
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"27" then
 			internal_sync_master <= write_reg_i(0) and FIRMWARE_DEVICE;
 			address_o <= (others=>'0');
+			
 		--//write register value
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) > x"27" then  --//read/write registers
 			--//if sync high, don't immediatly write the register value:

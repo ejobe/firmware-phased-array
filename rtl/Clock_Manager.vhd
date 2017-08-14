@@ -48,8 +48,8 @@ architecture rtl of Clock_Manager is
 	signal refresh_clk_counter_1Hz 	:	std_logic_vector(27 downto 0) := (others=>'0');
 	signal refresh_clk_counter_100mHz:	std_logic_vector(27 downto 0) := (others=>'0');
 
-	signal refresh_clk_1Hz				:	std_logic;
-	signal refresh_clk_100mHz			:	std_logic;
+	signal refresh_clk_1Hz				:	std_logic := '0';
+	signal refresh_clk_100mHz			:	std_logic := '0';
 	
 	--//for 7.5 MHz
 	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(23 downto 0) := x"7270E0";  --//7.5e6
@@ -93,7 +93,7 @@ begin
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2
-		port map(CLK1_i, PLL_reset_i, CLK_250MHz_o, fpga_fastpllLock_o);
+		port map(CLK1_i, PLL_reset_i or Reset_i, CLK_250MHz_o, fpga_fastpllLock_o);
 					
 	xCLK_GEN_100kHz : Slow_Clocks
 		generic map(clk_divide_by => 5)
