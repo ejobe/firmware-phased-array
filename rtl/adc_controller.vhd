@@ -54,6 +54,7 @@ entity adc_controller is
 		--//timestream data to beamform module
 		timestream_data_o		:	out full_data_type;
 		
+		rx_pll_reset_o			:	out std_logic;
 		dat_valid_o				:	inout	std_logic);
 		
 end adc_controller;		
@@ -67,6 +68,7 @@ signal adc_dclk_rst_state : adc_dclk_rst_state_type;
 
 signal user_dclk_rst	: std_logic;
 signal internal_dclk_rst : std_logic;
+signal internal_dclk_rst_counter : std_logic_vector(7 downto 0);
 signal internal_startup_dclk_rst : std_logic;
 signal internal_data_valid : std_logic;
 signal internal_data_valid_fast_clk : std_logic;
@@ -77,8 +79,7 @@ signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfe
 --//signals for adding relative delays between ADCs in order to align data
 signal delay_en   	: std_logic_vector(7 downto 0);
 signal delay_chan 	: rx_data_delay_type;
-signal rxdatapipe1   	: full_data_type; --//initial handle on rx data
-signal rxdatapipe2   	: full_data_type; --//initial handle on rx data
+signal rxdatapipe   	: full_data_type; --//initial handling of rx data
 
 signal data_pipe   	: buffered_data_type;
 signal data_pipe_2 	: full_data_type;
@@ -228,18 +229,19 @@ dat_valid_o <= internal_data_valid;
 --//NOTE + REMINDER: dclk_rst_lvds_o is active LOW due to schematic error switching lvds pairs
 --////////////////////////////////////////////////////////////////////////////////
 proc_dclk_rst : process(rst_i, clk_fast_i, internal_dclk_rst, internal_data_valid, rx_locked_i, pwr_up_i)
-variable i : integer range 1000 downto 0 := 0;
 begin
 	if rst_i = '1' or pwr_up_i='0' then
-		i := 0;
 		internal_data_valid_fast_clk <= '0';
+		internal_dclk_rst_counter <= (others=>'0');
 		dclk_rst_lvds_o <= "1111"; --//dclk should not be asserted when CAL is running (blocks cal cycle)
 		adc_dclk_rst_state <= idle_st;
+		rx_pll_reset_o <= '1';  --//reset the data-receiver PLL blocks
 	elsif rising_edge(clk_fast_i) and pwr_up_i = '1' then
 	
 		case adc_dclk_rst_state is
 			when idle_st=>
-				i := 0;
+				rx_pll_reset_o <= '0';
+				internal_dclk_rst_counter <= (others=>'0');
 				dclk_rst_lvds_o <= "1111";
 				internal_data_valid_fast_clk <= internal_data_valid_fast_clk;
 				if internal_dclk_rst = '1' or user_dclk_rst = '1' then
@@ -249,27 +251,27 @@ begin
 				end if;
 				
 			when pulse_st=>
+				rx_pll_reset_o <= '1';
 				internal_data_valid_fast_clk <= '0';
-				if i >= 100 then
-					i := 0;
-					dclk_rst_lvds_o <= "1111"; --//de-assert pulse
+				dclk_rst_lvds_o <= "0000"; --//send pulse (active low) This CLEARS the DCLK lines while active.
+				if internal_dclk_rst_counter = 100 then
+					internal_dclk_rst_counter <= (others=>'0');
 					adc_dclk_rst_state <= done_st;
 				else
-					dclk_rst_lvds_o <= "0000";  --//send pulse (active low) This CLEARS the DCLK lines while active.
-					i := i+1;
+					internal_dclk_rst_counter <= internal_dclk_rst_counter + 1;
+					adc_dclk_rst_state <= pulse_st;
 				end if;
 				
 			when done_st=>
-				i:=0;
-				dclk_rst_lvds_o <= "1111";
-				------------------------------------------------
-				--//TODO: probably should not require 'lock' here, otherwise data not flow if no lock.
-				------------------------------------------------
-				if rx_locked_i = '1' then  --//then wait for data clocks to reappear and lock the serdes receiver
+				rx_pll_reset_o <= '0';
+				dclk_rst_lvds_o <= "1111"; --//de-assert pulse
+				if internal_dclk_rst_counter = 100 then  
+					internal_dclk_rst_counter <= (others=>'0');
 					internal_data_valid_fast_clk <= '1';
 					adc_dclk_rst_state <= idle_st;
 				else
 					internal_data_valid_fast_clk <= '0';
+					internal_dclk_rst_counter <= internal_dclk_rst_counter + 1;
 					adc_dclk_rst_state <= done_st;
 				end if;
 		end case;
@@ -283,17 +285,16 @@ begin
 	if rst_i = '1' then
 		rx_ram_rd_en_o <= '0';
 		for i in 0 to 7 loop
-			rxdatapipe1(i) <= (others=>'0');
-			rxdatapipe2(i) <= (others=>'0');
+			rxdatapipe(i) <= (others=>'0');
 
 		end loop;
 	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
 		rx_ram_rd_en_o <= '1';
-		rxdatapipe2 <= rx_adc_data_i;
+		rxdatapipe <= rx_adc_data_i;
 	
 	elsif rising_edge(clk_core_i) then --//shouldn't reach here, unless clocks aren't frequency matched.
 		rx_ram_rd_en_o <= '0';
-		rxdatapipe2 <= rx_adc_data_hold_value;
+		rxdatapipe <= rx_adc_data_hold_value;
 	end if;
 end process;
 --////////////////////////////////////////////////////////////////////////
@@ -333,8 +334,8 @@ end process;
 --////////////////////////////////////////////////////////////////////////////
 --////////////////////////////////////////////////////////////////////////////
 
---//apply relative delays to data_pipe_2 
-proc_align_samples : process(rst_i, clk_core_i, delay_en, rxdatapipe2)
+--//apply relative delays to rxdatapipe
+proc_align_samples : process(rst_i, clk_core_i, delay_en, rxdatapipe)
 begin
 	for i in 0 to 7 loop
 		
@@ -397,7 +398,7 @@ begin
 			--//first pipeline stage
 			data_pipe(i)(define_ram_width-1 downto 0) <= data_pipe(i)(2*define_ram_width-1 downto define_ram_width);
 			--//apply channel-level mask here
-			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i) and channel_mask(i); 
+			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i) and channel_mask(i); 
 			
 		end if;
 	end loop;

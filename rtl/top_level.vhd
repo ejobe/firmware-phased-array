@@ -165,6 +165,7 @@ architecture rtl of top_level is
 	signal rx_fifo_usedwords	:  full_address_type;
 	signal rx_ram_wr_address	:  half_address_type;
 	signal rx_ram_rd_en			:	std_logic;
+	signal rx_pll_reset			:	std_logic;
 	--//pll control signals
 	signal lmk_start_write		:	std_logic := '0';
 	signal lmk_done_write		:	std_logic;
@@ -288,6 +289,7 @@ begin
 		rx_ram_rd_en_o 	=> rx_ram_rd_en,
 		rx_fifo_usedwrd_i => rx_fifo_usedwords,
 		timestream_data_o	=> wfm_data,
+		rx_pll_reset_o		=> rx_pll_reset,
 		dat_valid_o			=> adc_data_valid);
 	--///////////////////////////////////////	
 	xBEAMFORMER : entity work.beamform
@@ -381,7 +383,7 @@ begin
 	ReceiverBlock	:	 for i in 0 to 3 generate
 		xDATA_RECEIVER : entity work.RxData
 		port map(
-			rst_i					=>	reset_global_except_registers or reset_global or not startup_adc,		
+			rst_i					=>	reset_global_except_registers or reset_global or (not startup_adc) or rx_pll_reset,		
 			rx_dat_valid_i		=>	adc_data_valid,
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
@@ -472,6 +474,8 @@ begin
 	port map(
 		rst_i				=> reset_global,
 		clk_i				=> clock_25MHz,  --//clock for register interface
+		sync_slave_i	=> LOC_serial_in2,
+		sync_from_master_o	=> LOC_serial_out0,
 		--//////////////////////////
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
@@ -508,30 +512,30 @@ begin
 		
 	--uC_dig(1) <= 'X';  --//GPIO to BBB, may be driven by BBB
 	--uC_dig(3) <= 'X';  --//GPIO to BBB, may be driven by BBB
-	uC_dig(5) <= 'X'; --//not connected
-	uC_dig(6) <= 'X'; --//not connected
-	uC_dig(8) <= 'X'; --//not connected
+	uC_dig(5) <= '0'; --//not connected
+	uC_dig(6) <= '0'; --//not connected
+	uC_dig(8) <= '0'; --//not connected
 	--uC_dig(9) <= clock_rfrsh_pulse_1Hz;  --//external trigger (boosted on SPI_linker board)
-	uC_dig(10) <= 'X'; --//not connected
-	uC_dig(11) <= 'X'; --//not connected
+	uC_dig(10) <= '0'; --//not connected
+	uC_dig(11) <= '0'; --//not connected
    -----------------------------------------------------------------------------
 	
 	--//Other output pin assignments
 	-----------------------------------------------------------------------
 	--//serial links:
-	LOC_serial_out1  	<= 'X';
-	LOC_serial_out0	<= 'X';
-	LOC_serial_out3  	<= 'X';
-	LOC_serial_out2	<= 'X';
+	LOC_serial_out1  	<= '0';
+	--LOC_serial_out0	<= 'X'; --//used for master sync signal
+	LOC_serial_out3  	<= '0';
+	LOC_serial_out2	<= '0';
 	
-	--//USB
+	--//USB stuff
 	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
 	USB_RDY <= (others=>'0');
-	USB_FD <= (others=>'X');
-	USB_PA <= (others=>'X');
-	USB_IFCLK <= 'X';
-	USB_WAKEUP <= 'X';
-	USB_PA <= (others=>'X');
+	USB_FD <= (others=>'0');
+	USB_PA <= (others=>'0');
+	USB_IFCLK <= '0';
+	USB_WAKEUP <= '0';
+	USB_PA <= (others=>'0');
 	
 	--//ADC
 	ADC_Cal 		<= adc_cal_sig; --//adc calibration init pulse

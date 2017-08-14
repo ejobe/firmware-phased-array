@@ -24,6 +24,8 @@ entity registers_mcu_spi is
 	port(
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
+		sync_slave_i	:	in		std_logic;  --//signal to sync specific register assignments between boards (SLAVE only)
+		sync_from_master_o : out std_logic;	--// ^sync signal from master to slave
 		--//////////////////////////////
 		--//status/system read-only registers:
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
@@ -43,15 +45,27 @@ entity registers_mcu_spi is
 	end registers_mcu_spi;
 	
 architecture rtl of registers_mcu_spi is
---type read_request_state_type is (idle_st, read_rdy_st, read_req_st);
---signal read_request_state 	: read_request_state_type;
 
---signal internal_register 	: std_logic_vector(31 downto 0);
---signal internal_ready 		: std_logic;
+signal internal_sync_slave : std_logic;
+signal internal_sync_master: std_logic;
+signal internal_sync_reg   : std_logic_vector(1 downto 0);
+signal internal_sync_register  : std_logic_vector(define_register_size-1 downto 0);
 signal unique_chip_id		: std_logic_vector(63 downto 0);
 signal unique_chip_id_rdy	: std_logic;
 
 begin
+
+proc_master_slave: process(internal_sync_master, sync_slave_i)
+begin
+	case FIRMWARE_DEVICE is
+		when '1' =>
+			internal_sync_slave <= '0';  --//master device
+			sync_from_master_o <= internal_sync_master;
+		when '0' =>
+			internal_sync_slave <= sync_slave_i;  --//slave device
+			sync_from_master_o <= '0';
+	end case;
+end process;
 --/////////////////////////////////////////////////////////////////
 --//write registers: 
 proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i, registers_io)
@@ -173,14 +187,24 @@ begin
 		--//external trigger configuration
 		registers_io(106) <= x"000033";
 		
-		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
+		internal_sync_master <= '0';
+		internal_sync_register <= (others=>'0');
+		internal_sync_reg <= (others=>'0');
 	--////////////////////////////////////////////////////////////////////////////
+	--lots of if/else statements here, not awesome, but meets timing (only running this @25 MHz)
+	-------------------------------------------------------------
 	elsif rising_edge(clk_i) then 
+		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);
+		
+		--//handle sync event, falling edge condition of internal_sync_reg (i.e. the sync is 'released')
+		if internal_sync_reg = "10" then
+			registers_io(to_integer(unsigned(internal_sync_register(31 downto 24)))) <= internal_sync_register(23 downto 0);
+			address_o <= internal_sync_register(31 downto 24);
 		
 		--//read register command
-		if write_rdy_i = '1' and write_reg_i(31 downto 24) = x"6D" then
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"6D" then
 			read_reg_o <=  write_reg_i(7 downto 0) & registers_io(to_integer(unsigned(write_reg_i(7 downto 0))));
 			address_o <= x"47";  --//initiate a read	
 		
@@ -199,12 +223,22 @@ begin
 		--//read data chunk 3	
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
 			read_reg_o <= current_ram_adr_data_i(3);
-			address_o <= x"47";  --//initiate a read	
-
+			address_o <= x"47";  --//initiate a read
+			
+		--//catch a sync command, if master board. 
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"27" then
+			internal_sync_master <= write_reg_i(0) and FIRMWARE_DEVICE;
+			address_o <= (others=>'0');
 		--//write register value
-		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) > x"26" then  --//read/write registers
-			registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
-			address_o <= write_reg_i(31 downto 24);
+		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) > x"27" then  --//read/write registers
+			--//if sync high, don't immediatly write the register value:
+			if internal_sync_reg = "11" then
+				internal_sync_register <= write_reg_i;
+				address_o <= (others=>'0');
+			else
+				registers_io(to_integer(unsigned(write_reg_i(31 downto 24)))) <= write_reg_i(23 downto 0);
+				address_o <= write_reg_i(31 downto 24);
+			end if;
 
 		else
 			address_o <= x"00";

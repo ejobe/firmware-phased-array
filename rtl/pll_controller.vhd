@@ -140,7 +140,6 @@ begin
 		internal_spi_write <= '1';
 	end if;
 end process;		
-	
 		
 proc_lmk_write : process(rst_i, clk_i, write_i, internal_spi_write)
 	variable j : integer range 0 to 26 := 0;
