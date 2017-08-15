@@ -23,7 +23,7 @@ entity top_level is
 	----- Master = 1 (all functionality) ; Slave = 0 (removes beamforming, the phased trigger, cal pulser output, ...)
 	----------------------------------
 	Generic(
-		FIRMWARE_DEVICE : std_logic := '1');
+		FIRMWARE_DEVICE : std_logic := '0');
 	----------------------------------	
 	Port(
 		--//Master clocks (2 copies, 100 MHz)
@@ -56,10 +56,10 @@ entity top_level is
 		USB_PA			: 	inout std_logic_vector(7 downto 0);	
 		USB_FD			:	inout	std_logic_vector(15 downto 0);
 		USB_RDY			:	out	std_logic_vector(1 downto 0);
-		--//Trigger SMA's
+		--//Trigger SMA's (all bi-directional, pin names match silkscreen label direction for clarity)
 		SMA_in			: 	inout	std_logic;
-		SMA_out0			: 	out	std_logic;
-		SMA_out1			: 	out	std_logic;
+		SMA_out0			: 	inout	std_logic;
+		SMA_out1			: 	inout	std_logic;
 		--//LMK04808 interface
 		LMK_SYNC			:  inout std_logic;
 		LMK_Stat_Hldov :  inout std_logic;
@@ -74,12 +74,20 @@ entity top_level is
 		SYS_serial_out	:  out	std_logic;
 		LOC_serial_in0 :  in		std_logic;
 		LOC_serial_in1 :  in		std_logic;
-		LOC_serial_in2 :  in		std_logic;
-		LOC_serial_in3 :  in		std_logic;
+		--LOC_serial_in2 :  in		std_logic; --//wiring to this RJ45 jack broken on schematic
+		--LOC_serial_in3 :  in		std_logic; --//wiring to this RJ45 jack broken on schematic
 		LOC_serial_out0:  out	std_logic;
 		LOC_serial_out1:  out	std_logic;
-		LOC_serial_out2:  out	std_logic;
-		LOC_serial_out3:  out	std_logic;
+		--LOC_serial_out2:  out	std_logic; --//wiring to this RJ45 jack broken on schematic
+		--LOC_serial_out3:  out	std_logic; --//wiring to this RJ45 jack broken on schematic
+		SerialLinkTri0 : inout std_logic;  --//use these to tri-state the incorrectly wired (formerly) LVDS pairs
+		SerialLinkTri1 : inout std_logic;
+		SerialLinkTri2 : inout std_logic;
+		SerialLinkTri3 : inout std_logic;
+		SerialLinkTri4 : inout std_logic;
+		SerialLinkTri5 : inout std_logic;
+		SerialLinkTri6 : inout std_logic;
+		SerialLinkTri7 : inout std_logic;
 		--//clk select mux
 		CLK_select 		:	out	std_logic_vector(1 downto 0) := "00"; --//set defaults
 		--//uC
@@ -183,6 +191,8 @@ architecture rtl of top_level is
 	signal register_adr			:	std_logic_vector(define_address_size-1 downto 0);
 	--//unused vme pins (used to simply set to Hi-Z):
 	signal vme_unused_pins		: 	std_logic_vector(79 downto 0);
+	--//other unused pins to tri-state
+	signal unused_pins			:  std_logic_vector(43 downto 0);
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
 	signal beam_data_8			: array_of_beams_type; --//registered on core clk
@@ -200,7 +210,9 @@ architecture rtl of top_level is
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	signal status_reg_latched_data_manager :  std_logic_vector(23 downto 0);
 	signal status_reg_adc	: std_logic_vector(23 downto 0);
-	
+	--//self-generated cal pulse signals
+	signal cal_pulse_rf_switch_ctl : std_logic;
+	signal cal_pulse_the_pulse	: std_logic;
 	--//signals driven from the data manager module
 	signal data_manager_write_busy : std_logic;
 	signal event_meta_data	: event_metadata_type;
@@ -209,7 +221,10 @@ architecture rtl of top_level is
 	signal scalers_trig			: std_logic;
 	signal scaler_to_read		: std_logic_vector(23 downto 0);
 	signal scalers_gate			: std_logic;
-	
+	--//sync signals 
+	signal board_sync : std_logic; --//for debugging
+	signal sync_from_master_device : std_logic;
+	signal sync_to_slave_device : std_logic;
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -339,8 +354,8 @@ begin
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_250MHz,
 		reg_i			=> registers,
-		pulse_o		=> SMA_out0, --//pulse out in 'TRIG_OUT' SMA connector
-		rf_switch_o => SMA_in);    
+		pulse_o		=> cal_pulse_the_pulse, --SMA_out0, --//pulse out in 'TRIG_OUT' SMA connector
+		rf_switch_o => cal_pulse_rf_switch_ctl); --SMA_in);  
 	--///////////////////////////////////////	
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
@@ -433,7 +448,7 @@ begin
 		clk_iface_i				=> clock_25MHz,
 		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
-		phased_trig_i			=> the_phased_trigger or the_phased_trigger_from_master,
+		phased_trig_i			=> (the_phased_trigger and FIRMWARE_DEVICE) or the_phased_trigger_from_master,
 		last_trig_beam_i		=> last_trig_beams,
 		last_trig_pow_i		=> last_trig_power,
 		ext_trig_i				=> external_trigger,
@@ -476,8 +491,8 @@ begin
 	port map(
 		rst_i				=> reset_global,
 		clk_i				=> clock_25MHz,  --//clock for register interface
-		sync_slave_i	=> LOC_serial_in2,
-		sync_from_master_o	=> LOC_serial_out0,
+		sync_slave_i	=> sync_to_slave_device,
+		sync_from_master_o	=> sync_from_master_device,
 		--//////////////////////////
 		--//status registers
 		scaler_to_read_i => scaler_to_read,
@@ -491,6 +506,7 @@ begin
 		write_rdy_i		=> mcu_rx_rdy,
 		read_reg_o 		=> register_to_read,
 		registers_io	=> registers, --//system register space
+		sync_active_o	=> board_sync,
 		address_o		=> register_adr);
 	--///////////////////////////////////////	
 	----------------------------------------------------------------
@@ -512,44 +528,74 @@ begin
 		rx_rdy_o		 => mcu_rx_rdy);
 		--tx_rdy_o		 => mcu_tx_rdy);
 		
-	--uC_dig(1) <= 'X';  --//GPIO to BBB, may be driven by BBB
-	--uC_dig(3) <= 'X';  --//GPIO to BBB, may be driven by BBB
-	uC_dig(5) <= '0'; --//not connected
-	uC_dig(6) <= '0'; --//not connected
-	uC_dig(8) <= '0'; --//not connected
+	--uC_dig(1) <= 'X';  --//GPIO to BBB, may be driven by BBB or firmware
+	--uC_dig(3) <= 'X';  --//GPIO to BBB, may be driven by BBB or firmware
+	--uC_dig(5) <= '0'; --//not connected
+	--uC_dig(6) <= '0'; --//not connected
+	--uC_dig(8) <= '0'; --//not connected
 	--uC_dig(9) <= clock_rfrsh_pulse_1Hz;  --//external trigger (boosted on SPI_linker board)
-	uC_dig(10) <= '0'; --//not connected
-	uC_dig(11) <= '0'; --//not connected
+	--uC_dig(10) <= '0'; --//not connected
+	--uC_dig(11) <= '0'; --//not connected
    -----------------------------------------------------------------------------
 	
 	--//Other output pin assignments
 	-----------------------------------------------------------------------
-	proc_phased_trigger_master_to_slave : process(the_phased_trigger, LOC_serial_in3)
-	begin	
-		case FIRMWARE_DEVICE is
-			when '1' =>  --//master board
-				LOC_serial_out1 <= the_phased_trigger;
-				the_phased_trigger_from_master <= '0';
-			when '0' =>  --//slave board
-				LOC_serial_out0 <= '0';
-				the_phased_trigger_from_master <= LOC_serial_in3;
-			end case;
+	-------------------------------------------------------------------------------------
+	--MASTER BOARD:
+	-- --SMA_out0 => the DDR cal pulse
+	-- --SMA_out1 => the phased trigger to the slave board
+	-- --SMA_in => the sync signal to the slave board
+	--SLAVE BOARD:
+	-- --SMA_out0 => the cal pulse enable
+	-- --SMA_out1 => the phased trigger from the master board
+	-- --SMA_in => the sync signal from the master board
+	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger)
+	begin
+	case FIRMWARE_DEVICE is
+		when '1' => --//master board
+			SMA_out0 <= cal_pulse_the_pulse;  
+			SMA_out1 <= the_phased_trigger;
+			SMA_in	<= sync_from_master_device;
+			the_phased_trigger_from_master <= '0';
+			sync_to_slave_device <= '0';
+		when '0' => --//slave board
+			SMA_out0 <= cal_pulse_rf_switch_ctl;
+			the_phased_trigger_from_master <= SMA_out1;
+			sync_to_slave_device <= SMA_in;
+	end case;
 	end process;
-				
-	--//unused RJ45 serial links:
-	--LOC_serial_out1  	<= '0'; --//used for sending phased trigger from master to slave
-	--LOC_serial_out0	<= 'X'; --//used for master sync signal
-	LOC_serial_out3  	<= '0';
-	LOC_serial_out2	<= '0';
 	
-	--//USB stuff:
-	--USB_RDY(1)	<=	usb_slwr;	--//usb signal-low write
-	USB_RDY <= (others=>'0');
-	USB_FD <= (others=>'0');
-	USB_PA <= (others=>'0');
-	USB_IFCLK <= '0';
-	USB_WAKEUP <= '0';
-	USB_PA <= (others=>'0');
+	--//unused RJ45 serial links:
+	LOC_serial_out1  	<= '0'; 
+	LOC_serial_out0	<= '0'; 
+	SYS_serial_out 	<= '0';
+	--------------------------------------------------------------
+	--//unused pins:
+	USB_FD 	<=  unused_pins(15 downto 0);
+	USB_PA 	<=  unused_pins(23 downto 16);
+	USB_CTL 	<=  unused_pins(26 downto 24);
+	USB_RDY  <=  unused_pins(28 downto 27);
+	USB_WAKEUP <= unused_pins(29);
+	USB_IFCLK  <= unused_pins(30);
+	uC_dig(5) <= unused_pins(31);
+	uC_dig(6) <= unused_pins(32);
+	uC_dig(8) <= unused_pins(33);
+	uC_dig(10) <= unused_pins(34);
+	uC_dig(11) <= unused_pins(35);
+	SerialLinkTri0 <= unused_pins(36);
+	SerialLinkTri1 <= unused_pins(37);
+	SerialLinkTri2 <= unused_pins(38);
+	SerialLinkTri3 <= unused_pins(39);
+	SerialLinkTri4 <= unused_pins(40);
+	SerialLinkTri5 <= unused_pins(41);
+	SerialLinkTri6 <= unused_pins(42);
+	SerialLinkTri7 <= unused_pins(43);
+	xUNUSED_TRISTATE : entity work.unused_pin_driver(RTL)
+	port map(
+		oe			=> (others=>'0'), 
+		datain	=> (others=>'0'),
+		dataout 	=> unused_pins);
+	--------------------------------------------------------------
 	
 	--//ADC
 	ADC_Cal 		<= adc_cal_sig; --//adc calibration init pulse
@@ -581,7 +627,7 @@ begin
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
 	
-	LED(0) <= '1'; --not registers(base_adrs_rdout_cntrl+0)(0); --not clock_10Hz; --not registers(base_adrs_rdout_cntrl+0)(0);
+	LED(0) <= not board_sync;
 	LED(1) <= not reset_global;
 	LED(2) <= not reset_global;
 	

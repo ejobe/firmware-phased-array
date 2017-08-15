@@ -40,6 +40,7 @@ entity registers_mcu_spi is
 		read_reg_o 		:	out 	std_logic_vector(define_register_size-1 downto 0); --//set data here to be read out
 		registers_io	:	inout	register_array_type;
 		--registers_dclk_o		:	out	register_array_type;  --//copy of registers on clk_data_i
+		sync_active_o	:  inout	std_logic := '0'; --//for debugging
 		address_o		:	out	std_logic_vector(define_address_size-1 downto 0));
 		
 	end registers_mcu_spi;
@@ -49,6 +50,7 @@ architecture rtl of registers_mcu_spi is
 signal internal_sync_slave : std_logic;
 signal internal_sync_master: std_logic;
 signal internal_sync_reg   : std_logic_vector(1 downto 0);
+signal internal_sync_timeout_counter : std_logic_vector(23 downto 0);
 signal internal_sync_register  : std_logic_vector(define_register_size-1 downto 0);
 signal unique_chip_id		: std_logic_vector(63 downto 0);
 signal unique_chip_id_rdy	: std_logic;
@@ -107,7 +109,8 @@ begin
 		registers_io(32) <= x"000000";
 		registers_io(33) <= x"000000";
 		registers_io(34) <= x"000000";
-		
+		registers_io(39) <= x"000000"; --//sync command register [39]
+
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(109)  <= x"000001"; --//set read register
@@ -161,10 +164,9 @@ begin
 		--//masking:
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
-		registers_io(81) <= x"00000F";   --// trig holdoff [80]
-		registers_io(82) <= x"00001E";	--// trigger enables
-		registers_io(83) <= x"000303";   --//external trigger configuration
-
+		registers_io(81) <= x"00000F";   --// trig holdoff [81]
+		registers_io(82) <= x"00001E";	--// trigger/beam enables [82]
+		registers_io(83) <= x"000303";   --//external trigger output configuration [83]
 		
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
@@ -184,19 +186,18 @@ begin
 		registers_io(base_adrs_trig_thresh+14) <= x"0FFFFF";   --//[100]
 		registers_io(base_adrs_trig_thresh+15) <= x"0FFFFF";   --//[101]
 		
-		--//external trigger configuration
-		registers_io(106) <= x"000033";
-		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 		internal_sync_master <= '0';
 		internal_sync_register <= (others=>'0');
 		internal_sync_reg <= (others=>'0');
-	--////////////////////////////////////////////////////////////////////////////
+		sync_active_o <= '0';
+	--//////////////////////////////////////////////////////////////////////////////////////////
 	--lots of if/else statements here, not awesome, but meets timing (only running this @25 MHz)
 	-------------------------------------------------------------
 	elsif rising_edge(clk_i) then 
-		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);
+		sync_active_o <= internal_sync_reg(0);
+		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);				
 		
 		--//handle sync event, falling edge condition of internal_sync_reg (i.e. the sync is 'released')
 		if internal_sync_reg = "10" then

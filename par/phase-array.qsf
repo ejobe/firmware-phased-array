@@ -195,7 +195,6 @@ set_instance_assignment -name IO_STANDARD "2.5 V" -to dir_trans
 set_instance_assignment -name IO_STANDARD "2.5 V" -to clkswitchcontrol
 set_instance_assignment -name IO_STANDARD LVDS -to DIGOUT_1
 set_instance_assignment -name IO_STANDARD LVDS -to DIGOUT_2
-set_instance_assignment -name IO_STANDARD LVDS -to DIGOUT_3
 set_instance_assignment -name IO_STANDARD LVDS -to DIGOUT_0
 set_instance_assignment -name IO_STANDARD LVDS -to ADC_PIN15_PIN14_RST[3]
 set_instance_assignment -name IO_STANDARD LVDS -to ADC_PIN15_PIN14_RST[2]
@@ -319,7 +318,6 @@ set_instance_assignment -name IO_STANDARD "2.5 V" -to _ga[2]
 set_instance_assignment -name IO_STANDARD "2.5 V" -to address[29]
 set_instance_assignment -name IO_STANDARD "2.5 V" -to _ga[0]
 set_instance_assignment -name IO_STANDARD "2.5 V" -to address[27]
-set_instance_assignment -name IO_STANDARD LVDS -to DIGIN_3
 set_instance_assignment -name IO_STANDARD LVDS -to DIGIN_1
 set_instance_assignment -name IO_STANDARD LVDS -to DIGIN_2
 set_instance_assignment -name IO_STANDARD LVDS -to "samplingclock(n)"
@@ -349,16 +347,13 @@ set_instance_assignment -name IO_STANDARD LVDS -to "ADC3in[18](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC3in[17](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC3in[16](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC3in[15](n)"
-set_instance_assignment -name IO_STANDARD LVDS -to "DIGOUT_1(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "DIGOUT_2(n)"
-set_instance_assignment -name IO_STANDARD LVDS -to "DIGOUT_3(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC_PIN15_PIN14_RST[3](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC_PIN15_PIN14_RST[2](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC_PIN15_PIN14_RST[1](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADC_PIN15_PIN14_RST[0](n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "master_clock1(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "master_clock(n)"
-set_instance_assignment -name IO_STANDARD LVDS -to "DIGIN_3(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "DIGIN_1(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "DIGIN_2(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADCclk1(n)"
@@ -726,13 +721,11 @@ set_location_assignment PIN_AC29 -to altera_reserved_tdi
 set_location_assignment PIN_AC28 -to altera_reserved_tdo
 set_location_assignment PIN_C4 -to ~ALTERA_CRC_ERROR~
 set_location_assignment PIN_AD6 -to "samplingclock(n)"
-set_location_assignment PIN_K26 -to "DIGOUT_3(n)"
 set_location_assignment PIN_F1 -to "DIGOUT_0(n)"
 set_location_assignment PIN_N12 -to "ADC_PIN15_PIN14_RST[3](n)"
 set_location_assignment PIN_L11 -to "ADC_PIN15_PIN14_RST[2](n)"
 set_location_assignment PIN_D10 -to "ADC_PIN15_PIN14_RST[1](n)"
 set_location_assignment PIN_K13 -to "ADC_PIN15_PIN14_RST[0](n)"
-set_location_assignment PIN_AL19 -to "DIGIN_3(n)"
 set_location_assignment PIN_AL4 -to "DIGIN_1(n)"
 set_location_assignment PIN_AF6 -to "DIGIN_2(n)"
 set_location_assignment PIN_AG17 -to "ADC_PIN79_PIN80_OR[3](n)"
@@ -861,7 +854,6 @@ set_location_assignment PIN_AL8 -to "ADC3in[4](n)"
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to DIGIN_2
-set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to DIGIN_3
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to ADC_PIN79_PIN80_OR
 set_instance_assignment -name INPUT_TERMINATION DIFFERENTIAL -to DIGIN_1
 set_location_assignment PIN_L6 -to DSA_PIN12_LE
@@ -870,15 +862,11 @@ set_location_assignment PIN_K6 -to DSA_PIN13_CLK
 set_instance_assignment -name IO_STANDARD "2.5 V" -to DSA_PIN13_CLK
 set_location_assignment PIN_K7 -to DSA_PIN14_SI
 set_instance_assignment -name IO_STANDARD "2.5 V" -to DSA_PIN14_SI
-set_instance_assignment -name IO_STANDARD LVDS -to DIGIN_4
 set_instance_assignment -name IO_STANDARD LVDS -to DIGIN_0
-set_instance_assignment -name IO_STANDARD LVDS -to DIGOUT_4
 set_location_assignment PIN_AM30 -to DIGOUT_4
-set_location_assignment PIN_AL30 -to "DIGOUT_4(n)"
 set_location_assignment PIN_F10 -to DIGIN_0
 set_location_assignment PIN_G10 -to "DIGIN_0(n)"
 set_location_assignment PIN_A11 -to DIGIN_4
-set_location_assignment PIN_B11 -to "DIGIN_4(n)"
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
@@ -1004,8 +992,6 @@ set_instance_assignment -name IO_STANDARD "2.5 V" -to microcontroller[1]
 set_instance_assignment -name IO_STANDARD "2.5 V" -to microcontroller[0]
 set_instance_assignment -name IO_STANDARD LVDS -to ADCclk1
 set_instance_assignment -name IO_STANDARD LVDS -to "DIGIN_0(n)"
-set_instance_assignment -name IO_STANDARD LVDS -to "DIGIN_4(n)"
-set_instance_assignment -name IO_STANDARD LVDS -to "DIGOUT_4(n)"
 set_instance_assignment -name IO_STANDARD LVDS -to "ADCclk0(n)"
 set_global_assignment -name ENABLE_CRC_ERROR_PIN ON
 set_global_assignment -name DEVICE_MIGRATION_LIST "5AGXFB5H4F35C4,5AGXFB3H4F35C4,5AGXFB3H4F35C5,5AGXFB3H4F35I5,5AGXFB3H6F35C6,5AGXFB1H4F35C4,5AGXFB1H4F35C5,5AGXFB1H4F35I5,5AGXFB1H6F35C6,5AGXFB7H4F35C4,5AGXFB7H4F35C5,5AGXFB7H4F35I5,5AGXFB7H6F35C6,5AGXFB5H4F35C5,5AGXFB5H4F35I5,5AGXFB5H6F35C6,5AGXFA7H4F35C4,5AGXFA7H4F35C5,5AGXFA7H4F35I5,5AGXFA7H6F35C6,5AGXFA5H4F35C4,5AGXFA5H4F35C5,5AGXFA5H4F35I5,5AGXFA5H6F35C6"
@@ -1091,6 +1077,11 @@ set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phas
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
+set_location_assignment PIN_K26 -to DIGOUT_3_n
+set_location_assignment PIN_AL30 -to DIGOUT_4_n
+set_location_assignment PIN_B11 -to DIGIN_4_n
+set_location_assignment PIN_AL19 -to DIGIN_3_n
+set_global_assignment -name VHDL_FILE ../rtl/altera_ip/unused_pin_driver.vhd
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/rx_fifo.vhd
 set_global_assignment -name VERILOG_FILE ../rtl/scaler.v
 set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/ChipID/altchip_id.v

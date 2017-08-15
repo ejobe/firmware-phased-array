@@ -45,7 +45,7 @@ begin
 
 sys_trig_o <= internal_exttrig_reg(1) and reg_i(82)(1);
 
-proc_reg_ext : process(rst_i, ext_i, internal_gate_reg, internal_exttrig_reg, internal_exttrig_edge)
+proc_reg_ext : process(rst_i, clk_i, ext_i, internal_gate_reg, internal_exttrig_reg, internal_exttrig_edge)
 begin	
 	if rst_i = '1' then
 		internal_gate_reg <= (others=>'0');

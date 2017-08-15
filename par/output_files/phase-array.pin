@@ -92,7 +92,7 @@ ADC2in[1]                    : A7        : input  : LVDS              :         
 GND*                         : A8        :        :                   :         : 7B        :                
 VCCIO7B                      : A9        : power  :                   : 2.5V    : 7B        :                
 ADC2in[17]                   : A10       : input  : LVDS              :         : 7B        : Y              
-DIGIN_4                      : A11       : input  : LVDS              :         : 7C        : Y              
+DIGIN_4                      : A11       : bidir  : 2.5 V             :         : 7C        : Y              
 VCCIO7C                      : A12       : power  :                   : 2.5V    : 7C        :                
 ADC2in[23]                   : A13       : input  : LVDS              :         : 7C        : Y              
 ADC2in[3]                    : A14       : input  : LVDS              :         : 7D        : Y              
@@ -158,7 +158,7 @@ VCCPD4A                      : AB6       : power  :                   : 2.5V    
 GND                          : AB7       : gnd    :                   :         :           :                
 GND                          : AB8       : gnd    :                   :         :           :                
 VCCPD4A                      : AB9       : power  :                   : 2.5V    : 4A        :                
-Trig_out                     : AB10      : output : 2.5 V             :         : 4B        : Y              
+Trig_out                     : AB10      : bidir  : 2.5 V             :         : 4B        : Y              
 GPIO[0]                      : AB11      : bidir  : 2.5 V             :         : 4C        : Y              
 GPIO[1]                      : AB12      : bidir  : 2.5 V             :         : 4C        : Y              
 GPIO[3]                      : AB13      : bidir  : 2.5 V             :         : 4C        : Y              
@@ -473,7 +473,7 @@ ADC3in[18]                   : AL15      : input  : LVDS              :         
 ADC3in[10](n)                : AL16      : input  : LVDS              :         : 4D        : Y              
 USB_PA[5]                    : AL17      : bidir  : 2.5 V             :         : 3D        : Y              
 LMK_DATAuWire                : AL18      : output : 2.5 V             :         : 3D        : Y              
-DIGIN_3(n)                   : AL19      : input  : LVDS              :         : 3D        : Y              
+DIGIN_3_n                    : AL19      : bidir  : 2.5 V             :         : 3D        : Y              
 ADC1in[22](n)                : AL20      : input  : LVDS              :         : 3C        : Y              
 ADC1in[3](n)                 : AL21      : input  : LVDS              :         : 3C        : Y              
 ADC1in[3]                    : AL22      : input  : LVDS              :         : 3C        : Y              
@@ -484,7 +484,7 @@ ADC1in[21](n)                : AL26      : input  : LVDS              :         
 ADC1in[9]                    : AL27      : input  : LVDS              :         : 3A        : Y              
 vme_data[31]                 : AL28      : bidir  : 2.5 V             :         : 3A        : Y              
 address[30]                  : AL29      : bidir  : 2.5 V             :         : 3A        : Y              
-DIGOUT_4(n)                  : AL30      : output : LVDS              :         : 3A        : Y              
+DIGOUT_4_n                   : AL30      : bidir  : 2.5 V             :         : 3A        : Y              
 address[27]                  : AL31      : bidir  : 2.5 V             :         : 3A        : Y              
 DNU                          : AL32      :        :                   :         :           :                
 GND                          : AL33      : gnd    :                   :         :           :                
@@ -507,7 +507,7 @@ VCCIO4D                      : AM15      : power  :                   : 2.5V    
 ADC3in[10]                   : AM16      : input  : LVDS              :         : 4D        : Y              
 USB_PA[7]                    : AM17      : bidir  : 2.5 V             :         : 3D        : Y              
 VCCIO3D                      : AM18      : power  :                   : 2.5V    : 3D        :                
-DIGIN_3                      : AM19      : input  : LVDS              :         : 3D        : Y              
+DIGIN_3                      : AM19      : bidir  : 2.5 V             :         : 3D        : Y              
 ADC1in[22]                   : AM20      : input  : LVDS              :         : 3C        : Y              
 VCCIO3C                      : AM21      : power  :                   : 2.5V    : 3C        :                
 ADC1in[8](n)                 : AM22      : input  : LVDS              :         : 3C        : Y              
@@ -518,7 +518,7 @@ ADC1in[21]                   : AM26      : input  : LVDS              :         
 VCCIO3A                      : AM27      : power  :                   : 2.5V    : 3A        :                
 address[28]                  : AM28      : bidir  : 2.5 V             :         : 3A        : Y              
 address[31]                  : AM29      : bidir  : 2.5 V             :         : 3A        : Y              
-DIGOUT_4                     : AM30      : output : LVDS              :         : 3A        : Y              
+DIGOUT_4                     : AM30      : bidir  : 2.5 V             :         : 3A        : Y              
 address[29]                  : AM31      : bidir  : 2.5 V             :         : 3A        : Y              
 DCLK                         : AM32      :        :                   :         : 3A        :                
 AS_DATA3, DATA3              : AM33      :        :                   :         : 3A        :                
@@ -599,7 +599,7 @@ GND                          : B7        : gnd    :                   :         
 GND*                         : B8        :        :                   :         : 7B        :                
 ADC2in[17](n)                : B9        : input  : LVDS              :         : 7B        : Y              
 GND                          : B10       : gnd    :                   :         :           :                
-DIGIN_4(n)                   : B11       : input  : LVDS              :         : 7C        : Y              
+DIGIN_4_n                    : B11       : bidir  : 2.5 V             :         : 7C        : Y              
 ADC2in[23](n)                : B12       : input  : LVDS              :         : 7C        : Y              
 GND                          : B13       : gnd    :                   :         :           :                
 ADC2in[7]                    : B14       : input  : LVDS              :         : 7D        : Y              
@@ -852,7 +852,7 @@ am[0]                        : J22       : bidir  : 2.5 V             :         
 ADC0in[13](n)                : J23       : input  : LVDS              :         : 8B        : Y              
 VCCIO8B                      : J24       : power  :                   : 2.5V    : 8B        :                
 address[10]                  : J25       : bidir  : 2.5 V             :         : 8B        : Y              
-DIGOUT_3                     : J26       : output : LVDS              :         : 8A        : Y              
+DIGOUT_3                     : J26       : bidir  : 2.5 V             :         : 8A        : Y              
 address[13]                  : J27       : bidir  : 2.5 V             :         : 8A        : Y              
 vme_data[3]                  : J28       : bidir  : 2.5 V             :         : 8A        : Y              
 VCCIO8A                      : J29       : power  :                   : 2.5V    : 8A        :                
@@ -886,7 +886,7 @@ address[15]                  : K22       : bidir  : 2.5 V             :         
 address[9]                   : K23       : bidir  : 2.5 V             :         : 8B        : Y              
 address[8]                   : K24       : bidir  : 2.5 V             :         : 8B        : Y              
 address[7]                   : K25       : bidir  : 2.5 V             :         : 8B        : Y              
-DIGOUT_3(n)                  : K26       : output : LVDS              :         : 8A        : Y              
+DIGOUT_3_n                   : K26       : bidir  : 2.5 V             :         : 8A        : Y              
 address[11]                  : K27       : bidir  : 2.5 V             :         : 8A        : Y              
 address[12]                  : K28       : bidir  : 2.5 V             :         : 8A        : Y              
 GND*                         : K29       :        :                   :         : 8A        :                
@@ -938,7 +938,7 @@ GND                          : M6        : gnd    :                   :         
 GND*                         : M7        :        :                   :         : 7A        :                
 GND*                         : M8        :        :                   :         : 7B        :                
 VCCPGM                       : M9        : power  :                   : 3.0V/3.3V :           :                
-Trig_out_aux                 : M10       : output : 2.5 V             :         : 7B        : Y              
+Trig_out_aux                 : M10       : bidir  : 2.5 V             :         : 7B        : Y              
 ADC_PIN15_PIN14_RST[3]       : M11       : output : LVDS              :         : 7C        : Y              
 GND*                         : M12       :        :                   :         : 7C        :                
 GND*                         : M13       :        :                   :         : 7C        :                
