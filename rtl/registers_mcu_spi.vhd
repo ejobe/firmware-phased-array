@@ -145,8 +145,12 @@ begin
 		registers_io(base_adrs_adc_cntrl+3) <= x"000000"; --//delay ADC1   (57)
 		registers_io(base_adrs_adc_cntrl+4) <= x"000000"; --//delay ADC2   (58)
 		registers_io(base_adrs_adc_cntrl+5) <= x"000000"; --//delay ADC3   (59)
-		registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
-
+		case FIRMWARE_DEVICE is 
+			when '1' =>
+				registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
+			when '0' =>
+				registers_io(base_adrs_adc_cntrl+6) <= x"00000C"; --//ADC PD control (60) TURN OFF ADC's 2 and 3 on slave board by default
+		end case;
 		--//step-attenuator:
 		registers_io(base_adrs_dsa_cntrl+0) <= x"000000"; --//atten values for CH 0 & 1 & 2
 		registers_io(base_adrs_dsa_cntrl+1) <= x"000000"; --//atten values for CH 3 & 4 & 5

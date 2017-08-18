@@ -68,7 +68,9 @@ signal adc_dclk_rst_state : adc_dclk_rst_state_type;
 
 signal user_dclk_rst	: std_logic;
 signal internal_dclk_rst : std_logic;
-signal internal_dclk_rst_counter : std_logic_vector(7 downto 0);
+signal internal_dclk_rst_counter : std_logic_vector(23 downto 0);
+signal internal_dclk_rst_counter_max : std_logic_vector(23 downto 0) := (others=>'1');
+
 signal internal_startup_dclk_rst : std_logic;
 signal internal_data_valid : std_logic;
 signal internal_data_valid_fast_clk : std_logic;
@@ -254,7 +256,7 @@ begin
 				rx_pll_reset_o <= '1';
 				internal_data_valid_fast_clk <= '0';
 				dclk_rst_lvds_o <= "0000"; --//send pulse (active low) This CLEARS the DCLK lines while active.
-				if internal_dclk_rst_counter = 100 then
+				if internal_dclk_rst_counter = 100 then --//400 ns pulse
 					internal_dclk_rst_counter <= (others=>'0');
 					adc_dclk_rst_state <= done_st;
 				else
@@ -265,7 +267,7 @@ begin
 			when done_st=>
 				rx_pll_reset_o <= '0';
 				dclk_rst_lvds_o <= "1111"; --//de-assert pulse
-				if internal_dclk_rst_counter = 100 then  
+				if internal_dclk_rst_counter = internal_dclk_rst_counter_max then  
 					internal_dclk_rst_counter <= (others=>'0');
 					internal_data_valid_fast_clk <= '1';
 					adc_dclk_rst_state <= idle_st;

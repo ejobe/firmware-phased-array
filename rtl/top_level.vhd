@@ -400,7 +400,7 @@ begin
 	ReceiverBlock	:	 for i in 0 to 3 generate
 		xDATA_RECEIVER : entity work.RxData
 		port map(
-			rst_i					=>	reset_global_except_registers or reset_global or (not startup_adc) or rx_pll_reset,		
+			rst_i					=>	reset_global_except_registers or reset_global or (not startup_adc) or rx_pll_reset or adc_pd_sig(i),		
 			rx_dat_valid_i		=>	adc_data_valid,
 			adc_dclk_i			=>	adc_data_clock(i),	
 			adc_data_i			=> adc_data(i),
