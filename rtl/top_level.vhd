@@ -283,7 +283,7 @@ begin
 		clk_i					=> clock_1MHz,
 		clk_core_i			=> clock_93MHz,
 		clk_iface_i			=> clock_25MHz,
-		clk_fast_i			=> clock_250MHz,
+		clk_fast_i			=> clock_93MHz, --clock_250MHz,
 		rst_i					=> reset_global or reset_adc,
 		pwr_up_i 			=> startup_adc,
 		rx_locked_i			=> (adc_rx_lvds_locked(0) and 
@@ -627,14 +627,17 @@ begin
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
 	
-	LED(0) <= not board_sync;
-	LED(1) <= not reset_global;
-	LED(2) <= not reset_global;
+	--//leds active low
+	LED(0) <= startup_adc;
+	LED(1) <= not (reset_global or reset_global_except_registers);
+	LED(2) <= not (reset_global or reset_global_except_registers);
 	
-	LED(3) <= '1';
-	LED(4) <= '1';
-	LED(5) <= not (adc_rx_lvds_locked(0) and adc_rx_lvds_locked(1) and 
-						adc_rx_lvds_locked(2) and adc_rx_lvds_locked(2) and adc_data_valid and clock_10Hz);
+	LED(3) <= not board_sync;
+	LED(4) <= not clock_10Hz;
+	LED(5) <= not ((adc_rx_lvds_locked(0) xor adc_pd_sig(0)) and 
+						(adc_rx_lvds_locked(1) xor adc_pd_sig(1)) and 
+						(adc_rx_lvds_locked(2) xor adc_pd_sig(2)) and 
+						(adc_rx_lvds_locked(2) xor adc_pd_sig(3)) and clock_10Hz);
 	--/////////////////////////////////////////////////////////////////////////////
 	--//define unused VME interface pins
 	dtack			 	<= '0';

@@ -288,8 +288,8 @@ begin
 		rx_ram_rd_en_o <= '0';
 		for i in 0 to 7 loop
 			rxdatapipe(i) <= (others=>'0');
-
 		end loop;
+		
 	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
 		rx_ram_rd_en_o <= '1';
 		rxdatapipe <= rx_adc_data_i;

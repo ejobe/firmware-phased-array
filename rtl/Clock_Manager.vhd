@@ -58,11 +58,12 @@ architecture rtl of Clock_Manager is
 	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"0E4E1C0";  --//7.5e6
 	--constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"8F0D180";  --//7.5e7
 	--//for 25 MHz
-	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"17D7840";  --//25e6
-	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"EE6B280";  --//25e7
-	--//for 24 MHz
-	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"16E3600";  --//25e6
-	--constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"E4E1C00";  --//25e7	
+	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"17D7840";  --//25e6
+	--constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"EE6B280";  --//25e7
+	--//for 23.475 MHz
+	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"165A0BC";  --//23.4375e6
+	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"DF84758";  --//23.4375e6	
+	
 	
 	component pll_block
 		port( refclk, rst			: in 	std_logic;

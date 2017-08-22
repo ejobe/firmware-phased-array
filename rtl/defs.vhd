@@ -110,7 +110,7 @@ type scaler_array_type is array(31 downto 0) of std_logic_vector(15 downto 0);
 
 
 --//assign rx data a specific value when deactivating the rx fifo read request (read clk > write clk)  [[SHOULD NEVER REACH THIS STATE, ERROR CONDITION]]
-constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80808080808080808080808080808080";
+constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80C080C08080808080808080808080C0";
 constant rx_adc_data_hold_value : full_data_type := (RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,
 																		RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD);
 ----------------------------------------------------------------------
