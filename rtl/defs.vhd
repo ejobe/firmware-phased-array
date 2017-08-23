@@ -63,8 +63,8 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000011";
-constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e1" & x"7" & x"0A";
+constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000012";
+constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e1" & x"8" & x"0A";
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////
 
@@ -110,7 +110,7 @@ type scaler_array_type is array(31 downto 0) of std_logic_vector(15 downto 0);
 
 
 --//assign rx data a specific value when deactivating the rx fifo read request (read clk > write clk)  [[SHOULD NEVER REACH THIS STATE, ERROR CONDITION]]
-constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80C080C08080808080808080808080C0";
+constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80808080808080808080808080808080";
 constant rx_adc_data_hold_value : full_data_type := (RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,
 																		RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD,RX_ADC_DATA_HOLD);
 ----------------------------------------------------------------------

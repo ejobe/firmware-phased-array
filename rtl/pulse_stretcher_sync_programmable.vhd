@@ -38,7 +38,7 @@ elsif rising_edge(clk_i) then
 end if;
 end process;
 ------------
-proc_stretch : process(rst_i, clk_i, internal_pulse)
+proc_stretch : process(rst_i, clk_i, internal_pulse, out_pol_i)
 begin
 if rst_i = '1' then
 	internal_stretch_counter <= (others=>'0');

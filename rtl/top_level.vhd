@@ -156,6 +156,7 @@ architecture rtl of top_level is
 	signal mcu_spi_busy			:	std_logic;
 	--//signals from ADC chips
 	signal adc_data_valid		:	std_logic;
+	signal adc_data_good			:  std_logic;
 	signal adc_cal_sig			:	std_logic;
 	signal adc_data_clock		:	std_logic_vector(3 downto 0);
 	signal adc_data				:	adc_output_data_type;
@@ -192,7 +193,7 @@ architecture rtl of top_level is
 	--//unused vme pins (used to simply set to Hi-Z):
 	signal vme_unused_pins		: 	std_logic_vector(79 downto 0);
 	--//other unused pins to tri-state
-	signal unused_pins			:  std_logic_vector(43 downto 0);
+	signal unused_pins			:  std_logic_vector(45 downto 0);
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
 	signal beam_data_8			: array_of_beams_type; --//registered on core clk
@@ -225,6 +226,10 @@ architecture rtl of top_level is
 	signal board_sync : std_logic; --//for debugging
 	signal sync_from_master_device : std_logic;
 	signal sync_to_slave_device : std_logic;
+	--//stuff for LEDs
+	signal led_trig : std_logic;
+	signal led_sync : std_logic;
+	signal led_gate : std_logic;
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -240,15 +245,16 @@ begin
 	--//master 100 MHz clock input
 	--///////////////////////////////////////
 	--// hardcode default constant clock mux selection:
-	--CLK_select(0) <= '0'; --// board block selection: 1= use local oscillator
-	--CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
+	--CLK_select(0) <= '0'; --// board block selection: 1= use local oscillator, 0= external LVDS input
+	CLK_select(1) <= '0'; --// PLL clock selection: 0= in one PLL mode, probably want to use ref clock 
+	                      --// (UPDATE: do not set this to '1', as PLL VCXO disabled to save power)
 	--///////////////////////////////////////
 	--//allow clock selection to be programmable:
 	proc_set_clock_ref : process(reset_global, reset_global_except_registers, registers)
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
 			CLK_select(0) <= registers(120)(0);   --//board clock
-			CLK_select(1) <= registers(120)(1);   --//PLL clock source
+			--CLK_select(1) <= registers(120)(1);   --//PLL clock source
 		end if;
 	end process;
 	--///////////////////////////////////////
@@ -273,7 +279,7 @@ begin
 
 	--//status register for ADC and PLL chip stuff:
 	proc_stat_reg_adc : status_reg_adc <= LMK_Stat_Hldov & LMK_Stat_LD & LMK_Stat_Clk0 & LMK_Stat_Clk1 & 
-								clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & x"0" & 
+								clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & "000" & adc_data_good &
 								adc_rx_lvds_locked(3) & adc_rx_lvds_locked(2) & adc_rx_lvds_locked(1) & adc_rx_lvds_locked(0); 
 
 		--///////////////////////////////////////
@@ -305,6 +311,7 @@ begin
 		rx_ram_rd_en_o 	=> rx_ram_rd_en,
 		rx_fifo_usedwrd_i => rx_fifo_usedwords,
 		timestream_data_o	=> wfm_data,
+		data_good_o			=> adc_data_good,
 		rx_pll_reset_o		=> rx_pll_reset,
 		dat_valid_o			=> adc_data_valid);
 	--///////////////////////////////////////	
@@ -354,8 +361,8 @@ begin
 		rst_i			=> reset_global or reset_global_except_registers,
 		clk_i			=> clock_250MHz,
 		reg_i			=> registers,
-		pulse_o		=> cal_pulse_the_pulse, --SMA_out0, --//pulse out in 'TRIG_OUT' SMA connector
-		rf_switch_o => cal_pulse_rf_switch_ctl); --SMA_in);  
+		pulse_o		=> cal_pulse_the_pulse,  
+		rf_switch_o => cal_pulse_rf_switch_ctl); 
 	--///////////////////////////////////////	
 	--//pll configuration block	
 	xPLL_CONTROLLER : entity work.pll_controller
@@ -549,7 +556,7 @@ begin
 	-- --SMA_out0 => the cal pulse enable
 	-- --SMA_out1 => the phased trigger from the master board
 	-- --SMA_in => the sync signal from the master board
-	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger)
+	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1)
 	begin
 	case FIRMWARE_DEVICE is
 		when '1' => --//master board
@@ -590,6 +597,8 @@ begin
 	SerialLinkTri5 <= unused_pins(41);
 	SerialLinkTri6 <= unused_pins(42);
 	SerialLinkTri7 <= unused_pins(43);
+	uC_dig(1) <= unused_pins(44); --//note: this pin may be used at some point; it is wired to the breakout board MiniFit Jr connector
+	uC_dig(3) <= unused_pins(45); --//note: this pin may be used at some point; it is wired to the breakout board MiniFit Jr connector
 	xUNUSED_TRISTATE : entity work.unused_pin_driver(RTL)
 	port map(
 		oe			=> (others=>'0'), 
@@ -627,17 +636,49 @@ begin
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
 	
-	--//leds active low
-	LED(0) <= startup_adc;
+	-------------------------------------------------------------
+	--//LEDs active low
+	xLED_TRIG_PULSE : entity work.pulse_stretcher_sync(rtl)
+	generic map(stretch => 50000)
+	port map(
+		rst_i		=> reset_global or reset_global_except_registers,
+		clk_i		=> clock_25MHz,
+		pulse_i	=> scalers_trig,
+		pulse_o	=> led_trig);
+	xLED_SYNC_PULSE : entity work.pulse_stretcher_sync(rtl)
+	generic map(stretch => 50000)
+	port map(
+		rst_i		=> reset_global or reset_global_except_registers,
+		clk_i		=> clock_25MHz,
+		pulse_i	=> board_sync,
+		pulse_o	=> led_sync);
+	xLED_GATE_PULSE : entity work.pulse_stretcher_sync(rtl)
+	generic map(stretch => 100000)
+	port map(
+		rst_i		=> reset_global or reset_global_except_registers,
+		clk_i		=> clock_25MHz,
+		pulse_i	=> scalers_gate,
+		pulse_o	=> led_gate);
+		
+	LED(0) <= not led_gate;
 	LED(1) <= not (reset_global or reset_global_except_registers);
-	LED(2) <= not (reset_global or reset_global_except_registers);
+	LED(2) <= not (reset_global or reset_global_except_registers or led_trig);
 	
-	LED(3) <= not board_sync;
-	LED(4) <= not clock_10Hz;
+	LED(3) <= not led_sync;
+	process(clock_10Hz)
+	begin
+	case FIRMWARE_DEVICE is
+		when '1' =>
+			LED(4) <= not clock_10Hz;
+		when '0' =>
+			LED(4) <= clock_10Hz;
+	end case;
+	end process;
 	LED(5) <= not ((adc_rx_lvds_locked(0) xor adc_pd_sig(0)) and 
 						(adc_rx_lvds_locked(1) xor adc_pd_sig(1)) and 
 						(adc_rx_lvds_locked(2) xor adc_pd_sig(2)) and 
 						(adc_rx_lvds_locked(2) xor adc_pd_sig(3)) and clock_10Hz);
+	-------------------------------------------------------------
 	--/////////////////////////////////////////////////////////////////////////////
 	--//define unused VME interface pins
 	dtack			 	<= '0';

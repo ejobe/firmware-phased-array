@@ -200,6 +200,8 @@ begin
 			
 			internal_beams_4a_pipe(i) <= (others=>'0');
 			internal_beams_4b_pipe(i) <= (others=>'0');
+			beams_4a_o(i) <= (others=>'0');
+			beams_4b_o(i) <= (others=>'0');
 			
 			--//output beam power
 			sum_pow_o(i) <= (others=>'0');

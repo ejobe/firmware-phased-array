@@ -53,6 +53,7 @@ entity adc_controller is
 	
 		--//timestream data to beamform module
 		timestream_data_o		:	out full_data_type;
+		data_good_o				:  out std_logic;
 		
 		rx_pll_reset_o			:	out std_logic;
 		dat_valid_o				:	inout	std_logic);
@@ -74,7 +75,8 @@ signal internal_dclk_rst_counter_max : std_logic_vector(23 downto 0) := (others=
 signal internal_startup_dclk_rst : std_logic;
 signal internal_data_valid : std_logic;
 signal internal_data_valid_fast_clk : std_logic;
-signal internal_startup_data_valid : std_logic;
+
+signal internal_data_good : std_logic;
 
 signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfer
 
@@ -131,14 +133,12 @@ caldly_scs_o <= "0000"; --//when ece is disabled, set caldly to 0
 --//when caldly = 1, corresponds  to 2^32 clock cycles
 --//cal pin assert/de-assert: allot ~3000 clock cycles (1280 + 1280 + extra)
 --//
---//let's just wait for 1 whole second before setting dat_valid_o
 proc_startup_cycle : process(rst_i, pwr_up_i, clk_i, user_dclk_rst)
 variable i : integer range 0 to 10000001 := 0;
 begin
 	if rst_i='1' or pwr_up_i='0' then
 		i:= 0;
 		--dat_valid_o <= '0';
-		internal_startup_data_valid <= '0';
 		cal_o <= '0';
 		internal_startup_dclk_rst <= '0';
 		adc_startup_state <= pwr_st;
@@ -146,7 +146,6 @@ begin
 	elsif rising_edge(clk_i) and pwr_up_i = '1' then
 		case adc_startup_state is
 			when pwr_st => 
-				internal_startup_data_valid <= '0';
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
 				if i >= 8000000 then	--//wait 8 seconds
@@ -157,7 +156,6 @@ begin
 				end if;
 				
 			when cal_st =>
-				internal_startup_data_valid <= '0';
 				internal_startup_dclk_rst <= '0';
 				if i >= 1200 then	--//cal pulse >1280 clock cycles in length
 					i := 0;
@@ -172,7 +170,6 @@ begin
 				end if;
 				
 			when rdy_st => 
-				internal_startup_data_valid <= '0';
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
 				if i >= 3000000 then  --//cal cycle takes 1.4e6 clock cycles
@@ -184,14 +181,12 @@ begin
 				end if;
 			
 			when dclk_rst_st =>
-				internal_startup_data_valid <= '0';
 				internal_startup_dclk_rst <= '1';
 				cal_o <= '0';
 				i := 0;
 				adc_startup_state <= done_st;
 				
 			when done_st =>
-				internal_startup_data_valid <= '1';
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
 				i := 0;
@@ -221,10 +216,15 @@ port map(
    clkB				=> clk_core_i,
    SignalIn_clkA	=> internal_data_valid_fast_clk,
    SignalOut_clkB	=> internal_data_valid);
+xDATAGOODSYNC : signal_sync
+port map(
+	clkA				=> clk_core_i,
+   clkB				=> clk_iface_i,
+   SignalIn_clkA	=> internal_data_good,
+   SignalOut_clkB	=> data_good_o);
 	
 dat_valid_o <= internal_data_valid;
 --//
-
 --////////////////////////////////////////////////////////////////////////////////
 --//this is a one-shot process. rst_i or pwr_up_i need to be asserted to re-start
 --////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ begin
 				rx_pll_reset_o <= '0';
 				internal_dclk_rst_counter <= (others=>'0');
 				dclk_rst_lvds_o <= "1111";
-				internal_data_valid_fast_clk <= internal_data_valid_fast_clk;
+				--internal_data_valid_fast_clk <= internal_data_valid_fast_clk;
 				if internal_dclk_rst = '1' or user_dclk_rst = '1' then
 					adc_dclk_rst_state <= pulse_st;
 				else
@@ -256,7 +256,7 @@ begin
 				rx_pll_reset_o <= '1';
 				internal_data_valid_fast_clk <= '0';
 				dclk_rst_lvds_o <= "0000"; --//send pulse (active low) This CLEARS the DCLK lines while active.
-				if internal_dclk_rst_counter = 100 then --//400 ns pulse
+				if internal_dclk_rst_counter = 100 then --//400 ns pulse @ 250MHz, or 1.07 microseconds @ 93.75MHz 
 					internal_dclk_rst_counter <= (others=>'0');
 					adc_dclk_rst_state <= done_st;
 				else
@@ -286,21 +286,24 @@ proc_manage_rx_fifo : process(rst_i, clk_core_i, rx_fifo_usedwrd_i, rx_adc_data_
 begin
 	if rst_i = '1' then
 		rx_ram_rd_en_o <= '0';
+		internal_data_good <='0';
 		for i in 0 to 7 loop
 			rxdatapipe(i) <= (others=>'0');
 		end loop;
 		
 	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
 		rx_ram_rd_en_o <= '1';
+		internal_data_good <='1';
 		rxdatapipe <= rx_adc_data_i;
 	
-	elsif rising_edge(clk_core_i) then --//shouldn't reach here, unless clocks aren't frequency matched.
+	elsif rising_edge(clk_core_i) then 
 		rx_ram_rd_en_o <= '0';
+		internal_data_good <='0';
 		rxdatapipe <= rx_adc_data_hold_value;
 	end if;
 end process;
 --////////////////////////////////////////////////////////////////////////
-
+--------------------------------------------------------------------------
 proc_dat_valid : process(rst_i, clk_core_i, internal_data_valid, internal_rx_dat_valid)
 begin
 	if rst_i = '1' or internal_data_valid = '0' then	
@@ -332,10 +335,9 @@ begin
 		
 	end if;
 end process;
-
 --////////////////////////////////////////////////////////////////////////////
 --////////////////////////////////////////////////////////////////////////////
-
+------------------------------------------------------------------------------
 --//apply relative delays to rxdatapipe
 proc_align_samples : process(rst_i, clk_core_i, delay_en, rxdatapipe)
 begin

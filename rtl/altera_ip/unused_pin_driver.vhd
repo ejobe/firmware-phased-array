@@ -34,31 +34,31 @@
 --agreement for further details.
 
 
---altiobuf_out CBX_AUTO_BLACKBOX="ALL" DEVICE_FAMILY="Arria V" ENABLE_BUS_HOLD="FALSE" LEFT_SHIFT_SERIES_TERMINATION_CONTROL="FALSE" NUMBER_OF_CHANNELS=44 OPEN_DRAIN_OUTPUT="FALSE" PSEUDO_DIFFERENTIAL_MODE="FALSE" USE_DIFFERENTIAL_MODE="FALSE" USE_OE="TRUE" USE_TERMINATION_CONTROL="FALSE" datain dataout oe
+--altiobuf_out CBX_AUTO_BLACKBOX="ALL" DEVICE_FAMILY="Arria V" ENABLE_BUS_HOLD="FALSE" LEFT_SHIFT_SERIES_TERMINATION_CONTROL="FALSE" NUMBER_OF_CHANNELS=46 OPEN_DRAIN_OUTPUT="FALSE" PSEUDO_DIFFERENTIAL_MODE="FALSE" USE_DIFFERENTIAL_MODE="FALSE" USE_OE="TRUE" USE_TERMINATION_CONTROL="FALSE" datain dataout oe
 --VERSION_BEGIN 15.1 cbx_altiobuf_out 2015:10:21:18:09:22:SJ cbx_mgl 2015:10:21:18:12:49:SJ cbx_stratixiii 2015:10:21:18:09:23:SJ cbx_stratixv 2015:10:21:18:09:23:SJ  VERSION_END
 
  LIBRARY arriav;
  USE arriav.all;
 
---synthesis_resources = arriav_io_obuf 44 
+--synthesis_resources = arriav_io_obuf 46 
  LIBRARY ieee;
  USE ieee.std_logic_1164.all;
 
- ENTITY  unused_pin_driver_iobuf_out_oos IS 
+ ENTITY  unused_pin_driver_iobuf_out_qos IS 
 	 PORT 
 	 ( 
-		 datain	:	IN  STD_LOGIC_VECTOR (43 DOWNTO 0);
-		 dataout	:	OUT  STD_LOGIC_VECTOR (43 DOWNTO 0);
-		 oe	:	IN  STD_LOGIC_VECTOR (43 DOWNTO 0) := (OTHERS => '1')
+		 datain	:	IN  STD_LOGIC_VECTOR (45 DOWNTO 0);
+		 dataout	:	OUT  STD_LOGIC_VECTOR (45 DOWNTO 0);
+		 oe	:	IN  STD_LOGIC_VECTOR (45 DOWNTO 0) := (OTHERS => '1')
 	 ); 
- END unused_pin_driver_iobuf_out_oos;
+ END unused_pin_driver_iobuf_out_qos;
 
- ARCHITECTURE RTL OF unused_pin_driver_iobuf_out_oos IS
+ ARCHITECTURE RTL OF unused_pin_driver_iobuf_out_qos IS
 
-	 SIGNAL  wire_obufa_i	:	STD_LOGIC_VECTOR (43 DOWNTO 0);
-	 SIGNAL  wire_obufa_o	:	STD_LOGIC_VECTOR (43 DOWNTO 0);
-	 SIGNAL  wire_obufa_oe	:	STD_LOGIC_VECTOR (43 DOWNTO 0);
-	 SIGNAL  oe_w :	STD_LOGIC_VECTOR (43 DOWNTO 0);
+	 SIGNAL  wire_obufa_i	:	STD_LOGIC_VECTOR (45 DOWNTO 0);
+	 SIGNAL  wire_obufa_o	:	STD_LOGIC_VECTOR (45 DOWNTO 0);
+	 SIGNAL  wire_obufa_oe	:	STD_LOGIC_VECTOR (45 DOWNTO 0);
+	 SIGNAL  oe_w :	STD_LOGIC_VECTOR (45 DOWNTO 0);
 	 COMPONENT  arriav_io_obuf
 	 GENERIC 
 	 (
@@ -84,7 +84,7 @@
 	oe_w <= oe;
 	wire_obufa_i <= datain;
 	wire_obufa_oe <= oe_w;
-	loop0 : FOR i IN 0 TO 43 GENERATE 
+	loop0 : FOR i IN 0 TO 45 GENERATE 
 	  obufa :  arriav_io_obuf
 	  GENERIC MAP (
 		bus_hold => "false",
@@ -97,7 +97,7 @@
 	  );
 	END GENERATE loop0;
 
- END RTL; --unused_pin_driver_iobuf_out_oos
+ END RTL; --unused_pin_driver_iobuf_out_qos
 --VALID FILE
 
 
@@ -107,31 +107,31 @@ USE ieee.std_logic_1164.all;
 ENTITY unused_pin_driver IS
 	PORT
 	(
-		datain		: IN STD_LOGIC_VECTOR (43 DOWNTO 0);
-		oe		: IN STD_LOGIC_VECTOR (43 DOWNTO 0);
-		dataout		: OUT STD_LOGIC_VECTOR (43 DOWNTO 0)
+		datain		: IN STD_LOGIC_VECTOR (45 DOWNTO 0);
+		oe		: IN STD_LOGIC_VECTOR (45 DOWNTO 0);
+		dataout		: OUT STD_LOGIC_VECTOR (45 DOWNTO 0)
 	);
 END unused_pin_driver;
 
 
 ARCHITECTURE RTL OF unused_pin_driver IS
 
-	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (43 DOWNTO 0);
+	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (45 DOWNTO 0);
 
 
 
-	COMPONENT unused_pin_driver_iobuf_out_oos
+	COMPONENT unused_pin_driver_iobuf_out_qos
 	PORT (
-			datain	: IN STD_LOGIC_VECTOR (43 DOWNTO 0);
-			oe	: IN STD_LOGIC_VECTOR (43 DOWNTO 0);
-			dataout	: OUT STD_LOGIC_VECTOR (43 DOWNTO 0)
+			datain	: IN STD_LOGIC_VECTOR (45 DOWNTO 0);
+			oe	: IN STD_LOGIC_VECTOR (45 DOWNTO 0);
+			dataout	: OUT STD_LOGIC_VECTOR (45 DOWNTO 0)
 	);
 	END COMPONENT;
 
 BEGIN
-	dataout    <= sub_wire0(43 DOWNTO 0);
+	dataout    <= sub_wire0(45 DOWNTO 0);
 
-	unused_pin_driver_iobuf_out_oos_component : unused_pin_driver_iobuf_out_oos
+	unused_pin_driver_iobuf_out_qos_component : unused_pin_driver_iobuf_out_qos
 	PORT MAP (
 		datain => datain,
 		oe => oe,
@@ -151,18 +151,18 @@ END RTL;
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Arria V"
 -- Retrieval info: CONSTANT: enable_bus_hold STRING "FALSE"
 -- Retrieval info: CONSTANT: left_shift_series_termination_control STRING "FALSE"
--- Retrieval info: CONSTANT: number_of_channels NUMERIC "44"
+-- Retrieval info: CONSTANT: number_of_channels NUMERIC "46"
 -- Retrieval info: CONSTANT: open_drain_output STRING "FALSE"
 -- Retrieval info: CONSTANT: pseudo_differential_mode STRING "FALSE"
 -- Retrieval info: CONSTANT: use_differential_mode STRING "FALSE"
 -- Retrieval info: CONSTANT: use_oe STRING "TRUE"
 -- Retrieval info: CONSTANT: use_termination_control STRING "FALSE"
--- Retrieval info: USED_PORT: datain 0 0 44 0 INPUT NODEFVAL "datain[43..0]"
--- Retrieval info: USED_PORT: dataout 0 0 44 0 OUTPUT NODEFVAL "dataout[43..0]"
--- Retrieval info: USED_PORT: oe 0 0 44 0 INPUT NODEFVAL "oe[43..0]"
--- Retrieval info: CONNECT: @datain 0 0 44 0 datain 0 0 44 0
--- Retrieval info: CONNECT: @oe 0 0 44 0 oe 0 0 44 0
--- Retrieval info: CONNECT: dataout 0 0 44 0 @dataout 0 0 44 0
+-- Retrieval info: USED_PORT: datain 0 0 46 0 INPUT NODEFVAL "datain[45..0]"
+-- Retrieval info: USED_PORT: dataout 0 0 46 0 OUTPUT NODEFVAL "dataout[45..0]"
+-- Retrieval info: USED_PORT: oe 0 0 46 0 INPUT NODEFVAL "oe[45..0]"
+-- Retrieval info: CONNECT: @datain 0 0 46 0 datain 0 0 46 0
+-- Retrieval info: CONNECT: @oe 0 0 46 0 oe 0 0 46 0
+-- Retrieval info: CONNECT: dataout 0 0 46 0 @dataout 0 0 46 0
 -- Retrieval info: GEN_FILE: TYPE_NORMAL unused_pin_driver.vhd TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL unused_pin_driver.inc FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL unused_pin_driver.cmp TRUE
