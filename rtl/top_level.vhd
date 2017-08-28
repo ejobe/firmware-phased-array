@@ -286,7 +286,7 @@ begin
 	--//adc configuration and data-handling block
 	xADC_CONTROLLER : entity work.adc_controller
 	port map(
-		clk_i					=> clock_1MHz,
+		clk_i					=> clock_25MHz,
 		clk_core_i			=> clock_93MHz,
 		clk_iface_i			=> clock_25MHz,
 		clk_fast_i			=> clock_93MHz, --clock_250MHz,
@@ -487,6 +487,7 @@ begin
 		rst_i				=>	reset_global or reset_global_except_registers,	
 		clk_i				=> clock_25MHz,
 		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
+		pulse_refrshHz_i=> clock_rfrsh_pulse_1Hz,
 		gate_i			=> scalers_gate,
 		reg_i				=> registers,
 		trigger_i		=> scalers_trig,
@@ -674,10 +675,11 @@ begin
 			LED(4) <= clock_10Hz;
 	end case;
 	end process;
-	LED(5) <= not ((adc_rx_lvds_locked(0) xor adc_pd_sig(0)) and 
-						(adc_rx_lvds_locked(1) xor adc_pd_sig(1)) and 
-						(adc_rx_lvds_locked(2) xor adc_pd_sig(2)) and 
-						(adc_rx_lvds_locked(2) xor adc_pd_sig(3)) and clock_10Hz);
+	--//assign LED(5) to the rx locked signals or the ADC PD, if programmed as such
+	LED(5) <= not ((adc_rx_lvds_locked(0) or registers(base_adrs_adc_cntrl+6)(0)) and 
+						(adc_rx_lvds_locked(1) or registers(base_adrs_adc_cntrl+6)(1)) and 
+						(adc_rx_lvds_locked(2) or registers(base_adrs_adc_cntrl+6)(2)) and 
+						(adc_rx_lvds_locked(3) or registers(base_adrs_adc_cntrl+6)(3)) and clock_10Hz);
 	-------------------------------------------------------------
 	--/////////////////////////////////////////////////////////////////////////////
 	--//define unused VME interface pins

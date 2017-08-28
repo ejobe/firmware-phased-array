@@ -567,7 +567,7 @@ begin
 				std_logic_vector(resize(signed(dat(6)((i-11)*define_word_size+slice_hi-1 downto (i-11)*define_word_size+slice_lo )),define_beam_bits));
 			beam_4b_p11(i) <=
 				std_logic_vector(resize(signed(dat(1)((i+22)*define_word_size+slice_hi-1 downto (i+22)*define_word_size+slice_lo )),define_beam_bits)) +
-				std_logic_vector(resize(signed(dat(2)((i+11)*define_word_size+slice_hi-1 downto (i+11)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i+11)*define_word_size+slice_hi-1 downto (i+11)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(5)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(7)((i-11)*define_word_size+slice_hi-1 downto (i-11)*define_word_size+slice_lo )),define_beam_bits));	
 				
@@ -577,10 +577,10 @@ begin
 				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
 				std_logic_vector(resize(signed(dat(6)((i-9)*define_word_size+slice_hi-1 downto (i-9)*define_word_size+slice_lo )),define_beam_bits));
 			beam_4b_p9(i) <=
-				std_logic_vector(resize(signed(dat(0)((i+18)*define_word_size+slice_hi-1 downto (i+18)*define_word_size+slice_lo )),define_beam_bits)) +
-				std_logic_vector(resize(signed(dat(2)((i+9)*define_word_size+slice_hi-1 downto (i+9)*define_word_size+slice_lo )),define_beam_bits)) +
-				std_logic_vector(resize(signed(dat(4)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
-				std_logic_vector(resize(signed(dat(6)((i-9)*define_word_size+slice_hi-1 downto (i-9)*define_word_size+slice_lo )),define_beam_bits));
+				std_logic_vector(resize(signed(dat(1)((i+18)*define_word_size+slice_hi-1 downto (i+18)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(3)((i+9)*define_word_size+slice_hi-1 downto (i+9)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(5)((i-0)*define_word_size+slice_hi-1 downto (i-0)*define_word_size+slice_lo )),define_beam_bits)) +
+				std_logic_vector(resize(signed(dat(7)((i-9)*define_word_size+slice_hi-1 downto (i-9)*define_word_size+slice_lo )),define_beam_bits));
 			
 			beam_4a_p7(i) <=
 				std_logic_vector(resize(signed(dat(0)((i+14)*define_word_size+slice_hi-1 downto (i+14)*define_word_size+slice_lo )),define_beam_bits)) +

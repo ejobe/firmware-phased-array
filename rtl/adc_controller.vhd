@@ -81,9 +81,11 @@ signal internal_data_good : std_logic;
 signal internal_rx_dat_valid : std_logic_vector(2 downto 0); --//for clk transfer
 
 --//signals for adding relative delays between ADCs in order to align data
-signal delay_en   	: std_logic_vector(7 downto 0);
+type delay_en_type is array(7 downto 0) of std_logic_vector(1 downto 0);
+signal delay_en   	: delay_en_type;
 signal delay_chan 	: rx_data_delay_type;
 signal rxdatapipe   	: full_data_type; --//initial handling of rx data
+signal rxdatapipe2   : full_data_type; --//initial handling of rx data -- pipeline delay of single clk cycle
 
 signal data_pipe   	: buffered_data_type;
 signal data_pipe_2 	: full_data_type;
@@ -134,7 +136,7 @@ caldly_scs_o <= "0000"; --//when ece is disabled, set caldly to 0
 --//cal pin assert/de-assert: allot ~3000 clock cycles (1280 + 1280 + extra)
 --//
 proc_startup_cycle : process(rst_i, pwr_up_i, clk_i, user_dclk_rst)
-variable i : integer range 0 to 10000001 := 0;
+variable i : integer range 0 to 250000001 := 0;
 begin
 	if rst_i='1' or pwr_up_i='0' then
 		i:= 0;
@@ -148,7 +150,7 @@ begin
 			when pwr_st => 
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
-				if i >= 8000000 then	--//wait 8 seconds
+				if i >= 200000000 then	--//wait ~8 seconds
 					i := 0;
 					adc_startup_state <= cal_st; --//skip spi write state
 				else 
@@ -157,11 +159,11 @@ begin
 				
 			when cal_st =>
 				internal_startup_dclk_rst <= '0';
-				if i >= 1200 then	--//cal pulse >1280 clock cycles in length
+				if i >= 30000 then	--//cal pulse >1280 clock cycles in length
 					i := 0;
 					cal_o <= '0';  --// set cal pin low again
 					adc_startup_state <= rdy_st;
-				elsif i >= 1000 then
+				elsif i >= 25000 then
 					cal_o <= '1'; --//set cal pin high
 					i := i + 1;
 				else
@@ -172,7 +174,7 @@ begin
 			when rdy_st => 
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
-				if i >= 3000000 then  --//cal cycle takes 1.4e6 clock cycles
+				if i >= 75000000 then  --//cal cycle takes 1.4e6 clock cycles
 					i := 0;
 					adc_startup_state <= dclk_rst_st;
 				else 
@@ -289,17 +291,20 @@ begin
 		internal_data_good <='0';
 		for i in 0 to 7 loop
 			rxdatapipe(i) <= (others=>'0');
+			rxdatapipe2(i) <= (others=>'0');
 		end loop;
 		
 	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
 		rx_ram_rd_en_o <= '1';
 		internal_data_good <='1';
-		rxdatapipe <= rx_adc_data_i;
+		rxdatapipe2	<= rxdatapipe;
+		rxdatapipe 	<= rx_adc_data_i;
 	
 	elsif rising_edge(clk_core_i) then 
 		rx_ram_rd_en_o <= '0';
 		internal_data_good <='0';
-		rxdatapipe <= rx_adc_data_hold_value;
+		rxdatapipe2 <= rxdatapipe;
+		rxdatapipe 	<= rx_adc_data_hold_value;
 	end if;
 end process;
 --////////////////////////////////////////////////////////////////////////
@@ -311,7 +316,7 @@ begin
 		internal_rx_dat_valid <= (others=>'0'); 
 		
 		for j in 0 to 7 loop
-			delay_en(j) 	<= '0';
+			delay_en(j) 	<= "00";
 			delay_chan(j)  <= (others=>'0');
 			channel_mask(j)<= (others=>'1'); --(others=> not reg_i(48)(j));
 		end loop;
@@ -320,11 +325,11 @@ begin
 		
 		--//register the delay enable and value here:
 		for j in 0 to 3 loop
-			delay_en(2*j)   	<= reg_i(base_adrs_adc_cntrl+2+j)(4);
-			delay_en(2*j+1)   <= reg_i(base_adrs_adc_cntrl+2+j)(9);
+			delay_en(2*j)   	<= reg_i(base_adrs_adc_cntrl+2+j)(5 downto 4);
+			delay_en(2*j+1)   <= reg_i(base_adrs_adc_cntrl+2+j)(13 downto 12);
 
 			delay_chan(2*j) 	<= reg_i(base_adrs_adc_cntrl+2+j)(3 downto 0); 
-			delay_chan(2*j+1) <= reg_i(base_adrs_adc_cntrl+2+j)(8 downto 5);
+			delay_chan(2*j+1) <= reg_i(base_adrs_adc_cntrl+2+j)(11 downto 8);
 		end loop;
 		--////////////////
 		for j in 0 to 7 loop
@@ -351,7 +356,7 @@ begin
 			
 			timestream_data_o(i) <= data_pipe_2(i);
 			
-			case delay_en(i) is
+			case delay_en(i)(0) is
 				when '1' =>
 				--////////////////////////////////////////////////////////
 				--// add in sample-level delays here
@@ -401,9 +406,15 @@ begin
 			--////////////////////////////////////////////////
 			--//first pipeline stage
 			data_pipe(i)(define_ram_width-1 downto 0) <= data_pipe(i)(2*define_ram_width-1 downto define_ram_width);
-			--//apply channel-level mask here
-			data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i) and channel_mask(i); 
-			
+			--//apply channel-level mask here:
+			case delay_en(i)(1) is
+				--//normal delay
+				when '0' =>
+					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i) and channel_mask(i); 
+				--//extra clk_core_i cycle of data delay
+				when '1' =>
+					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i) and channel_mask(i);
+			end case;	
 		end if;
 	end loop;
 end process;

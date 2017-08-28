@@ -25,6 +25,8 @@ entity scalers_top is
 		rst_i				:		in		std_logic;
 		clk_i				:		in 	std_logic;
 		pulse_refrsh_i	:		in		std_logic;
+		pulse_refrshHz_i	:	in		std_logic;
+		
 		gate_i			:		in		std_logic;
 		
 		reg_i				:		in		register_array_type;
@@ -36,7 +38,7 @@ end scalers_top;
 
 architecture rtl of scalers_top is
 
-constant num_scalers : integer := 32;
+constant num_scalers : integer := 48;
 type scaler_array_type is array(num_scalers-1 downto 0) of std_logic_vector(scaler_width-1 downto 0);
 
 signal internal_scaler_array : scaler_array_type;
@@ -92,6 +94,26 @@ GatedBeamTrigScalers : for i in 0 to define_num_beams-1 generate
 		scaler_o => internal_scaler_array(i+1+16));
 end generate;
 
+--//scaler 33
+xTRIGSCALERHz : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrshHz_i,
+		count_i => trigger_i,
+		scaler_o => internal_scaler_array(32));
+		
+--//scalers 34 to 48
+BeamTrigScalersHz : for i in 0 to define_num_beams-1 generate
+	xBEAMTRIGSCALERSHz : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrshHz_i,
+		count_i => beam_trig_i(i),
+		scaler_o => internal_scaler_array(i+1+32));
+end generate;
+
 proc_save_scalers : process(rst_i, clk_i, reg_i)
 begin
 	if rst_i = '1' then
@@ -103,39 +125,59 @@ begin
 		latched_scaler_array <= internal_scaler_array;
 	
 	elsif rising_edge(clk_i) then
-		case reg_i(41)(3 downto 0) is
-			when x"0" =>
+		case reg_i(41)(7 downto 0) is
+			when x"00" =>
 				scaler_to_read_o <= latched_scaler_array(1) & latched_scaler_array(0);
-			when x"1" =>
+			when x"01" =>
 				scaler_to_read_o <= latched_scaler_array(3) & latched_scaler_array(2);
-			when x"2" =>
+			when x"02" =>
 				scaler_to_read_o <= latched_scaler_array(5) & latched_scaler_array(4);
-			when x"3" =>
+			when x"03" =>
 				scaler_to_read_o <= latched_scaler_array(7) & latched_scaler_array(6);
-			when x"4" =>
+			when x"04" =>
 				scaler_to_read_o <= latched_scaler_array(9) & latched_scaler_array(8);
-			when x"5" =>
+			when x"05" =>
 				scaler_to_read_o <= latched_scaler_array(11) & latched_scaler_array(10);
-			when x"6" =>
+			when x"06" =>
 				scaler_to_read_o <= latched_scaler_array(13) & latched_scaler_array(12);
-			when x"7" =>
+			when x"07" =>
 				scaler_to_read_o <= latched_scaler_array(15) & latched_scaler_array(14);
-			when x"8" =>
+			when x"08" =>
 				scaler_to_read_o <= latched_scaler_array(17) & latched_scaler_array(16);
-			when x"9" =>
+			when x"09" =>
 				scaler_to_read_o <= latched_scaler_array(19) & latched_scaler_array(18);
-			when x"A" =>
+			when x"0A" =>
 				scaler_to_read_o <= latched_scaler_array(21) & latched_scaler_array(20);
-			when x"B" =>
+			when x"0B" =>
 				scaler_to_read_o <= latched_scaler_array(23) & latched_scaler_array(22);
-			when x"C" =>
+			when x"0C" =>
 				scaler_to_read_o <= latched_scaler_array(25) & latched_scaler_array(24);
-			when x"D" =>
+			when x"0D" =>
 				scaler_to_read_o <= latched_scaler_array(27) & latched_scaler_array(26);
-			when x"E" =>
+			when x"0E" =>
 				scaler_to_read_o <= latched_scaler_array(29) & latched_scaler_array(28);
-			when x"F" =>
+			when x"0F" =>
 				scaler_to_read_o <= latched_scaler_array(31) & latched_scaler_array(30);	
+			--//second-updating scalers:
+			when x"10" =>
+				scaler_to_read_o <= latched_scaler_array(33) & latched_scaler_array(32);
+			when x"11" =>
+				scaler_to_read_o <= latched_scaler_array(35) & latched_scaler_array(34);
+			when x"12" =>
+				scaler_to_read_o <= latched_scaler_array(37) & latched_scaler_array(36);
+			when x"13" =>
+				scaler_to_read_o <= latched_scaler_array(39) & latched_scaler_array(38);
+			when x"14" =>
+				scaler_to_read_o <= latched_scaler_array(41) & latched_scaler_array(40);
+			when x"15" =>
+				scaler_to_read_o <= latched_scaler_array(43) & latched_scaler_array(42);
+			when x"16" =>
+				scaler_to_read_o <= latched_scaler_array(45) & latched_scaler_array(44);
+			when x"17" =>
+				scaler_to_read_o <= latched_scaler_array(47) & latched_scaler_array(46);
+				
+			when others =>
+				scaler_to_read_o <= latched_scaler_array(1) & latched_scaler_array(0);
 		end case;
 	end if;
 end process;

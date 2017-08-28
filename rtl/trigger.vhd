@@ -193,6 +193,8 @@ begin
 			
 			buffered_powersum(i) <= buffered_powersum(i)(define_num_power_sums*(define_pow_sum_range+1)-1 downto 0) & powersums_i(i);	
 			
+			instantaneous_above_threshold_buf2(i) 	<= instantaneous_above_threshold_buf(i);
+			instantaneous_above_threshold_buf(i)	<= instantaneous_above_threshold(i);
 			--/////////////////////////////////////////////////
 			--// THE TRIGGER
 			case trigger_state_machine_state(i) is
@@ -226,13 +228,10 @@ begin
 					
 				--//trig hold off
 				when trig_hold_st =>
-					--//add some latency for the outputs to meet timing
-					instantaneous_above_threshold_buf2(i) <= instantaneous_above_threshold_buf(i);
-					instantaneous_above_threshold_buf(i) <= instantaneous_above_threshold(i);
 					last_trig_beam_clk_data_o(i) <= instantaneous_above_threshold(i); --//get the triggered beam info
 					instantaneous_above_threshold(i) <= '0';
 					
-					--//need to limit trigger burst rate in order to register on 15MHz interface clock
+					--//need to limit trigger burst rate in order to register on interface clock
 					if trigger_holdoff_counter(i) = internal_trig_holdoff then
 						trigger_holdoff_counter(i) <= (others=>'0');
 						trigger_state_machine_state(i) <= trig_done_st;
@@ -248,8 +247,6 @@ begin
 					
 				--//trig done, go back to idle_st
 				when trig_done_st =>
-					instantaneous_above_threshold_buf2(i) <= '0';
-					instantaneous_above_threshold_buf(i) <=  '0';
 					instantaneous_above_threshold(i) <= '0';
 					trigger_holdoff_counter(i) <= (others=>'0');
 					trigger_state_machine_state(i) <= idle_st;
@@ -266,7 +263,7 @@ begin
 		internal_trig_clk_data <= '0';
 		trig_clk_data_o <= '0';
 	elsif rising_edge(clk_data_i) then
-		internal_trig_clk_data <= trig_clk_data_o;
+		internal_trig_clk_data <=  trig_clk_data_o;
 		trig_clk_data_o	<=	(instantaneous_above_threshold_buf(0) and internal_trigger_beam_mask(0)) or
 									(instantaneous_above_threshold_buf(1) and internal_trigger_beam_mask(1)) or
 									(instantaneous_above_threshold_buf(2) and internal_trigger_beam_mask(2)) or
