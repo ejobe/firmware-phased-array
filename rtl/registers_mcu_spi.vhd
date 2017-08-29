@@ -170,8 +170,9 @@ begin
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		registers_io(81) <= x"00000F";   --// trig holdoff [81]
 		registers_io(82) <= x"00001E";	--// trigger/beam enables [82]
-		registers_io(83) <= x"000303";   --//external trigger output configuration [83]
-		
+		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
+		registers_io(84) <= x"000000";   --// enable phased trigger to data manager
+	
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
 		registers_io(base_adrs_trig_thresh+1) <= x"0FFFFF";   --//[87]

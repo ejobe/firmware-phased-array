@@ -93,6 +93,8 @@ signal internal_current_buffer		: std_logic_vector(1 downto 0);
 signal internal_buffer_reset_to_zero		: std_logic;
 signal internal_buffer_reset_to_zero_wait : std_logic;
 
+signal internal_phase_trigger_data_enable : std_logic := '0';
+
 --signal internal_data_manager_status : std_logic_vector(23 downto 0) := (others=>'0'); --//status register
 signal status_reg_update_reg 	: std_logic_vector(2 downto 0) := (others=>'0');
 
@@ -174,7 +176,13 @@ PreTrigSync : for i in 0 to 2 generate
 		SignalOut_clkB		=> internal_pre_trig_window_select(i));
 end generate;
 --/////////////////////////////////////////////////////////
-
+xPHASEDTRIGENABLESYNC : signal_sync
+port map(
+	clkA 			=> clk_iface_i,
+	clkB			=> clk_i,
+	SignalIn_clkA		=> reg_i(84)(0),
+	SignalOut_clkB		=> internal_phase_trigger_data_enable);
+------------------------------------------------------------------
 --//////////////////////////////////////
 --//apply programmable pre-trigger window and pipeline the output data into 4 buffers using 2 extra clk cycles
 PreTrigBlock : for i in 0 to 7 generate
@@ -215,7 +223,7 @@ begin
 	elsif rising_edge(clk_i) and internal_forced_trigger = '1' then
 		event_trigger_reg(0) <= '1';
 		internal_last_trigger_type <= "01";
-	elsif rising_edge(clk_i) and phased_trig_i = '1' then 
+	elsif rising_edge(clk_i) and phased_trig_i = '1' and internal_phase_trigger_data_enable = '1' then 
 		event_trigger_reg(0) <= '1';
 		internal_last_beam_trigger <= last_trig_beam_i; --//update the beam trigger info
 		internal_last_trigger_type <= "10";
