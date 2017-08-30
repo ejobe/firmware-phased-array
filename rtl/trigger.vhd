@@ -20,7 +20,7 @@ use ieee.numeric_std.all;
 
 use work.defs.all;
 use work.register_map.all;
-
+------------------------------------------------------------------------------------------------------------------------------
 entity trigger is
 	generic(
 		ENABLE_PHASED_TRIGGER : std_logic := '1'); --//compile-time flag
@@ -42,9 +42,9 @@ entity trigger is
 		trig_clk_iface_o				:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
 		
 end trigger;
-
+------------------------------------------------------------------------------------------------------------------------------
 architecture rtl of trigger is
-
+------------------------------------------------------------------------------------------------------------------------------
 type buffered_powersum_type is array(define_num_beams-1 downto 0) of 
 	std_logic_vector(2*define_num_power_sums*(define_pow_sum_range+1)-1 downto 0);
 
@@ -58,6 +58,7 @@ signal instant_power_1_buf : average_power_16samp_type;
 signal instantaneous_above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check if beam above threshold at each clk_data_i edge
 signal instantaneous_above_threshold_buf	:	std_logic_vector(define_num_beams-1 downto 0); 
 signal instantaneous_above_threshold_buf2	:	std_logic_vector(define_num_beams-1 downto 0); 
+signal internal_last_trig_latched_beam_pattern :  std_logic_vector(define_num_beams-1 downto 0);
 
 signal thresholds_meta : average_power_16samp_type;
 signal thresholds  : average_power_16samp_type;
@@ -70,12 +71,17 @@ signal trigger_state_machine_state : trigger_state_machine_state_array_type;
 
 type trig_hold_counter_type is array(define_num_beams-1 downto 0) of std_logic_vector(11 downto 0);
 signal trigger_holdoff_counter		:	trig_hold_counter_type;
-signal internal_trig_holdoff : std_logic_vector(11 downto 0);
+signal internal_trig_holdoff_count : std_logic_vector(11 downto 0);
+signal internal_per_beam_trigger_holdoff : std_logic_vector(define_num_beams-1 downto 0); --//indicates if beam in trigger-holdoff mode
+signal internal_global_trigger_holdoff : std_logic; --//OR of all the bits in the internal_per_beam_trigger_holdoff
+signal internal_trig_holdoff_mode : std_logic := '1';
+
+signal internal_data_manager_write_busy_reg : std_logic_vector(2 downto 0) := (others=>'0');
 
 signal internal_trigger_beam_mask :  std_logic_vector(define_num_beams-1 downto 0);
 
 signal internal_trig_clk_data : std_logic;
-
+------------------------------------------------------------------------------------------------------------------------------
 component flag_sync is
 port(
 	clkA			: in	std_logic;
@@ -91,9 +97,9 @@ port(
    SignalIn_clkA	: in	std_logic;
    SignalOut_clkB	: out	std_logic);
 end component;
-
+-------------------------------------------------------------------------------------
 begin
-
+-------------------------------------------------------------------------------------
 TrigMaskSync : for i in 0 to define_num_beams-1 generate
 	xTRIGMASKSYNC : signal_sync
 	port map(
@@ -102,16 +108,24 @@ TrigMaskSync : for i in 0 to define_num_beams-1 generate
 		SignalIn_clkA	=> reg_i(80)(i), --//reg 80 has the beam mask
 		SignalOut_clkB	=> internal_trigger_beam_mask(i));
 end generate;
-
+-------------------------------------------------------------------------------------
 TrigHoldoffSync : for i in 0 to 11 generate
 	xTRIGHOLDOFFSYNC : signal_sync
 	port map(
 		clkA				=> clk_iface_i,
 		clkB				=> clk_data_i,
 		SignalIn_clkA	=> reg_i(81)(i), --//reg 81 has the programmable trig holdoff (lowest 12 bits)
-		SignalOut_clkB	=> internal_trig_holdoff(i));
+		SignalOut_clkB	=> internal_trig_holdoff_count(i));
 end generate;
-
+-------------------------------------------------------------------------------------	
+xTRIGHOLDOFFMODESYNC : signal_sync
+port map(
+	clkA				=> clk_iface_i,
+	clkB				=> clk_data_i,
+	SignalIn_clkA	=> reg_i(85)(0), 
+	SignalOut_clkB	=> internal_trig_holdoff_mode);
+-------------------------------------------------------------------------------------
+--///////////////////////////////////////////////////////////////////////////////////
 proc_clk_xfer : process(clk_data_i, reg_i, internal_trig_en_reg)
 begin
 	if rising_edge(clk_data_i) then
@@ -122,8 +136,43 @@ begin
 		internal_trig_en_reg <= internal_trig_en_reg(1 downto 0) & reg_i(82)(0); --//phased trig enable
 	end if;
 end process;
-
-proc_buf_powsum : process(rst_i, clk_data_i, data_write_busy_i, internal_trig_en_reg)
+------------------------------------------------------------------------------------------------------------------------------
+proc_get_trig_holdoff : process(rst_i, clk_data_i, internal_per_beam_trigger_holdoff, internal_trig_holdoff_mode)
+begin
+	if rst_i = '1' then
+		internal_global_trigger_holdoff <= '0';
+	elsif rising_edge(clk_data_i) and internal_trig_holdoff_mode = '0' then
+		internal_global_trigger_holdoff <= '0';
+	elsif rising_edge(clk_data_i) then
+		internal_global_trigger_holdoff <=	internal_per_beam_trigger_holdoff(0) or internal_per_beam_trigger_holdoff(1) or
+														internal_per_beam_trigger_holdoff(2) or internal_per_beam_trigger_holdoff(3) or
+														internal_per_beam_trigger_holdoff(4) or internal_per_beam_trigger_holdoff(5) or
+														internal_per_beam_trigger_holdoff(6) or internal_per_beam_trigger_holdoff(7) or
+														internal_per_beam_trigger_holdoff(8) or internal_per_beam_trigger_holdoff(9) or
+														internal_per_beam_trigger_holdoff(10) or internal_per_beam_trigger_holdoff(11) or
+														internal_per_beam_trigger_holdoff(12) or internal_per_beam_trigger_holdoff(13) or
+														internal_per_beam_trigger_holdoff(14);
+	end if;
+end process;
+------------------------------------------------------------------------------------------------------------------------------
+proc_get_last_beam_trigger_pattern : process(rst_i, clk_data_i, internal_last_trig_latched_beam_pattern, data_write_busy_i, 
+															internal_data_manager_write_busy_reg)
+begin	
+	if rst_i = '1' then
+		last_trig_beam_clk_data_o <= (others=>'0');
+		internal_data_manager_write_busy_reg <= (others=>'0');
+	---------------------------------------------------------------------------------------------
+	--//this is only really going to be useful when trig_holdoff_mode = 1
+	--//otherwise, at high trigger rates, multiple beams may have overlapping triggers
+	elsif rising_edge(clk_data_i) then
+		internal_data_manager_write_busy_reg <= internal_data_manager_write_busy_reg(1 downto 0) & data_write_busy_i;
+		if internal_data_manager_write_busy_reg(2 downto 1) = "01" then
+			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; --//latch last triggered beam pattern
+		end if;
+	end if;
+end process;
+------------------------------------------------------------------------------------------------------------------------------
+proc_buf_powsum : process(rst_i, clk_data_i, data_write_busy_i, internal_trig_en_reg, internal_trig_holdoff_count, internal_global_trigger_holdoff)
 begin
 	for i in 0 to define_num_beams-1 loop
 		if rst_i = '1' or ENABLE_PHASED_TRIGGER = '0' then
@@ -133,7 +182,7 @@ begin
 			instant_power_1_buf(i) <= (others=>'0');
 			last_trig_pow_o(i) <= (others=>'0');
 			
-			last_trig_beam_clk_data_o(i) <= '0';
+			internal_last_trig_latched_beam_pattern(i) <= '0';
 			
 			instantaneous_above_threshold(i) <= '0';
 			instantaneous_above_threshold_buf(i) <= '0';
@@ -143,6 +192,7 @@ begin
 			
 			trigger_state_machine_state(i) 	<= idle_st;
 			trigger_holdoff_counter(i) 		<= (others=>'0');
+			internal_per_beam_trigger_holdoff(i) <= '0';
 		
 		elsif rising_edge(clk_data_i) and internal_trig_en_reg(2) = '0' then
 			instantaneous_avg_power_0(i) <= (others=>'0');
@@ -151,7 +201,7 @@ begin
 			instant_power_1_buf(i) <= (others=>'0');
 			last_trig_pow_o(i) <= (others=>'0');
 			
-			last_trig_beam_clk_data_o(i) <= '0';
+			internal_last_trig_latched_beam_pattern(i) <= '0';
 			
 			instantaneous_above_threshold(i) <= '0';
 			instantaneous_above_threshold_buf(i) <= '0';
@@ -202,8 +252,10 @@ begin
 				--//waiting for trigger
 				when idle_st => 
 					trigger_holdoff_counter(i) <= (others=>'0');
-					
-					if data_write_busy_i = '1' then
+					internal_per_beam_trigger_holdoff(i) <= '0';
+					internal_last_trig_latched_beam_pattern(i) <= '0';
+
+					if data_write_busy_i = '1' or internal_global_trigger_holdoff = '1' then
 						instantaneous_above_threshold(i) <= '0';
 						trigger_state_machine_state(i) <= idle_st;
 					
@@ -223,16 +275,18 @@ begin
 					end if;
 					
 				when trig_high_st =>
+					internal_per_beam_trigger_holdoff(i) <= '1';
+					internal_last_trig_latched_beam_pattern(i) <= '1'; --//active for holdoff cycle
 					instantaneous_above_threshold(i) <= '1';
 					trigger_state_machine_state(i) <= trig_hold_st;
 					
 				--//trig hold off
 				when trig_hold_st =>
-					last_trig_beam_clk_data_o(i) <= instantaneous_above_threshold(i); --//get the triggered beam info
+					internal_per_beam_trigger_holdoff(i) <= '1';
 					instantaneous_above_threshold(i) <= '0';
 					
 					--//need to limit trigger burst rate in order to register on interface clock
-					if trigger_holdoff_counter(i) = internal_trig_holdoff then
+					if trigger_holdoff_counter(i) = internal_trig_holdoff_count then
 						trigger_holdoff_counter(i) <= (others=>'0');
 						trigger_state_machine_state(i) <= trig_done_st;
 						
@@ -247,6 +301,7 @@ begin
 					
 				--//trig done, go back to idle_st
 				when trig_done_st =>
+					internal_per_beam_trigger_holdoff(i) <= '0';
 					instantaneous_above_threshold(i) <= '0';
 					trigger_holdoff_counter(i) <= (others=>'0');
 					trigger_state_machine_state(i) <= idle_st;
@@ -256,7 +311,7 @@ begin
 		end if;
 	end loop;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 process(clk_data_i, rst_i)
 begin
 	if rst_i = '1'  or ENABLE_PHASED_TRIGGER = '0' then
@@ -281,7 +336,7 @@ begin
 									(instantaneous_above_threshold_buf(14) and internal_trigger_beam_mask(14));
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 --/////////////////////////////////////////////////////
 --/////////////////////////////////////////////////////
 --//now, sync beam triggers to slower clock
@@ -295,7 +350,7 @@ TrigSync	:	 for i in 0 to define_num_beams-1 generate
 		busy_clkA	=> open,
 		out_clkB		=> trig_beam_o(i));
 end generate TrigSync;
-
+------------------------------------------------------------------------------------------------------------------------------
 xTRIGSYNC : flag_sync
 	port map(
 		clkA 			=> clk_data_i,

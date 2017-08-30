@@ -70,7 +70,7 @@ signal adc_dclk_rst_state : adc_dclk_rst_state_type;
 signal user_dclk_rst	: std_logic;
 signal internal_dclk_rst : std_logic;
 signal internal_dclk_rst_counter : std_logic_vector(23 downto 0);
-signal internal_dclk_rst_counter_max : std_logic_vector(23 downto 0) := (others=>'1');
+constant internal_dclk_rst_counter_max : std_logic_vector(23 downto 0) := (others=>'1');
 
 signal internal_startup_dclk_rst : std_logic;
 signal internal_data_valid : std_logic;

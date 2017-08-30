@@ -41,9 +41,9 @@ entity event_metadata is
 		
 end event_metadata;
 
-
+------------------------------------------------------------------------------------------------------------------------------
 architecture rtl of event_metadata is
-
+------------------------------------------------------------------------------------------------------------------------------
 type internal_header_type is array(define_num_wfm_buffers-1 downto 0) of std_logic_vector(23 downto 0);
 signal internal_header_0 : internal_header_type;
 signal internal_header_1 : internal_header_type;
@@ -86,8 +86,11 @@ signal internal_next_event_counter : std_logic_vector(47 downto 0);
 signal internal_trig_counter : std_logic_vector(47 downto 0);
 		
 signal internal_running_timestamp : std_logic_vector(47 downto 0);
+signal internal_event_timestamp_fast_clk : std_logic_vector(47 downto 0);
 signal internal_event_timestamp : std_logic_vector(47 downto 0);
 
+signal internal_data_clk_time_reset : std_logic := '0';
+------------------------------------------------------------------------------------------------------------------------------
 component signal_sync is
 port(
 	clkA			: in	std_logic;
@@ -116,6 +119,7 @@ end component;
 --//
 begin
 --//
+------------------------------------------------------------------------------------------------------------------------------
 xTRIGSYNC : flag_sync
 	port map(
 		clkA 			=> clk_i,
@@ -123,6 +127,13 @@ xTRIGSYNC : flag_sync
 		in_clkA		=> trig_i,
 		busy_clkA	=> open,
 		out_clkB		=> internal_trig);
+xCLEARSYNC : flag_sync
+	port map(
+		clkA 			=> clk_iface_i,
+		clkB			=> clk_i,
+		in_clkA		=> reg_i(126)(0),
+		busy_clkA	=> open,
+		out_clkB		=> internal_data_clk_time_reset);
 xMETADATASYNC : flag_sync
 	port map(
 		clkA 			=> clk_i,
@@ -146,24 +157,45 @@ port map(
 	refresh_i => clk_refrsh_i, --//1 Hz refresh clock
 	count_i => internal_buffer_full,
 	scaler_o => internal_deadtime_counter);
-	
-process(rst_i, clk_iface_i, reg_i)
+------------------------------------------------------------------------------------------------------------------------------
+--//TIMESTAMP is measured on the data clock
+proc_incr_timestamp : process(rst_i, clk_i, internal_data_clk_time_reset)
 begin
 	if rst_i = '1' then
 		internal_running_timestamp <= (others=>'0');
+	elsif rising_edge(clk_i) and internal_data_clk_time_reset = '1' then
+		internal_running_timestamp <= (others=>'0');
+	elsif rising_edge(clk_i) then
+		internal_running_timestamp <= internal_running_timestamp + 1;
+	end if;
+end process;
+------------------------------------------------------------------------------------------------------------------------------
+proc_get_timestamp : process(rst_i, clk_i, internal_running_timestamp, get_metadata_i)
+begin
+	if rst_i = '1' then
+		internal_event_timestamp_fast_clk <= (others=>'0');
+	elsif rising_edge(clk_i) and internal_data_clk_time_reset = '1' then
+		internal_event_timestamp_fast_clk <= (others=>'0');
+	elsif rising_edge(clk_i) and get_metadata_i = '1' then
+		internal_event_timestamp_fast_clk <= internal_running_timestamp;
+	end if;
+end process;
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+process(rst_i, clk_iface_i, reg_i)
+begin
+	if rst_i = '1' then
 		internal_trig_reg <= (others=>'0');
 		internal_get_meta_data_reg <= (others=>'0');
 	elsif rising_edge(clk_iface_i) and reg_i(126)(0) = '1' then
-		internal_running_timestamp <= (others=>'0');
 		internal_trig_reg <= (others=>'0');
 		internal_get_meta_data_reg <= (others=>'0');
 	elsif rising_edge(clk_iface_i) then
-		internal_running_timestamp <= internal_running_timestamp + 1;
 		internal_trig_reg <= internal_trig_reg(1 downto 0) & internal_trig;
 		internal_get_meta_data_reg <= internal_get_meta_data_reg(2 downto 0) & internal_get_meta_data;
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 proc_trig_tag: process(rst_i, clk_iface_i, reg_i, internal_trig_reg)
 begin
 	if rst_i = '1' then
@@ -174,7 +206,7 @@ begin
 		internal_trig_counter <= internal_trig_counter + 1;
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 proc_evt_count_tag : process(rst_i, clk_iface_i, reg_i, internal_get_meta_data_reg)
 begin
 	if rst_i = '1' then
@@ -187,11 +219,11 @@ begin
 		buf <= 0;
 	elsif rising_edge(clk_iface_i) and internal_get_meta_data_reg(2 downto 1) = "01" then
 		internal_next_event_counter <= internal_next_event_counter + 1;
-		internal_event_timestamp <= internal_running_timestamp;
+		internal_event_timestamp <= internal_event_timestamp_fast_clk;
 		buf <= to_integer(unsigned(current_buffer_i));
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 proc_register_meta_data : process(rst_i, clk_iface_i, internal_get_meta_data_reg)
 begin
 		if rst_i = '1' then
@@ -252,7 +284,7 @@ begin
 			internal_header_24(buf) <= x"0" & last_trig_pow_i(14);		
 		end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 proc_assign_metadata : process(rst_i, clk_iface_i, reg_i(78))
 variable n : integer range 0 to 3 := 0;
 begin

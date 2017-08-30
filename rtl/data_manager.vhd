@@ -20,6 +20,8 @@ use work.defs.all;
 use work.register_map.all;
 
 entity data_manager is
+	generic(
+		FIRMWARE_DEVICE   :  std_logic := '1');
 	port(
 		rst_i					:	in	 std_logic;
 		clk_i					:  in	 std_logic; --//core data clock
@@ -210,7 +212,7 @@ begin
 	end if;
 end process;
 --//////////////////////////////////////
-
+------------------------------------------------------------------------------------------------------------------------------
 --//////////////////////////////////////
 --//register trigger signal
 --//trigger types: 1 = software trigger, 2 = beam trigger, 3 = ext trigger
@@ -223,7 +225,7 @@ begin
 	elsif rising_edge(clk_i) and internal_forced_trigger = '1' then
 		event_trigger_reg(0) <= '1';
 		internal_last_trigger_type <= "01";
-	elsif rising_edge(clk_i) and phased_trig_i = '1' and internal_phase_trigger_data_enable = '1' then 
+	elsif rising_edge(clk_i) and phased_trig_i = '1' and internal_phase_trigger_data_enable = '1'  then 
 		event_trigger_reg(0) <= '1';
 		internal_last_beam_trigger <= last_trig_beam_i; --//update the beam trigger info
 		internal_last_trigger_type <= "10";
@@ -239,7 +241,7 @@ begin
 	end if;
 end process;
 
-
+------------------------------------------------------------------------------------------------------------------------------
 --//data manager status register: 
 --//note this register is re-clocked in the registers module before read, so no metastability issues 
 -----------------------
@@ -264,7 +266,7 @@ begin
 		end if;
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 --/////////////////////////////////////////////////////////	
 --//manage buffers. if trigger, write to data ram
 proc_save_triggered_event : process(rst_i, clk_i, event_trigger_reg, internal_clear_buffer, wr_busy_o, internal_write_busy,
@@ -425,6 +427,7 @@ begin
 		end case;
 	end if;
 end process;
+------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 --///////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////
@@ -486,7 +489,7 @@ begin
 		end case;
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 --//interpret register to assign data buffer to readout
 proc_select_wfm_ram : process(clk_iface_i, reg_i(78), read_ch, internal_wfm_ram_0, internal_wfm_ram_1, 
 										internal_wfm_ram_2, internal_wfm_ram_3, internal_wfm_ram_0_chan_sel, internal_wfm_ram_1_chan_sel, 
@@ -589,7 +592,7 @@ begin
 		end case;
 	end if;
 end process;
-
+------------------------------------------------------------------------------------------------------------------------------
 xEVENTMETADATA : entity work.event_metadata
 port map(
 	rst_i					=> rst_i,
@@ -605,7 +608,7 @@ port map(
 	current_buffer_i	=> internal_current_buffer,
 	reg_i				 	=> reg_i,		
 	event_header_o	 	=> event_meta_o);
-
+------------------------------------------------------------------------------------------------------------------------------
 --///////////////////
 --//FPGA RAM blocks defined here:
 --///////////////////

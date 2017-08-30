@@ -449,6 +449,7 @@ begin
 --			data_ram_ch1_o		=> ram_data(7));
 	--///////////////////////////////////////
 	xDATA_MANAGER : entity work.data_manager
+	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
 		rst_i						=> reset_global or reset_global_except_registers,
 		clk_i						=> clock_93MHz,
