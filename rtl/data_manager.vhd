@@ -216,7 +216,7 @@ end process;
 --//////////////////////////////////////
 --//register trigger signal
 --//trigger types: 1 = software trigger, 2 = beam trigger, 3 = ext trigger
-proc_reg_trig : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i, ext_trig_i)
+proc_reg_trig : process(rst_i, clk_i, internal_forced_trigger, phased_trig_i, ext_trig_i, internal_phase_trigger_data_enable)
 begin
 	if rst_i = '1' then
 		event_trigger_reg(0) <= '0';

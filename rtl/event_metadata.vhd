@@ -170,7 +170,7 @@ begin
 	end if;
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
-proc_get_timestamp : process(rst_i, clk_i, internal_running_timestamp, get_metadata_i)
+proc_get_timestamp : process(rst_i, clk_i, internal_running_timestamp, get_metadata_i, internal_data_clk_time_reset)
 begin
 	if rst_i = '1' then
 		internal_event_timestamp_fast_clk <= (others=>'0');

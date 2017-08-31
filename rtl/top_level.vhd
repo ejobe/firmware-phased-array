@@ -558,7 +558,7 @@ begin
 	-- --SMA_out0 => the cal pulse enable
 	-- --SMA_out1 => the phased trigger from the master board
 	-- --SMA_in => the sync signal from the master board
-	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1)
+	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1, sync_from_master_device)
 	begin
 	case FIRMWARE_DEVICE is
 		when '1' => --//master board

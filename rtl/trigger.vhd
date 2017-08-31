@@ -54,6 +54,12 @@ signal instantaneous_avg_power_1 : average_power_16samp_type;  --//defined in de
 
 signal instant_power_0_buf : average_power_16samp_type;
 signal instant_power_1_buf : average_power_16samp_type;
+signal instant_power_0_buf2 : average_power_16samp_type;
+signal instant_power_1_buf2 : average_power_16samp_type;
+signal instant_power_0_buf3 : average_power_16samp_type;
+signal instant_power_1_buf3 : average_power_16samp_type;
+signal instant_power_0_buf4 : average_power_16samp_type;
+signal instant_power_1_buf4 : average_power_16samp_type;
 
 signal instantaneous_above_threshold	:	std_logic_vector(define_num_beams-1 downto 0); --//check if beam above threshold at each clk_data_i edge
 signal instantaneous_above_threshold_buf	:	std_logic_vector(define_num_beams-1 downto 0); 
@@ -77,6 +83,11 @@ signal internal_global_trigger_holdoff : std_logic; --//OR of all the bits in th
 signal internal_trig_holdoff_mode : std_logic := '1';
 
 signal internal_data_manager_write_busy_reg : std_logic_vector(2 downto 0) := (others=>'0');
+
+signal internal_trig_pow_latch_0 : std_logic_vector(define_num_beams-1 downto 0) := (others=>'0'); --//flag to record last beam power values
+signal internal_trig_pow_latch_1 : std_logic_vector(define_num_beams-1 downto 0) := (others=>'0'); --//flag to record last beam power values
+signal internal_trig_pow_latch_0_reg : std_logic_vector(1 downto 0) := (others=>'0');
+signal internal_trig_pow_latch_1_reg : std_logic_vector(1 downto 0) := (others=>'0');
 
 signal internal_trigger_beam_mask :  std_logic_vector(define_num_beams-1 downto 0);
 
@@ -160,19 +171,49 @@ proc_get_last_beam_trigger_pattern : process(rst_i, clk_data_i, internal_last_tr
 begin	
 	if rst_i = '1' then
 		last_trig_beam_clk_data_o <= (others=>'0');
+		for i in 0 to define_num_beams-1 loop
+			last_trig_pow_o(i) <= (others=>'0');
+		end loop;
+		internal_trig_pow_latch_0_reg <= (others=>'0');
+		internal_trig_pow_latch_1_reg <= (others=>'0');
 		internal_data_manager_write_busy_reg <= (others=>'0');
 	---------------------------------------------------------------------------------------------
-	--//this is only really going to be useful when trig_holdoff_mode = 1
-	--//otherwise, at high trigger rates, multiple beams may have overlapping triggers
 	elsif rising_edge(clk_data_i) then
 		internal_data_manager_write_busy_reg <= internal_data_manager_write_busy_reg(1 downto 0) & data_write_busy_i;
+		
+		--this is only really going to be useful when trig_holdoff_mode = 1
+		--otherwise, at high trigger rates, multiple beams may have overlapping triggers
 		if internal_data_manager_write_busy_reg(2 downto 1) = "01" then
 			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; --//latch last triggered beam pattern
 		end if;
+		
+		------------------------------------------------------------------------------------
+		--save last trig beam powers
+		internal_trig_pow_latch_0_reg(1) <= internal_trig_pow_latch_0_reg(0);
+		internal_trig_pow_latch_1_reg(1) <= internal_trig_pow_latch_1_reg(0);
+		
+		internal_trig_pow_latch_0_reg(0) <= internal_trig_pow_latch_0(0) or internal_trig_pow_latch_0(1) or internal_trig_pow_latch_0(2) or
+													internal_trig_pow_latch_0(3) or internal_trig_pow_latch_0(4) or internal_trig_pow_latch_0(5) or
+													internal_trig_pow_latch_0(6) or internal_trig_pow_latch_0(7) or internal_trig_pow_latch_0(8) or
+													internal_trig_pow_latch_0(9) or internal_trig_pow_latch_0(10) or internal_trig_pow_latch_0(11) or
+													internal_trig_pow_latch_0(12) or internal_trig_pow_latch_0(13) or internal_trig_pow_latch_0(14);
+		internal_trig_pow_latch_1_reg(0) <= internal_trig_pow_latch_1(0) or internal_trig_pow_latch_1(1) or internal_trig_pow_latch_1(2) or
+													internal_trig_pow_latch_1(3) or internal_trig_pow_latch_1(4) or internal_trig_pow_latch_1(5) or
+													internal_trig_pow_latch_1(6) or internal_trig_pow_latch_1(7) or internal_trig_pow_latch_1(8) or
+													internal_trig_pow_latch_1(9) or internal_trig_pow_latch_1(10) or internal_trig_pow_latch_1(11) or
+													internal_trig_pow_latch_1(12) or internal_trig_pow_latch_1(13) or internal_trig_pow_latch_1(14);
+													
+		if internal_trig_pow_latch_0_reg = "01" then
+			last_trig_pow_o <= instant_power_0_buf4;
+		elsif internal_trig_pow_latch_1_reg = "01" then
+			last_trig_pow_o <= instant_power_1_buf4;
+		end if;
+	
 	end if;
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
-proc_buf_powsum : process(rst_i, clk_data_i, data_write_busy_i, internal_trig_en_reg, internal_trig_holdoff_count, internal_global_trigger_holdoff)
+proc_buf_powsum : process(rst_i, clk_data_i, data_write_busy_i, internal_trig_en_reg, internal_trig_holdoff_count, internal_global_trigger_holdoff,
+									instantaneous_avg_power_0, instantaneous_avg_power_1)
 begin
 	for i in 0 to define_num_beams-1 loop
 		if rst_i = '1' or ENABLE_PHASED_TRIGGER = '0' then
@@ -180,7 +221,12 @@ begin
 			instantaneous_avg_power_1(i) <= (others=>'0');
 			instant_power_0_buf(i) <= (others=>'0');
 			instant_power_1_buf(i) <= (others=>'0');
-			last_trig_pow_o(i) <= (others=>'0');
+			instant_power_0_buf2(i) <= (others=>'0');
+			instant_power_1_buf2(i) <= (others=>'0');
+			instant_power_0_buf3(i) <= (others=>'0');
+			instant_power_1_buf3(i) <= (others=>'0');		
+			instant_power_0_buf4(i) <= (others=>'0');
+			instant_power_1_buf4(i) <= (others=>'0');	
 			
 			internal_last_trig_latched_beam_pattern(i) <= '0';
 			
@@ -188,6 +234,9 @@ begin
 			instantaneous_above_threshold_buf(i) <= '0';
 			instantaneous_above_threshold_buf2(i) <= '0';
 			
+			internal_trig_pow_latch_0(i) <= '0';  --//flag to record last beam power values
+			internal_trig_pow_latch_1(i) <= '0';  --//flag to record last beam power values
+
 			buffered_powersum(i) <= (others=>'0');
 			
 			trigger_state_machine_state(i) 	<= idle_st;
@@ -199,13 +248,21 @@ begin
 			instantaneous_avg_power_1(i) <= (others=>'0');
 			instant_power_0_buf(i) <= (others=>'0');
 			instant_power_1_buf(i) <= (others=>'0');
-			last_trig_pow_o(i) <= (others=>'0');
+			instant_power_0_buf2(i) <= (others=>'0');
+			instant_power_1_buf2(i) <= (others=>'0');
+			instant_power_0_buf3(i) <= (others=>'0');
+			instant_power_1_buf3(i) <= (others=>'0');	
+			instant_power_0_buf4(i) <= (others=>'0');
+			instant_power_1_buf4(i) <= (others=>'0');				
 			
 			internal_last_trig_latched_beam_pattern(i) <= '0';
 			
 			instantaneous_above_threshold(i) <= '0';
 			instantaneous_above_threshold_buf(i) <= '0';
 			instantaneous_above_threshold_buf2(i) <= '0';
+			
+			internal_trig_pow_latch_0(i) <= '0';
+			internal_trig_pow_latch_1(i) <= '0';
 			
 			buffered_powersum(i) <= (others=>'0');
 			
@@ -215,7 +272,12 @@ begin
 		--//there are 16 samples every clock cycle. We want to calculate the power in 16 sample units every 8 samples.
 		--//So that's two power calculations every clk_data_i cycle
 		elsif rising_edge(clk_data_i) then
-
+			instant_power_0_buf4(i) <= instant_power_0_buf3(i);
+			instant_power_1_buf4(i) <= instant_power_1_buf3(i);
+			instant_power_0_buf3(i) <= instant_power_0_buf2(i);
+			instant_power_1_buf3(i) <= instant_power_1_buf2(i);
+			instant_power_0_buf2(i) <= instant_power_0_buf(i);
+			instant_power_1_buf2(i) <= instant_power_1_buf(i);
 			instant_power_0_buf(i) <= instantaneous_avg_power_0(i);
 			instant_power_1_buf(i) <= instantaneous_avg_power_1(i);
 			--//calculate first 16-sample power
@@ -251,6 +313,8 @@ begin
 			
 				--//waiting for trigger
 				when idle_st => 
+					internal_trig_pow_latch_0(i) <= '0';
+					internal_trig_pow_latch_1(i) <= '0';
 					trigger_holdoff_counter(i) <= (others=>'0');
 					internal_per_beam_trigger_holdoff(i) <= '0';
 					internal_last_trig_latched_beam_pattern(i) <= '0';
@@ -259,14 +323,18 @@ begin
 						instantaneous_above_threshold(i) <= '0';
 						trigger_state_machine_state(i) <= idle_st;
 					
-					elsif instant_power_0_buf(i) > thresholds(i) then
+					elsif instantaneous_avg_power_0(i) > thresholds(i) then
 						instantaneous_above_threshold(i) <= '1'; --// high for two clk_data_i cycles
-						last_trig_pow_o(i) <= instantaneous_avg_power_0(i);
+						-----------FLAG power in sum 0 ------------------------
+						internal_trig_pow_latch_0(i) <= '1';
+						--------------------------------------------------------
 						trigger_state_machine_state(i) <= trig_high_st;
 						
-					elsif instant_power_1_buf(i) > thresholds(i) then
+					elsif instantaneous_avg_power_1(i) > thresholds(i) then
 						instantaneous_above_threshold(i) <= '1'; --// high for two clk_data_i cycles
-						last_trig_pow_o(i) <= instantaneous_avg_power_1(i);
+						-----------FLAG power in sum 1 ------------------------
+						internal_trig_pow_latch_1(i) <= '1';
+						--------------------------------------------------------
 						trigger_state_machine_state(i) <= trig_high_st;
 						
 					else
@@ -282,6 +350,8 @@ begin
 					
 				--//trig hold off
 				when trig_hold_st =>
+					internal_trig_pow_latch_0(i) <= '0';
+					internal_trig_pow_latch_1(i) <= '0';
 					internal_per_beam_trigger_holdoff(i) <= '1';
 					instantaneous_above_threshold(i) <= '0';
 					
@@ -301,6 +371,8 @@ begin
 					
 				--//trig done, go back to idle_st
 				when trig_done_st =>
+					internal_trig_pow_latch_0(i) <= '0';
+					internal_trig_pow_latch_1(i) <= '0';
 					internal_per_beam_trigger_holdoff(i) <= '0';
 					instantaneous_above_threshold(i) <= '0';
 					trigger_holdoff_counter(i) <= (others=>'0');

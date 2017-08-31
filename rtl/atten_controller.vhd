@@ -88,7 +88,7 @@ begin
 end process;
 	
 
-proc_start_dsa_write : process(rst_i, clk_i, write_i, dsa_write_state)
+proc_start_dsa_write : process(rst_i, clk_i, write_i, dsa_write_state, internal_spi_write_from_software)
 begin
 	if rst_i = '1' then
 		internal_spi_write <= '0';
