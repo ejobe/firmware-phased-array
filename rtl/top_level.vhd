@@ -222,6 +222,7 @@ architecture rtl of top_level is
 	signal scalers_trig			: std_logic;
 	signal scaler_to_read		: std_logic_vector(23 downto 0);
 	signal scalers_gate			: std_logic;
+	signal running_scalers		: std_logic_vector(23 downto 0);
 	--//sync signals 
 	signal board_sync : std_logic; --//for debugging
 	signal sync_from_master_device : std_logic;
@@ -466,6 +467,7 @@ begin
 		status_reg_o			=> status_reg_data_manager,
 		status_reg_latched_o => status_reg_latched_data_manager,
 		wfm_data_i				=> wfm_data,
+		running_scalers_i		=> running_scalers,
 		data_ram_at_current_adr_o => ram_data);
 		
 	--//readout controller using MCU/BeagleBone
@@ -493,6 +495,7 @@ begin
 		reg_i				=> registers,
 		trigger_i		=> scalers_trig,
 		beam_trig_i		=> scalers_beam_trigs,
+		running_scalers_o => running_scalers,
 		scaler_to_read_o  => scaler_to_read);
 	--///////////////////////////////////////		
 	xREGISTERS : entity work.registers_mcu_spi

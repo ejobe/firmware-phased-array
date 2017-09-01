@@ -32,6 +32,7 @@ entity event_metadata is
 		trig_type_i		:	in		std_logic_vector(1 downto 0);
 		trig_last_beam_i 	:  in	std_logic_vector(define_num_beams-1 downto 0);
 		last_trig_pow_i 	: 	in	average_power_16samp_type;
+		running_scaler_i	:	in	std_logic_vector(23 downto 0);
 		
 		get_metadata_i		:	in	std_logic; 
 		current_buffer_i	:	in std_logic_vector(1 downto 0);
@@ -79,6 +80,8 @@ signal internal_trig : std_logic;
 signal internal_trig_reg : std_logic_vector(2 downto 0);
 signal internal_get_meta_data: std_logic;
 signal internal_get_meta_data_reg : std_logic_vector(3 downto 0);
+
+signal internal_clear_meta_data : std_logic := '0';
 
 signal buf : integer range 0 to 3 := 0;
 
@@ -187,12 +190,15 @@ begin
 	if rst_i = '1' then
 		internal_trig_reg <= (others=>'0');
 		internal_get_meta_data_reg <= (others=>'0');
+		internal_clear_meta_data <= '0';
 	elsif rising_edge(clk_iface_i) and reg_i(126)(0) = '1' then
 		internal_trig_reg <= (others=>'0');
 		internal_get_meta_data_reg <= (others=>'0');
+		internal_clear_meta_data <= '1';
 	elsif rising_edge(clk_iface_i) then
 		internal_trig_reg <= internal_trig_reg(1 downto 0) & internal_trig;
 		internal_get_meta_data_reg <= internal_get_meta_data_reg(2 downto 0) & internal_get_meta_data;
+		internal_clear_meta_data <= '0';
 	end if;
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
@@ -224,7 +230,7 @@ begin
 	end if;
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
-proc_register_meta_data : process(rst_i, clk_iface_i, internal_get_meta_data_reg)
+proc_register_meta_data : process(rst_i, clk_iface_i, internal_get_meta_data_reg, internal_clear_meta_data)
 begin
 		if rst_i = '1' then
 			for i in 0 to define_num_wfm_buffers-1 loop
@@ -255,7 +261,36 @@ begin
 				internal_header_23(i) <= (others=>'0');
 				internal_header_24(i) <= (others=>'0');
 			end loop;
-	
+		
+		elsif  rising_edge(clk_iface_i) and internal_clear_meta_data = '1' then
+			for i in 0 to define_num_wfm_buffers-1 loop
+				internal_header_0(i) <= (others=>'0');
+				internal_header_1(i) <= (others=>'0');
+				internal_header_2(i) <= (others=>'0');
+				internal_header_3(i) <= (others=>'0');
+				internal_header_4(i) <= (others=>'0');
+				internal_header_5(i) <= (others=>'0');			
+				internal_header_6(i) <= (others=>'0');			
+				internal_header_7(i) <= (others=>'0');
+				internal_header_8(i) <= (others=>'0');
+				internal_header_9(i) <= (others=>'0');
+				internal_header_10(i) <= (others=>'0');
+				internal_header_11(i) <= (others=>'0');
+				internal_header_12(i) <= (others=>'0');
+				internal_header_13(i) <= (others=>'0');
+				internal_header_14(i) <= (others=>'0');
+				internal_header_15(i) <= (others=>'0');			
+				internal_header_16(i) <= (others=>'0');			
+				internal_header_17(i) <= (others=>'0');
+				internal_header_18(i) <= (others=>'0');
+				internal_header_19(i) <= (others=>'0');
+				internal_header_20(i) <= (others=>'0');
+				internal_header_21(i) <= (others=>'0');
+				internal_header_22(i) <= (others=>'0');
+				internal_header_23(i) <= (others=>'0');
+				internal_header_24(i) <= (others=>'0');
+			end loop;
+			
 		elsif rising_edge(clk_iface_i) and internal_get_meta_data_reg(3 downto 2) = "01" then 
 			internal_header_0(buf) <= internal_next_event_counter(23 downto 0);
 			internal_header_1(buf) <= internal_next_event_counter(47 downto 24);
@@ -266,7 +301,7 @@ begin
 			internal_header_6(buf) <= internal_deadtime_counter;
 			internal_header_7(buf) <= current_buffer_i & reg_i(42)(0) & '0' & reg_i(76)(2 downto 0) & trig_type_i & trig_last_beam_i;
 			internal_header_8(buf) <= '0' & reg_i(48)(7 downto 0) & reg_i(80)(define_num_beams-1 downto 0);
-			internal_header_9(buf) <= (others=>'0'); 
+			internal_header_9(buf) <= running_scaler_i; 
 			internal_header_10(buf) <= x"0" & last_trig_pow_i(0);
 			internal_header_11(buf) <= x"0" & last_trig_pow_i(1);
 			internal_header_12(buf) <= x"0" & last_trig_pow_i(2);

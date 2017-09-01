@@ -132,7 +132,7 @@ begin
 		registers_io(base_adrs_rdout_cntrl+9)  <= x"000000"; --//data chunk
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
 		registers_io(base_adrs_rdout_cntrl+11) <= x"000004"; --//length of register readout (NOT USED, only signal word readouts) (75)
-		registers_io(base_adrs_rdout_cntrl+12) <= x"000000"; --//readout pre-trig window [76]
+		registers_io(base_adrs_rdout_cntrl+12) <= x"000004"; --//readout pre-trig window [76]
 		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer + Reset Buffer Number to 0 [77]
 		registers_io(base_adrs_rdout_cntrl+14) <= x"000000"; --//select readout waveform buffer [78]
 

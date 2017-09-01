@@ -204,9 +204,9 @@ begin
 													internal_trig_pow_latch_1(12) or internal_trig_pow_latch_1(13) or internal_trig_pow_latch_1(14);
 													
 		if internal_trig_pow_latch_0_reg = "01" then
-			last_trig_pow_o <= instant_power_0_buf4;
+			last_trig_pow_o <= instant_power_0_buf2;
 		elsif internal_trig_pow_latch_1_reg = "01" then
-			last_trig_pow_o <= instant_power_1_buf4;
+			last_trig_pow_o <= instant_power_1_buf2;
 		end if;
 	
 	end if;

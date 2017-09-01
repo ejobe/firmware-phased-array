@@ -60,8 +60,6 @@ constant slice_base : integer := 2*pdat_size;
 constant slice_lo   : integer := define_wave2beam_lo_bit+slice_base;
 constant slice_hi   : integer := define_wave2beam_hi_bit+slice_base;
 
-constant zpad	: std_logic := '0';
-
 --// we will form more downward-looking beams than upward
 --// since there is a fixed added delay at each next antenna updwards
 --//
