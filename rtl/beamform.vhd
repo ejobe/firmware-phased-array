@@ -43,7 +43,8 @@ end beamform;
 
 architecture rtl of beamform is
 
-signal data_pipe			:  full_data_type;
+signal data_pipe			:  full_data_type;  --//initial pipeline of data
+signal data_pipe_railed	:  full_data_type;  --//option to rail the 7-bit data at 5 bits in order to fit in beamformer
 signal buf_data_0 		: 	full_data_type;
 signal buf_data_1 		: 	full_data_type;
 signal buf_data_2 		: 	full_data_type;
@@ -59,8 +60,6 @@ signal dat : internal_buf_data_type;
 constant slice_base : integer := 2*pdat_size;
 constant slice_lo   : integer := define_wave2beam_lo_bit+slice_base;
 constant slice_hi   : integer := define_wave2beam_hi_bit+slice_base;
-
-constant zpad	: std_logic := '0';
 
 --// we will form more downward-looking beams than upward
 --// since there is a fixed added delay at each next antenna updwards
@@ -163,7 +162,7 @@ port map(
 	SignalIn_clkA	=> reg_i(82)(4), 
 	SignalOut_clkB	=> internal_beam4b_enable);
 --------------------------------------------
-proc_buffer_data : process(rst_i, clk_i)
+proc_buffer_data : process(rst_i, clk_i, data_pipe)
 begin
 	for i in 0 to 7 loop
 		
@@ -172,7 +171,8 @@ begin
 			buf_data_1(i)<= (others=>'0');
 			buf_data_2(i)<= (others=>'0');
 			buf_data_3(i)<= (others=>'0');		
-			buf_data_4(i)<= (others=>'0');		
+			buf_data_4(i)<= (others=>'0');
+			data_pipe_railed(i) <= (others=>'0');	
 			data_pipe(i) <= (others=>'0');
 			
 			dat(i) <= (others=>'0');
@@ -185,7 +185,19 @@ begin
 			buf_data_3(i) <= buf_data_2(i);
 			buf_data_2(i) <= buf_data_1(i);
 			buf_data_1(i) <= buf_data_0(i);			
-			buf_data_0(i) <= data_pipe(i);		
+			buf_data_0(i) <= data_pipe_railed(i);		
+			
+			---rail wavefroms if exceed +15/-16 counts from mid-scale 64
+			for j in 0 to 2*define_serdes_factor-1 loop
+				if data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) < 48 then
+					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "0110000";
+				elsif data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) > 79 then
+					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "1001111";
+				else
+					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size);
+				end if;
+			end loop;
+			
 			data_pipe(i)  <= data_i(i);
 
 		end if;

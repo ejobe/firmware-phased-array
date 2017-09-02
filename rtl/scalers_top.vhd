@@ -33,6 +33,8 @@ entity scalers_top is
 		trigger_i		:		in		std_logic;
 		beam_trig_i		:		in		std_logic_vector(define_num_beams-1 downto 0);
 		
+		running_scalers_o:		out	std_logic_vector(23 downto 0);
+		
 		scaler_to_read_o  :   out	std_logic_vector(23 downto 0));
 end scalers_top;
 
@@ -52,8 +54,11 @@ port(
 	count_i		: in	std_logic;
 	scaler_o		: out std_logic_vector(scaler_width-1 downto 0));
 end component;
-
+-------------------------------------------------------------------------------
 begin
+-------------------------------------------------------------------------------
+proc_assign_scalers_to_metadata : running_scalers_o <= internal_scaler_array(32) & internal_scaler_array(0);
+-------------------------------------------------------------------------------
 --//scaler 1
 xTRIGSCALER : scaler
 	port map(

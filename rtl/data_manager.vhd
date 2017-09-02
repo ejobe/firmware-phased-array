@@ -42,6 +42,7 @@ entity data_manager is
 
 		--//waveform data	
 		wfm_data_i				:	in	 	full_data_type;
+		running_scalers_i		:  in 	std_logic_vector(23 downto 0);
 		data_ram_at_current_adr_o :  out	ram_adr_chunked_data_type);
 		
 	end data_manager;
@@ -604,6 +605,7 @@ port map(
 	trig_type_i			=> internal_last_trigger_type,
 	trig_last_beam_i 	=> internal_last_beam_trigger,
 	last_trig_pow_i	=> last_trig_pow_i,
+	running_scaler_i  => running_scalers_i,
 	get_metadata_i	 	=> internal_get_event_metadata, 
 	current_buffer_i	=> internal_current_buffer,
 	reg_i				 	=> reg_i,		
