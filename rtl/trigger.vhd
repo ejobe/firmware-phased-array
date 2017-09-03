@@ -167,7 +167,7 @@ begin
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
 proc_get_last_beam_trigger_pattern : process(rst_i, clk_data_i, internal_last_trig_latched_beam_pattern, data_write_busy_i, 
-															internal_data_manager_write_busy_reg)
+															internal_data_manager_write_busy_reg, internal_trig_pow_latch_0_reg, internal_trig_pow_latch_1_reg)
 begin	
 	if rst_i = '1' then
 		last_trig_beam_clk_data_o <= (others=>'0');
@@ -179,13 +179,13 @@ begin
 		internal_data_manager_write_busy_reg <= (others=>'0');
 	---------------------------------------------------------------------------------------------
 	elsif rising_edge(clk_data_i) then
-		internal_data_manager_write_busy_reg <= internal_data_manager_write_busy_reg(1 downto 0) & data_write_busy_i;
-		
-		--this is only really going to be useful when trig_holdoff_mode = 1
-		--otherwise, at high trigger rates, multiple beams may have overlapping triggers
-		if internal_data_manager_write_busy_reg(2 downto 1) = "01" then
-			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; --//latch last triggered beam pattern
-		end if;
+--		internal_data_manager_write_busy_reg <= internal_data_manager_write_busy_reg(1 downto 0) & data_write_busy_i;
+--		
+--		--this is only really going to be useful when trig_holdoff_mode = 1
+--		--otherwise, at high trigger rates, multiple beams may have overlapping triggers
+--		if internal_data_manager_write_busy_reg(2 downto 1) = "01" then
+--			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; --//latch last triggered beam pattern
+--		end if;
 		
 		------------------------------------------------------------------------------------
 		--save last trig beam powers
@@ -205,8 +205,10 @@ begin
 													
 		if internal_trig_pow_latch_0_reg = "01" then
 			last_trig_pow_o <= instant_power_0_buf2;
+			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; 
 		elsif internal_trig_pow_latch_1_reg = "01" then
 			last_trig_pow_o <= instant_power_1_buf2;
+			last_trig_beam_clk_data_o <= internal_last_trig_latched_beam_pattern; 
 		end if;
 	
 	end if;
