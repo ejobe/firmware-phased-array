@@ -231,6 +231,8 @@ architecture rtl of top_level is
 	signal led_trig : std_logic;
 	signal led_sync : std_logic;
 	signal led_gate : std_logic;
+	--//fpga temp
+	signal fpga_temp : std_logic_vector(7 downto 0);
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -507,6 +509,7 @@ begin
 		sync_from_master_o	=> sync_from_master_device,
 		--//////////////////////////
 		--//status registers
+		fpga_temp_i	=> fpga_temp,
 		scaler_to_read_i => scaler_to_read,
 		status_data_manager_i => status_reg_data_manager,
 		status_data_manager_latched_i => status_reg_latched_data_manager,
@@ -549,6 +552,15 @@ begin
 	--uC_dig(10) <= '0'; --//not connected
 	--uC_dig(11) <= '0'; --//not connected
    -----------------------------------------------------------------------------
+	--FPGA core temp
+	xFPGACORETEMP : entity work.fpga_core_temp
+	port map(
+		enable_i		=> registers(108)(1),
+		clk_i			=> clock_1MHz,
+		clk_reg_i	=> clock_25MHz,
+		rst_i 		=> reset_global or reset_global_except_registers,	
+		update_i		=> registers(108)(0),
+		temp_o 		=> fpga_temp); 
 	
 	--//Other output pin assignments
 	-----------------------------------------------------------------------

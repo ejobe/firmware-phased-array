@@ -28,6 +28,7 @@ entity registers_mcu_spi is
 		sync_from_master_o : out std_logic;	--// ^sync signal from master to slave
 		--//////////////////////////////
 		--//status/system read-only registers:
+		fpga_temp_i							:  in		std_logic_vector(7 downto 0);
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		status_data_manager_latched_i :  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
@@ -173,6 +174,8 @@ begin
 		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
 		registers_io(84) <= x"000000";   --// enable phased trigger to data manager
 		registers_io(85) <= x"000001";   --// trigger holdoff mode
+		
+		registers_io(108) <= x"000000"; --//write LSB to update internal temp sensor; LSB+1 to enable[108]
 
 		--//trigger thresholds:
 		registers_io(base_adrs_trig_thresh+0) <= x"0FFFFF";   --//[86]
@@ -264,6 +267,7 @@ begin
 			--//clear pulsed registers
 			registers_io(127) <= x"000000"; --//clear the reset register
 			registers_io(126) <= x"000000"; --//clear the event counter reset
+			registers_io(108)(0) <= '0'; --//clear the temp-update register LSB
 			registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//clear the software trigger
 			registers_io(base_adrs_rdout_cntrl+13)<= x"000000"; --//clear the 'buffer clear' register
 			registers_io(base_adrs_adc_cntrl+1)   <= x"000000"; --//clear the DCLK Reset pulse
@@ -273,7 +277,7 @@ begin
 			if unique_chip_id_rdy = '1' then
 				registers_io(4) <= unique_chip_id(23 downto 0);
 				registers_io(5) <= unique_chip_id(47 downto 24);
-				registers_io(6) <= x"00" & unique_chip_id(63 downto 48);	
+				registers_io(6) <= fpga_temp_i & unique_chip_id(63 downto 48);	
 			end if;
 		end if;
 	end if;
