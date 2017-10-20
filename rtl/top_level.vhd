@@ -23,7 +23,7 @@ entity top_level is
 	----- Master = 1 (all functionality) ; Slave = 0 (removes beamforming, the phased trigger, cal pulser output, ...)
 	----------------------------------
 	Generic(
-		FIRMWARE_DEVICE : std_logic := '0');
+		FIRMWARE_DEVICE : std_logic := '1');
 	----------------------------------	
 	Port(
 		--//Master clocks (2 copies, 100 MHz)
@@ -219,6 +219,7 @@ architecture rtl of top_level is
 	signal event_meta_data	: event_metadata_type;
 	--//signals for scalers
 	signal scalers_beam_trigs	: std_logic_vector(define_num_beams-1 downto 0);
+	signal scalers_beam_verified_trigs	: std_logic_vector(define_num_beams-1 downto 0);
 	signal scalers_trig			: std_logic;
 	signal scaler_to_read		: std_logic_vector(23 downto 0);
 	signal scalers_gate			: std_logic;
@@ -331,7 +332,7 @@ begin
 		beams_8_o	=> beam_data_8,
 		sum_pow_o	=> powsum_ev2samples);
 	--///////////////////////////////////////
-	xPHASEDTRIGGER : entity work.trigger
+	xPHASEDTRIGGER : entity work.trigger_v2
 	generic map( ENABLE_PHASED_TRIGGER => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,

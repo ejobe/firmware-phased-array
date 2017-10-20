@@ -115,7 +115,7 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(109)  <= x"000001"; --//set read register
-		registers_io(120) <= x"000000"; --//set 100 MHz clock source: external LVDS input or local oscillator
+		registers_io(120) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator --CHANGE THIS BACK TO 0
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -169,11 +169,11 @@ begin
 		--//masking + trigger config stuff:
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
-		registers_io(81) <= x"00000F";   --// trig holdoff [81]
+		registers_io(81) <= x"0000FF";   --// trig holdoff - lower 16 bits [81]
 		registers_io(82) <= x"00001E";	--// trigger/beam enables [82]
 		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
 		registers_io(84) <= x"000000";   --// enable phased trigger to data manager
-		registers_io(85) <= x"000001";   --// trigger holdoff mode
+		registers_io(85) <= x"000001";   --// trigger verification mode
 		
 		registers_io(108) <= x"000000"; --//write LSB to update internal temp sensor; LSB+1 to enable[108]
 

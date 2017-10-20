@@ -11,8 +11,6 @@
 -- DESCRIPTION:  first stab at forming beams from the timestream data
 --
 -----///////////////////////////////////////////////////////////////////
--- !!TODO!! : beams need to be updated since data as progressively deeper 
--- antennas will have +1m fiber length delay. Zero-delay beam will be
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;

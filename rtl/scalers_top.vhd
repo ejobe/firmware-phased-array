@@ -32,7 +32,7 @@ entity scalers_top is
 		reg_i				:		in		register_array_type;
 		trigger_i		:		in		std_logic;
 		beam_trig_i		:		in		std_logic_vector(define_num_beams-1 downto 0);
-		
+
 		running_scalers_o:		out	std_logic_vector(23 downto 0);
 		
 		scaler_to_read_o  :   out	std_logic_vector(23 downto 0));
