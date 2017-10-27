@@ -13,6 +13,7 @@ entity pll_block_2 is
 		refclk   : in  std_logic := '0'; --  refclk.clk
 		rst      : in  std_logic := '0'; --   reset.reset
 		outclk_0 : out std_logic;        -- outclk0.clk
+		outclk_1 : out std_logic;        -- outclk1.clk
 		locked   : out std_logic         --  locked.export
 	);
 end entity pll_block_2;
@@ -23,6 +24,7 @@ architecture rtl of pll_block_2 is
 			refclk   : in  std_logic := 'X'; -- clk
 			rst      : in  std_logic := 'X'; -- reset
 			outclk_0 : out std_logic;        -- clk
+			outclk_1 : out std_logic;        -- clk
 			locked   : out std_logic         -- export
 		);
 	end component pll_block_2_0002;
@@ -34,6 +36,7 @@ begin
 			refclk   => refclk,   --  refclk.clk
 			rst      => rst,      --   reset.reset
 			outclk_0 => outclk_0, -- outclk0.clk
+			outclk_1 => outclk_1, -- outclk1.clk
 			locked   => locked    --  locked.export
 		);
 
@@ -79,7 +82,7 @@ end architecture rtl; -- of pll_block_2
 -- Retrieval info: 	<generic name="gui_dsm_out_sel" value="1st_order" />
 -- Retrieval info: 	<generic name="gui_use_locked" value="true" />
 -- Retrieval info: 	<generic name="gui_en_adv_params" value="false" />
--- Retrieval info: 	<generic name="gui_number_of_clocks" value="1" />
+-- Retrieval info: 	<generic name="gui_number_of_clocks" value="2" />
 -- Retrieval info: 	<generic name="gui_multiply_factor" value="1" />
 -- Retrieval info: 	<generic name="gui_frac_multiply_factor" value="1" />
 -- Retrieval info: 	<generic name="gui_divide_factor_n" value="1" />
@@ -93,7 +96,7 @@ end architecture rtl; -- of pll_block_2
 -- Retrieval info: 	<generic name="gui_actual_phase_shift0" value="0" />
 -- Retrieval info: 	<generic name="gui_duty_cycle0" value="50" />
 -- Retrieval info: 	<generic name="gui_cascade_counter1" value="false" />
--- Retrieval info: 	<generic name="gui_output_clock_frequency1" value="100.0" />
+-- Retrieval info: 	<generic name="gui_output_clock_frequency1" value="10.0" />
 -- Retrieval info: 	<generic name="gui_divide_factor_c1" value="1" />
 -- Retrieval info: 	<generic name="gui_actual_output_clock_frequency1" value="0 MHz" />
 -- Retrieval info: 	<generic name="gui_ps_units1" value="ps" />

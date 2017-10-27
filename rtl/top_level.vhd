@@ -129,6 +129,7 @@ architecture rtl of top_level is
 	signal clock_250MHz			:	std_logic;		
 	signal clock_93MHz			:	std_logic;		
 	signal clock_25MHz			:	std_logic;  
+	signal clock_10MHz			:	std_logic;
 	signal clock_1MHz				:	std_logic;		
 	signal clock_1Hz				:	std_logic;		
 	signal clock_10Hz				:	std_logic;		
@@ -234,6 +235,10 @@ architecture rtl of top_level is
 	signal led_gate : std_logic;
 	--//fpga temp
 	signal fpga_temp : std_logic_vector(7 downto 0);
+	--//remote firmware upgrade
+	signal remote_upgrade_data 	: std_logic_vector(31 downto 0);
+	signal remote_upgrade_status	: std_logic_vector(23 downto 0);
+	--------------------------------------------------------------
 begin
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
@@ -272,6 +277,7 @@ begin
 		CLK_250MHz_o 	=> clock_250MHz,
 		CLK_93MHz_o		=> clock_93MHz,
 		CLK_25MHz_o 	=> clock_25MHz,
+		CLK_10MHz_o		=> clock_10MHz,
 		CLK_1MHz_o		=> clock_1MHz,		
 		CLK_1Hz_o		=> clock_1Hz,
 		CLK_10Hz_o		=> clock_10Hz,
@@ -504,19 +510,21 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
-		rst_i				=> reset_global,
-		clk_i				=> clock_25MHz,  --//clock for register interface
-		sync_slave_i	=> sync_to_slave_device,
+		rst_i						=> reset_global,
+		clk_i						=> clock_25MHz,  --//clock for register interface
+		sync_slave_i			=> sync_to_slave_device,
 		sync_from_master_o	=> sync_from_master_device,
 		--//////////////////////////
 		--//status registers
-		fpga_temp_i	=> fpga_temp,
-		scaler_to_read_i => scaler_to_read,
-		status_data_manager_i => status_reg_data_manager,
+		fpga_temp_i							=> fpga_temp,
+		scaler_to_read_i 					=> scaler_to_read,
+		status_data_manager_i 			=> status_reg_data_manager,
 		status_data_manager_latched_i => status_reg_latched_data_manager,
-		status_adc_i	  => status_reg_adc,
-		event_metadata_i => event_meta_data,
-		current_ram_adr_data_i => ram_data,
+		status_adc_i	 					=> status_reg_adc,
+		event_metadata_i 					=> event_meta_data,
+		current_ram_adr_data_i 			=> ram_data,
+		remote_upgrade_data_i			=> remote_upgrade_data,	
+		remote_upgrade_status_i			=> remote_upgrade_status,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
@@ -552,6 +560,16 @@ begin
 	--uC_dig(9) <= clock_rfrsh_pulse_1Hz;  --//external trigger (boosted on SPI_linker board)
 	--uC_dig(10) <= '0'; --//not connected
 	--uC_dig(11) <= '0'; --//not connected
+	-----------------------------------------------------------------------------
+	--REMOTE FIRMWARE UPGRADE
+	xREMOTE_FIRMWARE_UPGRADE :  entity work.remote_firmware_update_top
+	port map(
+		rst_i				=> reset_global or reset_global_except_registers,	
+		clk_10MHz_i		=> clock_10MHz,
+		clk_i				=> clock_25MHz,
+		registers_i		=> registers,
+		stat_reg_o		=> remote_upgrade_status,
+		data_o			=> remote_upgrade_data);
    -----------------------------------------------------------------------------
 	--FPGA core temp
 	xFPGACORETEMP : entity work.fpga_core_temp

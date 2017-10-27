@@ -51,7 +51,7 @@ set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
 set_global_assignment -name EDA_BOARD_DESIGN_SIGNAL_INTEGRITY_TOOL "HSPICE (Signal Integrity)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT HSPICE -section_id eda_board_design_signal_integrity
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 100 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 
 set_instance_assignment -name AUTO_GLOBAL_CLOCK OFF -to ADCclk1
@@ -1078,6 +1078,19 @@ set_location_assignment PIN_K26 -to DIGOUT_3_n
 set_location_assignment PIN_AL30 -to DIGOUT_4_n
 set_location_assignment PIN_B11 -to DIGIN_4_n
 set_location_assignment PIN_AL19 -to DIGIN_3_n
+set_global_assignment -name PROJECT_IP_REGENERATION_POLICY ALWAYS_REGENERATE_IP
+set_global_assignment -name POWER_USE_TA_VALUE 5
+set_global_assignment -name STRATIXIII_UPDATE_MODE REMOTE
+set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\remote_firmware_update"
+set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip\\fpga_temp\\synthesis"
+set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
+set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"
+set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
+set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/submodules/remote_update_remote_update_0.v
+set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/submodules/altera_remote_update_core.v
+set_global_assignment -name VHDL_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/remote_update.vhd
+set_global_assignment -name VHDL_FILE ../rtl/altera_ip/remote_update_writeFIFO.vhd
+set_global_assignment -name QSYS_FILE ../rtl/altera_ip/remote_update/epcqio_block.qsys
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/fpga_temp/synthesis/fpga_temp.vhd
 set_global_assignment -name QSYS_FILE ../rtl/altera_ip/fpga_temp.qsys
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/unused_pin_driver.vhd
@@ -1139,10 +1152,11 @@ set_global_assignment -name SIGNALTAP_FILE ../rtl/tapADCdataClkXfer.stp
 set_global_assignment -name VHDL_FILE ../rtl/pulse_stretcher_sync.vhd
 set_global_assignment -name VHDL_FILE ../rtl/external_trigger_manager.vhd
 set_global_assignment -name VHDL_FILE ../rtl/pulse_stretcher_sync_programmable.vhd
-set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip\\fpga_temp\\synthesis"
-set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
-set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"
-set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
 set_global_assignment -name VHDL_FILE ../rtl/fpga_core_temp.vhd
 set_global_assignment -name VHDL_FILE ../rtl/trigger_v2.vhd
+set_global_assignment -name VHDL_FILE ../rtl/remote_firmware_update_top.vhd
+set_global_assignment -name VHDL_FILE ../rtl/remote_firmware_update/remote_update_control.vhd
+set_global_assignment -name VHDL_FILE ../rtl/remote_firmware_update/epcq256_control.vhd
+set_global_assignment -name VHDL_FILE ../rtl/remote_firmware_update/reset_block.vhd
+set_global_assignment -name VHDL_FILE ../rtl/remote_firmware_update/remote_update_writeFIFO_block.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

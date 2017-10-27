@@ -26,6 +26,7 @@ entity Clock_Manager is
 		CLK_250MHz_o 	:  out	std_logic;
 		CLK_93MHz_o		:  out	std_logic;  
 		CLK_25MHz_o		:  inout	std_logic;  --//main logic clock
+		CLK_10MHz_o		:	out	std_logic;
 		CLK_1MHz_o		:  out	std_logic;
 		CLK_1Hz_o		:  out	std_logic;
 		CLK_10Hz_o		:  out	std_logic;
@@ -74,7 +75,7 @@ architecture rtl of Clock_Manager is
 	
 	component pll_block_2
 		port( refclk, rst			: in 	std_logic;
-				outclk_0, 
+				outclk_0, outclk_1,
 				locked				: out	std_logic);
 	end component;
 	
@@ -94,7 +95,8 @@ begin
 					clk_1MHz_sig, fpga_pllLock_o);
 					
 	xPLL_BLOCK_2 : pll_block_2
-		port map(CLK1_i, PLL_reset_i or Reset_i, CLK_250MHz_o, fpga_fastpllLock_o);
+		port map(CLK1_i, PLL_reset_i or Reset_i, CLK_250MHz_o, CLK_10MHz_o, 
+					fpga_fastpllLock_o);
 					
 	xCLK_GEN_100kHz : Slow_Clocks
 		generic map(clk_divide_by => 5)

@@ -35,6 +35,8 @@ entity registers_mcu_spi is
 		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
 		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
+		remote_upgrade_data_i			:  in		std_logic_vector(31 downto 0);
+		remote_upgrade_status_i			:  in		std_logic_vector(23 downto 0);
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
@@ -195,6 +197,18 @@ begin
 		registers_io(base_adrs_trig_thresh+14) <= x"0FFFFF";   --//[100]
 		registers_io(base_adrs_trig_thresh+15) <= x"0FFFFF";   --//[101]
 		
+		--//remote upgrade registers
+		registers_io(110) <= x"000000"; --//LSB = 1 to enable remote upgrade block
+		registers_io(111) <= x"000000";
+		registers_io(112) <= x"000000";
+		registers_io(113) <= x"000000";
+		registers_io(114) <= x"000000";
+		registers_io(115) <= x"000000";
+		registers_io(116) <= x"000000";
+		registers_io(117) <= x"000000";
+		registers_io(118) <= x"000000";
+		registers_io(119) <= x"000000";
+		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
 		internal_sync_master <= '0';
@@ -206,7 +220,13 @@ begin
 	-------------------------------------------------------------
 	elsif rising_edge(clk_i) then 
 		sync_active_o <= internal_sync_reg(0);
-		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);				
+		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);	
+
+		--//read only REMOTE UPGRADE registers (don't fit in read only allotment, so assign here continuously)
+		registers_io(103) <= remote_upgrade_status_i;
+		registers_io(104) <= x"00" & remote_upgrade_data_i(15 downto 0);
+		registers_io(105) <= x"00" & remote_upgrade_data_i(31 downto 16);
+		
 		
 		--//handle sync event, falling edge condition of internal_sync_reg (i.e. the sync is 'released')
 		if internal_sync_reg = "10" then

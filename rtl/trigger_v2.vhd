@@ -197,11 +197,11 @@ begin
 													
 		if internal_trig_pow_latch_0_reg = "01" then
 			last_trig_pow_o <= instant_power_0_buf2;
-			internal_last_trig_latched_beam_pattern_buf <= internal_last_trig_latched_beam_pattern; 
+			internal_last_trig_latched_beam_pattern_buf <= internal_last_trig_latched_beam_pattern; --//register the triggered beam pattern
 			verfication_trig_flag <= '1';
 		elsif internal_trig_pow_latch_1_reg = "01" then
 			last_trig_pow_o <= instant_power_1_buf2;
-			internal_last_trig_latched_beam_pattern_buf <= internal_last_trig_latched_beam_pattern; 
+			internal_last_trig_latched_beam_pattern_buf <= internal_last_trig_latched_beam_pattern; --//register the triggered beam pattern
 			verfication_trig_flag <= '1';
 		else
 			verfication_trig_flag <= '0';
@@ -228,7 +228,7 @@ begin
 		verification_current_max_beam <= (others=>'0');
 		verified_latched_trig_beam <= (others=>'0');
 		trig_verification_state <= idle_st;
-	
+	---------------------------------------------------------------------------------------------
 	elsif rising_edge(clk_data_i) then
 		verified_instantaneous_above_threshold_buf2 <= verified_instantaneous_above_threshold_buf;
 		verified_instantaneous_above_threshold_buf <= verified_instantaneous_above_threshold;
@@ -266,6 +266,7 @@ begin
 				end case;
 			
 			--// loop thru beams, find beam w/ max power
+			------- this adds 14 extra clk_data_i cycles to trigger
 			when trig_verify_1_st =>
 				internal_global_trigger_holdoff <= '1';
 				trigger_holdoff_counter <= (others=>'0');
@@ -287,6 +288,7 @@ begin
 				end if;
 			
 			--// verify beam with max power is above threshold
+			------- this adds another clk_data_i cycle, for 15 clk_data_i total cycles longer than over non-verified trigger
 			when trig_verify_2_st =>
 				internal_global_trigger_holdoff <= '1';
 				trigger_holdoff_counter <= (others=>'0');
