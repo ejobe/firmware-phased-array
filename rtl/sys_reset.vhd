@@ -8,7 +8,7 @@
 -- EMAIL         ejo@uchicago.edu
 -- DATE:         1/2016
 --
--- DESCRIPTION:  global resets
+-- DESCRIPTION:  resets
 --
 ---------------------------------------------------------------------------------
 

@@ -50,7 +50,8 @@ ENTITY remote_update_writeFIFO IS
 		wrclk		: IN STD_LOGIC ;
 		wrreq		: IN STD_LOGIC ;
 		q		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-		rdempty		: OUT STD_LOGIC 
+		rdempty		: OUT STD_LOGIC ;
+		wrfull		: OUT STD_LOGIC 
 	);
 END remote_update_writeFIFO;
 
@@ -59,6 +60,7 @@ ARCHITECTURE SYN OF remote_update_writefifo IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (31 DOWNTO 0);
 	SIGNAL sub_wire1	: STD_LOGIC ;
+	SIGNAL sub_wire2	: STD_LOGIC ;
 
 
 
@@ -86,22 +88,24 @@ ARCHITECTURE SYN OF remote_update_writefifo IS
 			wrclk	: IN STD_LOGIC ;
 			wrreq	: IN STD_LOGIC ;
 			q	: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-			rdempty	: OUT STD_LOGIC 
+			rdempty	: OUT STD_LOGIC ;
+			wrfull	: OUT STD_LOGIC 
 	);
 	END COMPONENT;
 
 BEGIN
 	q    <= sub_wire0(31 DOWNTO 0);
 	rdempty    <= sub_wire1;
+	wrfull    <= sub_wire2;
 
 	dcfifo_component : dcfifo
 	GENERIC MAP (
 		intended_device_family => "Arria V",
-		lpm_numwords => 256,
+		lpm_numwords => 128,
 		lpm_showahead => "OFF",
 		lpm_type => "dcfifo",
 		lpm_width => 32,
-		lpm_widthu => 8,
+		lpm_widthu => 7,
 		overflow_checking => "ON",
 		rdsync_delaypipe => 3,
 		read_aclr_synch => "OFF",
@@ -118,7 +122,8 @@ BEGIN
 		wrclk => wrclk,
 		wrreq => wrreq,
 		q => sub_wire0,
-		rdempty => sub_wire1
+		rdempty => sub_wire1,
+		wrfull => sub_wire2
 	);
 
 
@@ -132,9 +137,9 @@ END SYN;
 -- Retrieval info: PRIVATE: AlmostEmptyThr NUMERIC "-1"
 -- Retrieval info: PRIVATE: AlmostFull NUMERIC "0"
 -- Retrieval info: PRIVATE: AlmostFullThr NUMERIC "-1"
--- Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "0"
+-- Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "1"
 -- Retrieval info: PRIVATE: Clock NUMERIC "4"
--- Retrieval info: PRIVATE: Depth NUMERIC "256"
+-- Retrieval info: PRIVATE: Depth NUMERIC "128"
 -- Retrieval info: PRIVATE: Empty NUMERIC "1"
 -- Retrieval info: PRIVATE: Full NUMERIC "1"
 -- Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Arria V"
@@ -158,15 +163,15 @@ END SYN;
 -- Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
 -- Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
 -- Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
--- Retrieval info: PRIVATE: wsFull NUMERIC "0"
+-- Retrieval info: PRIVATE: wsFull NUMERIC "1"
 -- Retrieval info: PRIVATE: wsUsedW NUMERIC "0"
 -- Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Arria V"
--- Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "256"
+-- Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "128"
 -- Retrieval info: CONSTANT: LPM_SHOWAHEAD STRING "OFF"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "dcfifo"
 -- Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "32"
--- Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "8"
+-- Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "7"
 -- Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
 -- Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "3"
 -- Retrieval info: CONSTANT: READ_ACLR_SYNCH STRING "OFF"
@@ -181,6 +186,7 @@ END SYN;
 -- Retrieval info: USED_PORT: rdempty 0 0 0 0 OUTPUT NODEFVAL "rdempty"
 -- Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 -- Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
+-- Retrieval info: USED_PORT: wrfull 0 0 0 0 OUTPUT NODEFVAL "wrfull"
 -- Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
 -- Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 -- Retrieval info: CONNECT: @data 0 0 32 0 data 0 0 32 0
@@ -190,6 +196,7 @@ END SYN;
 -- Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 -- Retrieval info: CONNECT: q 0 0 32 0 @q 0 0 32 0
 -- Retrieval info: CONNECT: rdempty 0 0 0 0 @rdempty 0 0 0 0
+-- Retrieval info: CONNECT: wrfull 0 0 0 0 @wrfull 0 0 0 0
 -- Retrieval info: GEN_FILE: TYPE_NORMAL remote_update_writeFIFO.vhd TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL remote_update_writeFIFO.inc FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL remote_update_writeFIFO.cmp FALSE

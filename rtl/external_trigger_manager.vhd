@@ -37,9 +37,9 @@ end external_trigger_manager;
 
 architecture rtl of external_trigger_manager is
 
-signal internal_gate_reg : std_logic_vector(2 downto 0);
-signal internal_exttrig_reg : std_logic_vector(2 downto 0);
-signal internal_exttrig_edge : std_logic;
+signal internal_gate_reg 		: std_logic_vector(2 downto 0);
+signal internal_exttrig_reg 	: std_logic_vector(2 downto 0);
+signal internal_exttrig_edge 	: std_logic;
 
 begin
 

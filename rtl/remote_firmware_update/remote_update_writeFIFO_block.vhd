@@ -1,3 +1,6 @@
+--//EJO 10/2017
+--//KICP
+----------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 
@@ -13,7 +16,8 @@ entity remote_update_writeFIFO_block is
     mode_i    		: in  std_logic;  --//mode=1 to write to fifo; mode=0 to read  
     fifo_wren_i   : in  std_logic;
     fifo_wrclk_i  : in  std_logic;
-    fifo_data_i   : in  std_logic_vector(31 downto 0)
+    fifo_data_i   : in  std_logic_vector(31 downto 0);
+	 fifo_full_o	: out std_logic
   );
 end entity remote_update_writeFIFO_block;
 
@@ -38,6 +42,7 @@ begin
       data      => fifo_data_i,
       rdclk     => clock_i,
       rdreq     => rden_int,
+		wrfull	 => fifo_full_o,	
       rdempty   => empty_int,
       q         => data_o
     );

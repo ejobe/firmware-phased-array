@@ -1086,6 +1086,7 @@ set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phas
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl\\altera_ip"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array"
 set_global_assignment -name SEARCH_PATH "c:\\users\\eric\\desktop\\firmware-phased-array\\rtl"
+set_global_assignment -name VHDL_FILE ../rtl/altera_ip/EPCQ_read_buffer.vhd
 set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/submodules/remote_update_remote_update_0.v
 set_global_assignment -name VERILOG_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/submodules/altera_remote_update_core.v
 set_global_assignment -name VHDL_FILE ../rtl/altera_ip/remote_update/remote_update/synthesis/remote_update.vhd

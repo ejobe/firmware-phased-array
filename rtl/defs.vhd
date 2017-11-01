@@ -34,7 +34,7 @@ constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; 
 --//waveform acq RAM:
 constant define_ram_width  				: 	integer := 128;
 constant define_ram_depth					: 	integer := 5; --// words for Rx receiving RAM
-constant define_data_ram_depth			: 	integer := 7; --// words for block RAM -- sets time window for triggered and saved event
+constant define_data_ram_depth			: 	integer := 8; --// words for block RAM -- sets time window for triggered and saved event
 constant define_num_wfm_buffers			:	integer := 4; --// number of independent buffers for event waveform data
 
 --//firmware registers:
@@ -63,8 +63,8 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000015";
-constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e1" & x"9" & x"03";
+constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000018";
+constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e1" & x"B" & x"01";
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////
 
@@ -104,10 +104,6 @@ type sum_power_type is array(define_num_beams-1 downto 0) of
 --/////////
 constant define_16avg_pow_sum_range : integer := 20; --//20 bits (16 bits per sample, 16 samples)
 type average_power_16samp_type is array(define_num_beams-1 downto 0) of std_logic_vector(define_16avg_pow_sum_range-1 downto 0);
-	
---//scaler array
-type scaler_array_type is array(31 downto 0) of std_logic_vector(15 downto 0);
-
 
 --//assign rx data a specific value when deactivating the rx fifo read request (read clk > write clk)  [[SHOULD NEVER REACH THIS STATE, ERROR CONDITION]]
 constant RX_ADC_DATA_HOLD : std_logic_vector(127 downto 0) := x"80808080808080808080808080808080";

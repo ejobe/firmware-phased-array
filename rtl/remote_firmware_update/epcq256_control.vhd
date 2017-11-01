@@ -35,7 +35,9 @@ entity epcq256_control is
     clear_i			: in  std_logic;
     fifo_wren_i   : in  std_logic;
     fifo_ds_i     : in  std_logic;
-    fifo_data_i   : in  std_logic_vector(31 downto 0)
+    fifo_data_i   : in  std_logic_vector(31 downto 0);
+	 fifo_empty_o	: out std_logic;
+	 fifo_full_o	: out std_logic
   );
 end entity epcq256_control;
 
@@ -122,6 +124,7 @@ architecture behaviour OF epcq256_control is
   signal buffempty_int		: std_logic;
 begin
   buffclear <= clear_i OR reset_i;
+  fifo_empty_o <= buffempty_int;
   
   proc_reverse_datain : process(datain_int)
   begin
@@ -154,6 +157,7 @@ begin
       fifo_wrclk_i   => fifo_ds_i,
       fifo_data_i  	=> fifo_data_i,
       fifo_rden_i	 	=> buffread_int,
+		fifo_full_o		=> fifo_full_o,
       data_o			=> buffdata_int,
       empty_o     	=> buffempty_int);
   
@@ -166,21 +170,16 @@ begin
       en4b_addr      => en4b_addr,
       busy           => busy_int,
       addr           => addr_i,
-      
       rden 	        	=> rden,
       read 	        	=> read_int,		
       data_valid    	=> data_valid_int,
       dataout 	     	=> data_int,
-      read_address  	=> rdaddr_int,
-      
-      wren				=> wren_int,
-      
+      read_address  	=> rdaddr_int,     
+      wren				=> wren_int,   
       write				=> write_int,
       shift_bytes		=> shift_bytes_int,
-      datain			=> datain_int_rev,
-      
-      bulk_erase		=> bulk_erase_int,
-      
+      datain			=> datain_int_rev,   
+      bulk_erase		=> bulk_erase_int,    
       sector_erase	=> sector_erase_int
     );
   
@@ -223,7 +222,7 @@ begin
                   fsm <= startwrite;
                 end if;
               when "011" =>
-                fsm <= starterase;
+                fsm <= idle; --starterase; --mask off ability to bulk erase EPCQ
               when "100" =>
                 fsm <= startserase;
               when "101" =>
@@ -458,28 +457,28 @@ begin
   end process proc_write;
   
   -- Erase from the thing	
-  proc_erase : process (clk_i,reset_int)
-  begin
-    if (reset_int = '1' ) then
-      wren_erase_int    <= '0';
-      bulk_erase_int    <= '0';
-    elsif(rising_edge(clk_i)) then
-      case fsm is
-        when idle =>
-          wren_erase_int <= '0';
-          bulk_erase_int <= '0';
-        when starterase =>
-          wren_erase_int <= '1';
-          bulk_erase_int <= '1';
-        when doerase =>
-          wren_erase_int <= '1';
-          bulk_erase_int <= '1';
-        when others =>
-          wren_erase_int <= '0';
-          bulk_erase_int <= '0';
-      end case;
-    end if;
-  end process proc_erase;
+--  proc_erase : process (clk_i,reset_int)
+--  begin
+--    if (reset_int = '1' ) then
+--      wren_erase_int    <= '0';
+--      bulk_erase_int    <= '0';
+--    elsif(rising_edge(clk_i)) then
+--      case fsm is
+--        when idle =>
+--          wren_erase_int <= '0';
+--          bulk_erase_int <= '0';
+--        when starterase =>
+--          wren_erase_int <= '1';
+--          bulk_erase_int <= '1';
+--        when doerase =>
+--          wren_erase_int <= '1';
+--          bulk_erase_int <= '1';
+--        when others =>
+--          wren_erase_int <= '0';
+--          bulk_erase_int <= '0';
+--      end case;
+--    end if;
+--  end process proc_erase;
   
   -- Erase a specific sector	
   proc_serase : process (clk_i,reset_int)

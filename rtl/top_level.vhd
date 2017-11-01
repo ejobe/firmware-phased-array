@@ -236,8 +236,9 @@ architecture rtl of top_level is
 	--//fpga temp
 	signal fpga_temp : std_logic_vector(7 downto 0);
 	--//remote firmware upgrade
-	signal remote_upgrade_data 	: std_logic_vector(31 downto 0);
-	signal remote_upgrade_status	: std_logic_vector(23 downto 0);
+	signal remote_upgrade_data 		: std_logic_vector(31 downto 0);
+	signal remote_upgrade_status		: std_logic_vector(23 downto 0);
+	signal remote_upgrade_epcq_data 	:  std_logic_vector(31 downto 0);
 	--------------------------------------------------------------
 begin
 	--//pin to signal assignments
@@ -262,7 +263,7 @@ begin
 	proc_set_clock_ref : process(reset_global, reset_global_except_registers, registers)
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
-			CLK_select(0) <= registers(120)(0);   --//board clock
+			CLK_select(0) <= registers(124)(0);   --//board clock
 			--CLK_select(1) <= registers(120)(1);   --//PLL clock source
 		end if;
 	end process;
@@ -524,6 +525,7 @@ begin
 		event_metadata_i 					=> event_meta_data,
 		current_ram_adr_data_i 			=> ram_data,
 		remote_upgrade_data_i			=> remote_upgrade_data,	
+		remote_upgrade_epcq_data_i		=> remote_upgrade_epcq_data,
 		remote_upgrade_status_i			=> remote_upgrade_status,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
@@ -569,6 +571,7 @@ begin
 		clk_i				=> clock_25MHz,
 		registers_i		=> registers,
 		stat_reg_o		=> remote_upgrade_status,
+		epcq_rd_data_o => remote_upgrade_epcq_data,
 		data_o			=> remote_upgrade_data);
    -----------------------------------------------------------------------------
 	--FPGA core temp
@@ -668,7 +671,7 @@ begin
 	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
 	DEBUG(8) <=  '0';
 	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
-	DEBUG(10)<=  clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
+	DEBUG(10)<=  '0'; --clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
 	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
 	

@@ -36,6 +36,7 @@ entity registers_mcu_spi is
 		event_metadata_i					:	in		event_metadata_type;
 		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
 		remote_upgrade_data_i			:  in		std_logic_vector(31 downto 0);
+		remote_upgrade_epcq_data_i    :  in		std_logic_vector(31 downto 0);
 		remote_upgrade_status_i			:  in		std_logic_vector(23 downto 0);
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
@@ -117,7 +118,7 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(109)  <= x"000001"; --//set read register
-		registers_io(120) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator --CHANGE THIS BACK TO 0
+		registers_io(124) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator --CHANGE THIS BACK TO 0
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
@@ -208,6 +209,9 @@ begin
 		registers_io(117) <= x"000000";
 		registers_io(118) <= x"000000";
 		registers_io(119) <= x"000000";
+		registers_io(120) <= x"000000";
+		registers_io(121) <= x"000000";
+		registers_io(122) <= x"000000";		
 		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
@@ -226,7 +230,8 @@ begin
 		registers_io(103) <= remote_upgrade_status_i;
 		registers_io(104) <= x"00" & remote_upgrade_data_i(15 downto 0);
 		registers_io(105) <= x"00" & remote_upgrade_data_i(31 downto 16);
-		
+		registers_io(106) <= x"00" & remote_upgrade_epcq_data_i(15 downto 0);
+		registers_io(107) <= x"00" & remote_upgrade_epcq_data_i(31 downto 16);
 		
 		--//handle sync event, falling edge condition of internal_sync_reg (i.e. the sync is 'released')
 		if internal_sync_reg = "10" then
