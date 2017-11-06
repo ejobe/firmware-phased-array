@@ -204,6 +204,7 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	signal the_ext_trigger_out 	: std_logic := '0';
 	signal the_phased_trigger_from_master : std_logic := '0';
 	signal external_trigger			: std_logic;
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
@@ -241,6 +242,7 @@ architecture rtl of top_level is
 	signal remote_upgrade_epcq_data 	:  std_logic_vector(31 downto 0);
 	--------------------------------------------------------------
 begin
+	--///////////////////////////////////////
 	--//pin to signal assignments
 	adc_data_clock(0)	<= ADC_Clk_0;
 	adc_data_clock(1)	<= ADC_Clk_1;
@@ -287,7 +289,7 @@ begin
 		refresh_1Hz_o		=> clock_rfrsh_pulse_1Hz,
 		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz, --//scaler refresh clock
 		fpga_pllLock_o => clock_FPGA_PLLlock);
-
+	--///////////////////////////////////////
 	--//status register for ADC and PLL chip stuff:
 	proc_stat_reg_adc : status_reg_adc <= LMK_Stat_Hldov & LMK_Stat_LD & LMK_Stat_Clk0 & LMK_Stat_Clk1 & 
 								clock_FPGA_PLLlock & "00" & startup_adc & x"0" & adc_pd_sig & "000" & adc_data_good &
@@ -339,7 +341,7 @@ begin
 		beams_8_o	=> beam_data_8,
 		sum_pow_o	=> powsum_ev2samples);
 	--///////////////////////////////////////
-	xPHASEDTRIGGER : entity work.trigger_v2
+	xPHASEDTRIGGER : entity work.trigger_v2 --//trigger_v2 adds power 'verification' feature. 
 	generic map( ENABLE_PHASED_TRIGGER => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
@@ -364,7 +366,7 @@ begin
 		reg_i			=> registers, --//programmable registers
 		sys_trig_o  => external_trigger, --//trigger to firmware
 		sys_gate_o	=> scalers_gate, --//scaler gate
-		ext_trig_o	=> uC_dig(9)); --//external trigger output
+		ext_trig_o	=> the_ext_trigger_out)); --uC_dig(9)); --//external trigger output
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	generic map( ENABLE_CALIBRATION_PULSE => FIRMWARE_DEVICE)
@@ -479,7 +481,7 @@ begin
 		wfm_data_i				=> wfm_data,
 		running_scalers_i		=> running_scalers,
 		data_ram_at_current_adr_o => ram_data);
-		
+	--///////////////////////////////////////
 	--//readout controller using MCU/BeagleBone
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
 	port map(
@@ -591,23 +593,28 @@ begin
 	-- --SMA_out0 => the DDR cal pulse
 	-- --SMA_out1 => the phased trigger to the slave board
 	-- --SMA_in => the sync signal to the slave board
+	-- --uC_dig(9) [the SMA output on the SPI adapter board] => the system trigger external output
 	--SLAVE BOARD:
 	-- --SMA_out0 => the cal pulse enable
 	-- --SMA_out1 => the phased trigger from the master board
 	-- --SMA_in => the sync signal from the master board
+	-- --uC_dig(9) [the SMA output on the SPI adapter board] => the ext trig input pass-through (i.e. for PPS signal)
+	--------------------------------------------------------------------------------------
 	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1, sync_from_master_device)
 	begin
 	case FIRMWARE_DEVICE is
 		when '1' => --//master board
-			SMA_out0 <= cal_pulse_the_pulse;  
-			SMA_out1 <= the_phased_trigger;
-			SMA_in	<= sync_from_master_device;
+			SMA_out0 	<= cal_pulse_the_pulse;  
+			SMA_out1 	<= the_phased_trigger;
+			SMA_in		<= sync_from_master_device;
+			uC_dig(9)	<= the_ext_trigger_out;  --
 			the_phased_trigger_from_master <= '0';
 			sync_to_slave_device <= '0';
 		when '0' => --//slave board
-			SMA_out0 <= cal_pulse_rf_switch_ctl;
+			SMA_out0 	<= cal_pulse_rf_switch_ctl;
 			the_phased_trigger_from_master <= SMA_out1;
 			sync_to_slave_device <= SMA_in;
+			uC_dig(9)	<= SYS_serial_in; --//use SLAVE BOARD to pass through EXT TRIG port (likely wired to GPS PPS from ARA DAQ in field vault)
 	end case;
 	end process;
 	

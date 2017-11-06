@@ -117,8 +117,8 @@ begin
 
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
-		registers_io(109)  <= x"000001"; --//set read register
-		registers_io(124) <= x"000001"; --//set 100 MHz clock source: external LVDS input or local oscillator --CHANGE THIS BACK TO 0
+		registers_io(109) <= x"000001"; --//set read register
+		registers_io(124) <= x"000000"; --//set 100 MHz clock source: external LVDS input or local oscillator
 
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
