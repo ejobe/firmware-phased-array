@@ -120,6 +120,7 @@ architecture rtl of top_level is
 	--///////////////////////////////////////
 	--//system resets/startup
 	signal reset_global			:	std_logic;	--//system-wide reset signal
+	signal reset_poweron			:	std_logic;
 	signal reset_global_except_registers : std_logic;  --//system-wide reset signal EXCEPT register values
 	signal startup_adc			: 	std_logic;  --//startup adc circuit after reset
 	signal startup_pll			: 	std_logic;  --//startup pll circuit after reset
@@ -266,7 +267,6 @@ begin
 	begin
 		if reset_global = '1' or reset_global_except_registers = '1' then
 			CLK_select(0) <= registers(124)(0);   --//board clock
-			--CLK_select(1) <= registers(120)(1);   --//PLL clock source
 		end if;
 	end process;
 	--///////////////////////////////////////
@@ -366,7 +366,7 @@ begin
 		reg_i			=> registers, --//programmable registers
 		sys_trig_o  => external_trigger, --//trigger to firmware
 		sys_gate_o	=> scalers_gate, --//scaler gate
-		ext_trig_o	=> the_ext_trigger_out)); --uC_dig(9)); --//external trigger output
+		ext_trig_o	=> the_ext_trigger_out); --uC_dig(9)); --//external trigger output
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	generic map( ENABLE_CALIBRATION_PULSE => FIRMWARE_DEVICE)
@@ -409,6 +409,7 @@ begin
 		clk_i				=> clock_25MHz,
 		clk_rdy_i		=> clock_FPGA_PLLlock,
 		reg_i				=> registers,
+		power_on_rst_o => reset_poweron,
 		reset_sys_o		=> reset_global_except_registers,
 		reset_o			=> reset_global,
 		pll_strtup_o	=> startup_pll,
@@ -513,6 +514,7 @@ begin
 	xREGISTERS : entity work.registers_mcu_spi
 	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
+		rst_powerup_i			=> reset_poweron,
 		rst_i						=> reset_global,
 		clk_i						=> clock_25MHz,  --//clock for register interface
 		sync_slave_i			=> sync_to_slave_device,
@@ -600,7 +602,8 @@ begin
 	-- --SMA_in => the sync signal from the master board
 	-- --uC_dig(9) [the SMA output on the SPI adapter board] => the ext trig input pass-through (i.e. for PPS signal)
 	--------------------------------------------------------------------------------------
-	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1, sync_from_master_device)
+	proc_assign_sma_pins : process(cal_pulse_rf_switch_ctl, cal_pulse_the_pulse, the_phased_trigger, SMA_in, SMA_out1,
+												sync_from_master_device, the_ext_trigger_out)
 	begin
 	case FIRMWARE_DEVICE is
 		when '1' => --//master board

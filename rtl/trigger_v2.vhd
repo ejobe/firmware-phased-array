@@ -105,7 +105,7 @@ signal verified_latched_trig_beam : std_logic_vector(define_num_beams-1 downto 0
 signal verified_instantaneous_above_threshold : std_logic_vector(define_num_beams-1 downto 0);
 signal verified_instantaneous_above_threshold_buf : std_logic_vector(define_num_beams-1 downto 0);
 signal verified_instantaneous_above_threshold_buf2 : std_logic_vector(define_num_beams-1 downto 0);
-
+------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------
 component flag_sync is
 port(
@@ -232,7 +232,7 @@ begin
 	elsif rising_edge(clk_data_i) then
 		verified_instantaneous_above_threshold_buf2 <= verified_instantaneous_above_threshold_buf;
 		verified_instantaneous_above_threshold_buf <= verified_instantaneous_above_threshold;
-		
+		--////////////////////////////////////////////////////////////////////////////
 		case trig_verification_state is		
 			
 			when idle_st=>

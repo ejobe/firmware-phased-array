@@ -136,7 +136,7 @@ caldly_scs_o <= "0000"; --//when ece is disabled, set caldly to 0
 --//cal pin assert/de-assert: allot ~3000 clock cycles (1280 + 1280 + extra)
 --//
 proc_startup_cycle : process(rst_i, pwr_up_i, clk_i, user_dclk_rst)
-variable i : integer range 0 to 250000001 := 0;
+variable i : integer range 0 to 450000001 := 0;
 begin
 	if rst_i='1' or pwr_up_i='0' then
 		i:= 0;
@@ -150,7 +150,7 @@ begin
 			when pwr_st => 
 				internal_startup_dclk_rst <= '0';
 				cal_o <= '0';
-				if i >= 200000000 then	--//wait ~8 seconds
+				if i >= 400000000 then	--//wait ~8 seconds
 					i := 0;
 					adc_startup_state <= cal_st; --//skip spi write state
 				else 

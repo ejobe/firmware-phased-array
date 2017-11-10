@@ -1790,7 +1790,7 @@ agreement for further details.
 	)
 	(parameter
 		"FIRMWARE_DEVICE"
-		"'1'"
+		"'0'"
 		""
 		(type "PARAMETER_ENUM")	)
 	(drawing

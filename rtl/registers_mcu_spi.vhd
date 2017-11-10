@@ -10,6 +10,7 @@
 --
 -- DESCRIPTION:  setting registers
 ---------------------------------------------------------------------------------
+--////////////////////////////////////////////////////////////////////////////
 library IEEE; 
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
@@ -18,10 +19,12 @@ use ieee.numeric_std.all;
 use work.defs.all;
 use work.register_map.all;
 
+--////////////////////////////////////////////////////////////////////////////
 entity registers_mcu_spi is
 	generic(
 		FIRMWARE_DEVICE : std_logic);
 	port(
+		rst_powerup_i	:	in		std_logic;
 		rst_i				:	in		std_logic;  --//reset
 		clk_i				:	in		std_logic;  --//internal register clock 
 		sync_slave_i	:	in		std_logic;  --//signal to sync specific register assignments between boards (SLAVE only)
@@ -48,7 +51,8 @@ entity registers_mcu_spi is
 		address_o		:	out	std_logic_vector(define_address_size-1 downto 0));
 		
 	end registers_mcu_spi;
-	
+
+--////////////////////////////////////////////////////////////////////////////
 architecture rtl of registers_mcu_spi is
 
 signal internal_sync_slave : std_logic;
@@ -60,7 +64,7 @@ signal unique_chip_id		: std_logic_vector(63 downto 0);
 signal unique_chip_id_rdy	: std_logic;
 
 begin
-
+--////////////////////////////////////////////////////////////////////////////
 proc_master_slave: process(internal_sync_master, sync_slave_i)
 begin
 	case FIRMWARE_DEVICE is
@@ -74,13 +78,27 @@ begin
 end process;
 --/////////////////////////////////////////////////////////////////
 --//write registers: 
-proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i, registers_io)
+proc_write_register : process(rst_i, clk_i, write_rdy_i, write_reg_i, registers_io, rst_powerup_i)
 begin
+
 	if rst_i = '1' then
 		--////////////////////////////////////////////////////////////////////////////
+		--//for a few registers, only set defaults on power up:
+		if rst_powerup_i = '1' then
+			registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or firmware_version; --//firmware version (see defs.vhd)
+			registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
+			--//setting clock source:
+			registers_io(124) <= x"000000"; --//set 100 MHz clock source: external LVDS input (LSB=0) or local oscillator (LSB=1) [124]
+			case FIRMWARE_DEVICE is 
+				when '1' =>
+					registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
+				when '0' =>
+					registers_io(base_adrs_adc_cntrl+6) <= x"00000C"; --//ADC PD control (60) TURN OFF ADC's 2 and 3 on slave board by default
+			end case;
+		end if;
+		
+		--////////////////////////////////////////////////////////////////////////////
 		--//read-only registers:
-		registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or firmware_version; --//firmware version (see defs.vhd)
-		registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
 		registers_io(3) <= x"000000";       --//status register
 		registers_io(4) <= x"000000"; 		--//chipID (lower 24 bits)
 		registers_io(5) <= x"000000"; 		--//chipID (bits 48 to 25)
@@ -118,14 +136,13 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//set some default values
 		registers_io(109) <= x"000001"; --//set read register
-		registers_io(124) <= x"000000"; --//set 100 MHz clock source: external LVDS input or local oscillator
-
+		
 		registers_io(base_adrs_rdout_cntrl+0) <= x"000000"; --//software trigger register (64)
 		registers_io(base_adrs_rdout_cntrl+1) <= x"000000"; --//data readout channel (65)
 		registers_io(base_adrs_rdout_cntrl+2) <= x"000000"; --//data readout mode- pick between wfms, beams, etc(66) 
 		registers_io(base_adrs_rdout_cntrl+3) <= x"000001"; --//start readout address (67) NOT USED
 		registers_io(base_adrs_rdout_cntrl+4) <= x"000100"; --//x"000600"; --//stop readout address (68) NOT USED
-		registers_io(base_adrs_rdout_cntrl+5) <= x"000000"; --//current/target RAM address
+		registers_io(base_adrs_rdout_cntrl+5) <= x"000000"; --//current/target RAM address [69]
 		--//////////////////////////////////////////////////////////////////////////////////////////////////
 		--//note differentiating between the following 2 readout types only used when using USB readout
 		--//otherwise only base_adrs_rdout_cntrl+7 is used
@@ -149,14 +166,9 @@ begin
 		registers_io(base_adrs_adc_cntrl+3) <= x"000000"; --//delay ADC1   (57)
 		registers_io(base_adrs_adc_cntrl+4) <= x"000000"; --//delay ADC2   (58)
 		registers_io(base_adrs_adc_cntrl+5) <= x"000000"; --//delay ADC3   (59)
-		case FIRMWARE_DEVICE is 
-			when '1' =>
-				registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
-			when '0' =>
-				registers_io(base_adrs_adc_cntrl+6) <= x"00000C"; --//ADC PD control (60) TURN OFF ADC's 2 and 3 on slave board by default
-		end case;
+
 		--//step-attenuator:
-		registers_io(base_adrs_dsa_cntrl+0) <= x"000000"; --//atten values for CH 0 & 1 & 2
+		registers_io(base_adrs_dsa_cntrl+0) <= x"000000"; --//atten values for CH 0 & 1 & 2 [n.b., 1 byte each, need to be bit-reversed in sw]
 		registers_io(base_adrs_dsa_cntrl+1) <= x"000000"; --//atten values for CH 3 & 4 & 5
 		registers_io(base_adrs_dsa_cntrl+2) <= x"000000"; --//atten values for CH 6 & 7
 		registers_io(base_adrs_dsa_cntrl+3) <= x"000000"; --//write attenuator spi interface (address toggle)
@@ -175,8 +187,8 @@ begin
 		registers_io(81) <= x"0000FF";   --// trig holdoff - lower 16 bits [81]
 		registers_io(82) <= x"00001E";	--// trigger/beam enables [82]
 		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
-		registers_io(84) <= x"000000";   --// enable phased trigger to data manager
-		registers_io(85) <= x"000001";   --// trigger verification mode
+		registers_io(84) <= x"000000";   --// enable phased trigger to data manager (LSB=1 to enable)
+		registers_io(85) <= x"000001";   --// trigger verification mode (LSB=1 to enable)
 		
 		registers_io(108) <= x"000000"; --//write LSB to update internal temp sensor; LSB+1 to enable[108]
 
@@ -212,6 +224,7 @@ begin
 		registers_io(120) <= x"000000";
 		registers_io(121) <= x"000000";
 		registers_io(122) <= x"000000";		
+		--//end remote upgrade registers
 		
 		read_reg_o 	<= x"00" & registers_io(1); 
 		address_o 	<= x"00";
@@ -219,6 +232,7 @@ begin
 		internal_sync_register <= (others=>'0');
 		internal_sync_reg <= (others=>'0');
 		sync_active_o <= '0';
+		
 	--//////////////////////////////////////////////////////////////////////////////////////////
 	--lots of if/else statements here, not awesome, but meets timing (only running this @25 MHz)
 	-------------------------------------------------------------
@@ -316,3 +330,4 @@ port map(
 	data_valid => unique_chip_id_rdy,
 	chip_id    => unique_chip_id);
 end rtl;
+--////////////////////////////////////////////////////////////////////////////

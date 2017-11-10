@@ -24,6 +24,7 @@ entity sys_reset is
 		clk_i				:	in		std_logic;   --//25 MHz clock
 		clk_rdy_i		:	in		std_logic;
 		reg_i				:  in 	register_array_type;
+		power_on_rst_o	:	out	std_logic;
 		reset_o			:	out	std_logic;	--//active hi -- THIS IS THE GLOBAL RESET
 		reset_sys_o		:  out   std_logic;  --//active hi -- THIS RESETS EVERYTHING EXCEPT THE REGISTER VALUES
 		--//start-up signals for external circuits, only toggled on power-up
@@ -52,6 +53,7 @@ architecture rtl of sys_reset is
 	
 begin
 
+power_on_rst_o <= fpga_reset_pwr;
 reset_o			<= fpga_reset_pwr or fpga_reset_usr; --//global full reset
 reset_sys_o		<= fpga_reset_sys_usr;   --//aux user reset 
 --//power-on RESET:
