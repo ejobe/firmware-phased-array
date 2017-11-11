@@ -36,7 +36,11 @@ entity event_metadata is
 		
 		get_metadata_i		:	in	std_logic; 
 		current_buffer_i	:	in std_logic_vector(1 downto 0);
-
+	
+		--//stuff to latch running timestamp if pps input 
+		pps_latch_reg_i		:	in	std_logic_vector(1 downto 0);
+		latched_timestamp_o	:  out std_logic_vector(47 downto 0);
+		
 		reg_i					:	in		register_array_type;
 		event_header_o		:	out	event_metadata_type);
 		
@@ -93,6 +97,9 @@ signal internal_event_timestamp_fast_clk : std_logic_vector(47 downto 0);
 signal internal_event_timestamp : std_logic_vector(47 downto 0);
 
 signal internal_data_clk_time_reset : std_logic := '0';
+
+signal internal_pps_latch_sig : std_logic;
+signal internal_pps_latch_sig_data_clk : std_logic;
 ------------------------------------------------------------------------------------------------------------------------------
 component signal_sync is
 port(
@@ -160,6 +167,35 @@ port map(
 	refresh_i => clk_refrsh_i, --//1 Hz refresh clock
 	count_i => internal_buffer_full,
 	scaler_o => internal_deadtime_counter);
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+--//stuff to latch timestamp on external trigger input (i.e. PPS input)	
+process(rst_i, clk_iface_i, pps_latch_reg_i)
+begin
+	if rst_i = '1' then
+		internal_pps_latch_sig <= '0';
+	elsif rising_edge(clk_iface_i) and pps_latch_reg_i = "01" then
+		internal_pps_latch_sig <= '1';
+	elsif rising_edge(clk_iface_i) then
+		internal_pps_latch_sig <= '0';
+	end if;
+end process;
+xPPSLATCHSYNC : flag_sync
+	port map(
+		clkA 			=> clk_iface_i,
+		clkB			=> clk_i,
+		in_clkA		=> internal_pps_latch_sig,
+		busy_clkA	=> open,
+		out_clkB		=> internal_pps_latch_sig_data_clk);
+process(rst_i, clk_i, internal_pps_latch_sig_data_clk)
+begin
+	if rst_i = '1' then
+		latched_timestamp_o <= (others=>'0');
+	elsif rising_edge(clk_iface_i) and internal_pps_latch_sig_data_clk = '1' then
+		latched_timestamp_o <= internal_running_timestamp;
+	end if;
+end process;	
+------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------
 --//TIMESTAMP is measured on the data clock
 proc_incr_timestamp : process(rst_i, clk_i, internal_data_clk_time_reset)

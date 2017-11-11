@@ -32,6 +32,8 @@ entity scalers_top is
 		reg_i				:		in		register_array_type;
 		trigger_i		:		in		std_logic;
 		beam_trig_i		:		in		std_logic_vector(define_num_beams-1 downto 0);
+		pps_timestamp_i		  :		in		std_logic_vector(47 downto 0);
+		pps_timestamp_latched_o :		out	std_logic_vector(47 downto 0);
 
 		running_scalers_o:		out	std_logic_vector(23 downto 0);
 		
@@ -126,9 +128,12 @@ begin
 			latched_scaler_array(i) <= (others=>'0');
 		end loop;
 		scaler_to_read_o <= (others=>'0');
+		pps_timestamp_latched_o <= (others=>'0');
+	
 	elsif rising_edge(clk_i) and reg_i(40)(0) = '1' then
 		latched_scaler_array <= internal_scaler_array;
-	
+		pps_timestamp_latched_o <= pps_timestamp_i;
+		
 	elsif rising_edge(clk_i) then
 		case reg_i(41)(7 downto 0) is
 			when x"00" =>
@@ -180,7 +185,7 @@ begin
 				scaler_to_read_o <= latched_scaler_array(45) & latched_scaler_array(44);
 			when x"17" =>
 				scaler_to_read_o <= latched_scaler_array(47) & latched_scaler_array(46);
-				
+			
 			when others =>
 				scaler_to_read_o <= latched_scaler_array(1) & latched_scaler_array(0);
 		end case;

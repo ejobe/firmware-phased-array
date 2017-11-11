@@ -145,19 +145,19 @@ xBEAM8ENABLE : signal_sync
 port map(
 	clkA				=> clk_iface_i,
 	clkB				=> clk_i,
-	SignalIn_clkA	=> reg_i(82)(2), 
+	SignalIn_clkA	=> reg_i(82)(8), 
 	SignalOut_clkB	=> internal_beam8_enable);
 xBEAM4AENABLE : signal_sync
 port map(
 	clkA				=> clk_iface_i,
 	clkB				=> clk_i,
-	SignalIn_clkA	=> reg_i(82)(3), 
+	SignalIn_clkA	=> reg_i(82)(9), 
 	SignalOut_clkB	=> internal_beam4a_enable);
 xBEAM4BENABLE : signal_sync
 port map(
 	clkA				=> clk_iface_i,
 	clkB				=> clk_i,
-	SignalIn_clkA	=> reg_i(82)(4), 
+	SignalIn_clkA	=> reg_i(82)(10), 
 	SignalOut_clkB	=> internal_beam4b_enable);
 --------------------------------------------
 proc_buffer_data : process(rst_i, clk_i, data_pipe)

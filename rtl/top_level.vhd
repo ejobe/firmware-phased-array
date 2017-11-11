@@ -210,6 +210,9 @@ architecture rtl of top_level is
 	signal external_trigger			: std_logic;
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
 	signal last_trig_power			: average_power_16samp_type;
+	signal pps_timestamp_latch		: std_logic_vector(1 downto 0);
+	signal pps_timestamp				: std_logic_vector(47 downto 0);
+	signal pps_timestamp_to_read	: std_logic_vector(47 downto 0);
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	signal status_reg_latched_data_manager :  std_logic_vector(23 downto 0);
@@ -359,14 +362,16 @@ begin
 	xEXT_TRIG_MANAGER : entity work.external_trigger_manager
 	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
-		rst_i			=> reset_global or reset_global_except_registers,
-		clk_i			=> clock_25MHz, --//clock
-		ext_i			=> SYS_serial_in, --//external gate/trigger input, distributed by clock fanout board over RJ45
-		sys_trig_i	=> scalers_trig, --//firmware generated phased trigger
-		reg_i			=> registers, --//programmable registers
-		sys_trig_o  => external_trigger, --//trigger to firmware
-		sys_gate_o	=> scalers_gate, --//scaler gate
-		ext_trig_o	=> the_ext_trigger_out); --uC_dig(9)); --//external trigger output
+		rst_i					=> reset_global or reset_global_except_registers,
+		clk_i					=> clock_25MHz, --//clock
+		ext_i					=> SYS_serial_in, --//external gate/trigger input, distributed by clock fanout board over RJ45
+		sys_trig_i			=> scalers_trig, --//firmware generated phased trigger
+		reg_i					=> registers, --//programmable registers
+		refrsh_pulse_1Hz 	=> clock_rfrsh_pulse_1Hz,
+		sys_trig_o  		=> external_trigger, --//trigger to firmware
+		sys_gate_o			=> scalers_gate, --//scaler gate
+		pps_gate_o			=> pps_timestamp_latch,
+		ext_trig_o			=> the_ext_trigger_out); --uC_dig(9)); --//external trigger output
 	--///////////////////////////////////////	
    xCALPULSE : entity work.electronics_calpulse 
 	generic map( ENABLE_CALIBRATION_PULSE => FIRMWARE_DEVICE)
@@ -477,6 +482,8 @@ begin
 		reg_i						=> registers,
 		reg_adr_i				=> register_adr,
 		event_meta_o			=> event_meta_data,
+		pps_latch_reg_i			=> pps_timestamp_latch,
+		pps_latched_timestamp_o => pps_timestamp,
 		status_reg_o			=> status_reg_data_manager,
 		status_reg_latched_o => status_reg_latched_data_manager,
 		wfm_data_i				=> wfm_data,
@@ -508,6 +515,8 @@ begin
 		reg_i				=> registers,
 		trigger_i		=> scalers_trig,
 		beam_trig_i		=> scalers_beam_trigs,
+		pps_timestamp_i		  	=> pps_timestamp,
+		pps_timestamp_latched_o => pps_timestamp_to_read,
 		running_scalers_o => running_scalers,
 		scaler_to_read_o  => scaler_to_read);
 	--///////////////////////////////////////		
@@ -531,6 +540,7 @@ begin
 		remote_upgrade_data_i			=> remote_upgrade_data,	
 		remote_upgrade_epcq_data_i		=> remote_upgrade_epcq_data,
 		remote_upgrade_status_i			=> remote_upgrade_status,
+		pps_timestamp_to_read_i			=> pps_timestamp_to_read,
 		--//////////////////////////
 		write_reg_i		=> mcu_data_pkt_32bit,
 		write_rdy_i		=> mcu_rx_rdy,
@@ -682,7 +692,7 @@ begin
 	DEBUG(8) <=  '0';
 	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
 	DEBUG(10)<=  '0'; --clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
-	DEBUG(11)<=  mcu_spi_busy;--adc_cal_sig; --usb_slwr;
+	DEBUG(11)<=  scalers_gate;--adc_cal_sig; --usb_slwr;
 	--/////////////////////////////////
 	
 	-------------------------------------------------------------

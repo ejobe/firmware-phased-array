@@ -41,6 +41,7 @@ entity registers_mcu_spi is
 		remote_upgrade_data_i			:  in		std_logic_vector(31 downto 0);
 		remote_upgrade_epcq_data_i    :  in		std_logic_vector(31 downto 0);
 		remote_upgrade_status_i			:  in		std_logic_vector(23 downto 0);
+		pps_timestamp_to_read_i			:	in		std_logic_vector(47 downto 0);
 		--////////////////////////////
 		write_reg_i		:	in		std_logic_vector(define_register_size-1 downto 0); --//input data
 		write_rdy_i		:	in		std_logic; --//data ready to be written in spi_slave
@@ -181,11 +182,12 @@ begin
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
 		
-		--//masking + trigger config stuff:
+		--//masking + trigger configurations
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
-		registers_io(81) <= x"0000FF";   --// trig holdoff - lower 16 bits [81]
-		registers_io(82) <= x"00001E";	--// trigger/beam enables [82]
+		registers_io(81) <= x"0001FF";   --// trig holdoff - lower 16 bits [81]
+		registers_io(82) <= x"000700";	--// phased trigger/beam enables [82]
+		registers_io(75) <= x"00FF00";   --// external trigger input configuration [75]
 		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
 		registers_io(84) <= x"000000";   --// enable phased trigger to data manager (LSB=1 to enable)
 		registers_io(85) <= x"000001";   --// trigger verification mode (LSB=1 to enable)
@@ -240,12 +242,16 @@ begin
 		sync_active_o <= internal_sync_reg(0);
 		internal_sync_reg <= internal_sync_reg(0) & (internal_sync_slave or internal_sync_master);	
 
-		--//read only REMOTE UPGRADE registers (don't fit in read only allotment, so assign here continuously)
+		--//read only REMOTE UPGRADE registers (doesn't fit in read only allotment, so assign here continuously)
 		registers_io(103) <= remote_upgrade_status_i;
 		registers_io(104) <= x"00" & remote_upgrade_data_i(15 downto 0);
 		registers_io(105) <= x"00" & remote_upgrade_data_i(31 downto 16);
 		registers_io(106) <= x"00" & remote_upgrade_epcq_data_i(15 downto 0);
 		registers_io(107) <= x"00" & remote_upgrade_epcq_data_i(31 downto 16);
+		--//read only latched timestamp register (doesn't fit in read only allotment, so assign here continuously)
+		registers_io(44)	<= pps_timestamp_to_read_i(23 downto 0);
+		registers_io(45)	<= pps_timestamp_to_read_i(47 downto 24);
+		--//------------------------------------------------------------------------------
 		
 		--//handle sync event, falling edge condition of internal_sync_reg (i.e. the sync is 'released')
 		if internal_sync_reg = "10" then

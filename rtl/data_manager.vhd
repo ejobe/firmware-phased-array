@@ -39,6 +39,9 @@ entity data_manager is
 		status_reg_o		:	inout	std_logic_vector(23 downto 0);
 		status_reg_latched_o	:	out	std_logic_vector(23 downto 0);
 		event_meta_o		:	out	event_metadata_type;
+		
+		pps_latch_reg_i			:	in		std_logic_vector(1 downto 0);
+		pps_latched_timestamp_o	:	out	std_logic_vector(47 downto 0);
 
 		--//waveform data	
 		wfm_data_i				:	in	 	full_data_type;
@@ -608,6 +611,8 @@ port map(
 	running_scaler_i  => running_scalers_i,
 	get_metadata_i	 	=> internal_get_event_metadata, 
 	current_buffer_i	=> internal_current_buffer,
+	pps_latch_reg_i	=> pps_latch_reg_i,
+	latched_timestamp_o=> pps_latched_timestamp_o,
 	reg_i				 	=> reg_i,		
 	event_header_o	 	=> event_meta_o);
 ------------------------------------------------------------------------------------------------------------------------------

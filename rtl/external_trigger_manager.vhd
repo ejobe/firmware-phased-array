@@ -29,9 +29,11 @@ entity external_trigger_manager is
 		ext_i			:	in		std_logic; --//external gate/trigger input
 		sys_trig_i	:	in		std_logic; --//firmware generated phased trigger
 		reg_i			:  in 	register_array_type; --//programmable registers
+		refrsh_pulse_1Hz : in std_logic;
 		
 		sys_trig_o  :  out	std_logic; --//trigger to firmware
-		sys_gate_o	:	out	std_logic; --//scaler gate
+		sys_gate_o	:	out	std_logic; --//scaler gate\
+		pps_gate_o	:	out	std_logic_vector(1 downto 0); --//can be used to latch firmware timstamp for syncing off-line to PPS
 		ext_trig_o	:	out	std_logic); --//external trigger output
 end external_trigger_manager;
 
@@ -40,19 +42,41 @@ architecture rtl of external_trigger_manager is
 signal internal_gate_reg 		: std_logic_vector(2 downto 0);
 signal internal_exttrig_reg 	: std_logic_vector(2 downto 0);
 signal internal_exttrig_edge 	: std_logic;
+signal internal_gate_generator_output : std_logic;
+signal internal_trig_generator_output : std_logic;
 
 begin
-
-sys_trig_o <= internal_exttrig_reg(1) and reg_i(82)(1);
+--//if PPS plugged on ext trigger input, use to latch timestamp
+pps_gate_o <= internal_gate_reg(2 downto 1);
+--//external trigger to firmware core:
+sys_trig_o <= internal_exttrig_reg(1) and reg_i(75)(0);
+--//external trigger off-board assignment:
+proc_trig_out_assign : process(reg_i(83), internal_gate_reg, internal_gate_generator_output)
+begin
+	case reg_i(83)(2) is
+		when '0' =>
+			ext_trig_o <= internal_trig_generator_output;
+		when '1' =>
+			ext_trig_o <= refrsh_pulse_1Hz;
+	end case;
+end process;
+--//gate generator to firmware core:
+proc_gate_out_assign : process(reg_i(75), internal_gate_reg, internal_gate_generator_output)
+begin
+	case reg_i(75)(1) is
+		when '0' =>
+			sys_gate_o <= internal_gate_reg(2);
+		when '1' =>
+			sys_gate_o <= internal_gate_generator_output;
+	end case;
+end process;
 
 proc_reg_ext : process(rst_i, clk_i, ext_i, internal_gate_reg, internal_exttrig_reg, internal_exttrig_edge)
 begin	
 	if rst_i = '1' then
 		internal_gate_reg <= (others=>'0');
 		internal_exttrig_reg <= (others=>'0');
-		sys_gate_o <= '0';
 	elsif rising_edge(clk_i) then
-		sys_gate_o <= internal_gate_reg(2);
 		internal_gate_reg <= internal_gate_reg(1 downto 0) & ext_i;
 		if internal_exttrig_reg(2) = '1' then
 			internal_exttrig_reg <= (others=>'0');
@@ -72,6 +96,18 @@ begin
 	end if;
 end process;
 
+--//gate generator
+xGATE_GENERATOR : entity work.pulse_stretcher_sync_programmable(rtl)
+generic map(
+	stretch_width => 16)
+port map(
+	rst_i		=> rst_i or (not FIRMWARE_DEVICE),
+	clk_i		=> clk_i,
+	stretch_i => reg_i(75)(23 downto 8),
+	out_pol_i => '1',
+	pulse_i	=> internal_gate_reg(1),
+	pulse_o	=> internal_gate_generator_output);
+	
 --//send trigger out:
 xEXT_TRIG_OUT : entity work.pulse_stretcher_sync_programmable(rtl)
 generic map(
@@ -81,7 +117,7 @@ port map(
 	clk_i		=> clk_i,
 	stretch_i => reg_i(83)(15 downto 8),
 	out_pol_i => reg_i(83)(1),
-	pulse_i	=> sys_trig_i or (internal_exttrig_reg(1) and reg_i(83)(2)),
-	pulse_o	=> ext_trig_o);
+	pulse_i	=> sys_trig_i,
+	pulse_o	=> internal_trig_generator_output);
 
 end rtl;
