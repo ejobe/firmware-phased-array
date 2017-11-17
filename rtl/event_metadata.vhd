@@ -191,7 +191,7 @@ process(rst_i, clk_i, internal_pps_latch_sig_data_clk)
 begin
 	if rst_i = '1' then
 		latched_timestamp_o <= (others=>'0');
-	elsif rising_edge(clk_iface_i) and internal_pps_latch_sig_data_clk = '1' then
+	elsif rising_edge(clk_i) and internal_pps_latch_sig_data_clk = '1' then
 		latched_timestamp_o <= internal_running_timestamp;
 	end if;
 end process;	

@@ -33,6 +33,7 @@ entity pretrigger_window is
 --//before the trigger signal..
 
 architecture rtl of pretrigger_window is
+	--//8*128/8 samples at 1.5 GSPS => 85 ns per pre-trigger window block
 	type internal_data_buffer_type is array(7 downto 0) of std_logic_vector(127 downto 0);
 	signal internal_data_buffer_0 : internal_data_buffer_type;
 	signal internal_data_buffer_1 : internal_data_buffer_type;
@@ -40,6 +41,7 @@ architecture rtl of pretrigger_window is
 	signal internal_data_buffer_3 : internal_data_buffer_type;
 	signal internal_data_buffer_4 : internal_data_buffer_type;
 	signal internal_data_buffer_5 : internal_data_buffer_type;
+	signal internal_data_buffer_6 : internal_data_buffer_type;
 
 	signal internal_data_buffer_pickoff_0 : std_logic_vector(127 downto 0);
 	signal internal_data_buffer_pickoff_1 : std_logic_vector(127 downto 0);
@@ -48,7 +50,8 @@ architecture rtl of pretrigger_window is
 	signal internal_data_buffer_pickoff_4 : std_logic_vector(127 downto 0);
 	signal internal_data_buffer_pickoff_5 : std_logic_vector(127 downto 0);	
 	signal internal_data_buffer_pickoff_6 : std_logic_vector(127 downto 0);
-
+	signal internal_data_buffer_pickoff_7 : std_logic_vector(127 downto 0);
+	
 	signal internal_data_pipe : std_logic_vector(127 downto 0);
 
 begin
@@ -64,6 +67,7 @@ begin
 			internal_data_buffer_3(i) <= (others=>'0');
 			internal_data_buffer_4(i) <= (others=>'0');
 			internal_data_buffer_5(i) <= (others=>'0');
+			internal_data_buffer_6(i) <= (others=>'0');
 		end loop;
 		
 		internal_data_buffer_pickoff_0 <= (others=>'0');
@@ -73,11 +77,13 @@ begin
 		internal_data_buffer_pickoff_4 <= (others=>'0');
 		internal_data_buffer_pickoff_5 <= (others=>'0');
 		internal_data_buffer_pickoff_6 <= (others=>'0');
+		internal_data_buffer_pickoff_7 <= (others=>'0');
 		internal_data_pipe <= (others=>'0');
 	
 	elsif rising_edge(clk_i) then
 		
 		for i in 1 to 7 loop
+			internal_data_buffer_6(i) <= internal_data_buffer_6(i-1);
 			internal_data_buffer_5(i) <= internal_data_buffer_5(i-1);
 			internal_data_buffer_4(i) <= internal_data_buffer_4(i-1);
 			internal_data_buffer_3(i) <= internal_data_buffer_3(i-1);
@@ -87,6 +93,8 @@ begin
 		end loop;
 		
 		--//keep max fanout to two:
+		internal_data_buffer_pickoff_7  <= internal_data_buffer_6(7);
+		internal_data_buffer_6(0) <= internal_data_buffer_5(7);
 		internal_data_buffer_pickoff_6  <= internal_data_buffer_5(7);
 		internal_data_buffer_5(0) <= internal_data_buffer_4(7);
 		internal_data_buffer_pickoff_5  <= internal_data_buffer_4(7);
@@ -108,7 +116,7 @@ end process;
 proc_assign_data_o : process(rst_i, clk_i, pretrig_sel_i, internal_data_buffer_pickoff_0, internal_data_buffer_pickoff_1,
 										internal_data_buffer_pickoff_2, internal_data_buffer_pickoff_3,
 										internal_data_buffer_pickoff_4, internal_data_buffer_pickoff_5,
-										internal_data_buffer_pickoff_6)
+										internal_data_buffer_pickoff_6, internal_data_buffer_pickoff_7)
 begin
 	if rising_edge(clk_i) then
 		case pretrig_sel_i is
@@ -127,6 +135,8 @@ begin
 				data_o <= internal_data_buffer_pickoff_5;
 			when "110"=>
 				data_o <= internal_data_buffer_pickoff_6;
+			when "111"=>
+				data_o <= internal_data_buffer_pickoff_7; --//max pre-trigger delay is 7 blocks ~ 600 ns
 			when others=>
 				data_o <= internal_data_buffer_pickoff_0;
 		end case;
