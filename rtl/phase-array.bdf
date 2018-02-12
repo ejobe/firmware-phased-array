@@ -902,6 +902,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -432 1040 -344 1072))
 )
 (pin
 	(bidir)
@@ -919,6 +920,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1056 -376 1088))
 )
 (pin
 	(bidir)
@@ -936,6 +938,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1072 -368 1104))
 )
 (pin
 	(bidir)
@@ -953,6 +956,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1088 -376 1120))
 )
 (pin
 	(bidir)
@@ -970,6 +974,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1104 -376 1136))
 )
 (pin
 	(bidir)
@@ -987,6 +992,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1120 -376 1152))
 )
 (pin
 	(bidir)
@@ -1004,6 +1010,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1136 -376 1168))
 )
 (pin
 	(bidir)
@@ -1021,6 +1028,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1152 -376 1184))
 )
 (pin
 	(bidir)
@@ -1038,6 +1046,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 1168 -376 1200))
 )
 (pin
 	(bidir)
@@ -1055,6 +1064,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 576 -368 608))
 )
 (pin
 	(bidir)
@@ -1072,6 +1082,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 800 -368 832))
 )
 (pin
 	(bidir)
@@ -1089,6 +1100,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 816 -368 848))
 )
 (pin
 	(bidir)
@@ -1106,6 +1118,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 832 -376 864))
 )
 (pin
 	(bidir)
@@ -1123,6 +1136,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 848 -376 880))
 )
 (pin
 	(bidir)
@@ -1140,6 +1154,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 864 -376 896))
 )
 (pin
 	(bidir)
@@ -1157,6 +1172,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -462 880 -374 912))
 )
 (pin
 	(bidir)
@@ -1174,6 +1190,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 896 -368 928))
 )
 (pin
 	(bidir)
@@ -1191,6 +1208,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -462 912 -366 944))
 )
 (pin
 	(bidir)
@@ -1262,6 +1280,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -464 592 -368 624))
 )
 (pin
 	(bidir)
@@ -1279,6 +1298,7 @@ agreement for further details.
 		(line (pt 52 8)(pt 56 12))
 	)
 	(text "VCC" (rect 4 7 28 18)(font "Arial" (font_size 6)))
+	(annotation_block (location)(rect -445 608 -357 640))
 )
 (symbol
 	(rect -928 296 -640 1272)
@@ -1790,7 +1810,7 @@ agreement for further details.
 	)
 	(parameter
 		"FIRMWARE_DEVICE"
-		"'1'"
+		"'0'"
 		""
 		(type "PARAMETER_ENUM")	)
 	(drawing
@@ -1808,6 +1828,6 @@ agreement for further details.
 	(pt -392 1000)
 	(bus)
 )
-(text "RJ45: 3-IN(master_clock [split into 2 copies pre-FPGA] + DIGIN_0 + uC_SPI [to uC, not to FPGA]), 1-OUT (DIGOUT_0)" (rect -1056 224 1210 249)(font "Times New Roman" (font_size 14)(bold_italic)))
-(text "RJ45: 2-IN(DIGIN_1 + DIGIN_2), 2-OUT(DIGOUT_1 + DIGOUT_2)" (rect -1056 240 87 265)(font "Times New Roman" (font_size 14)(bold_italic)))
-(text "RJ45: 2-IN(DIGIN_3+ DIGIN_4),  2-OUT(DIGOUT_3 + DIGOUT_4) [BROKEN]" (rect -1056 256 267 281)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 3-IN(master_clock [split into 2 copies pre-FPGA] + DIGIN_0 + uC_SPI [to uC, not to FPGA]), 1-OUT (DIGOUT_0)" (rect -1056 224 1344 249)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 2-IN(DIGIN_1 + DIGIN_2), 2-OUT(DIGOUT_1 + DIGOUT_2)" (rect -1056 240 154 265)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 2-IN(DIGIN_3+ DIGIN_4),  2-OUT(DIGOUT_3 + DIGOUT_4) [BROKEN]" (rect -1056 256 345 281)(font "Times New Roman" (font_size 14)(bold_italic)))

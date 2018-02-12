@@ -331,7 +331,7 @@ begin
 		rx_pll_reset_o		=> rx_pll_reset,
 		dat_valid_o			=> adc_data_valid);
 	--///////////////////////////////////////	
-	xBEAMFORMER : entity work.beamform_v2
+	xBEAMFORMER : entity work.beamform_v4
 	generic map( ENABLE_BEAMFORMING => FIRMWARE_DEVICE)
 	port map(
 		rst_i			=> reset_global or reset_global_except_registers,
@@ -421,7 +421,7 @@ begin
 		dsa_strtup_o	=> startup_dsa,
 		adc_strtup_o	=> startup_adc,
 		adc_reset_o		=> reset_adc);
-	--///////////////////////////////////////	
+	--///////////////////////////////////////////////////////////	
 	--//ADC data receiver block
 	ReceiverBlock	:	 for i in 0 to 3 generate
 		xDATA_RECEIVER : entity work.RxData
