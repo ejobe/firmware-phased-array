@@ -29,6 +29,7 @@ entity data_manager is
 		pulse_refrsh_i		:	in	 std_logic;
 		wr_busy_o			:	inout std_logic; --//
 		
+		scaler_gate_i		:	in	 std_logic; --//gate used for scalers, also tag events that fall in this 'gate'
 		phased_trig_i		:	in	 std_logic; 
 		last_trig_beam_i	: 	in  std_logic_vector(define_num_beams-1 downto 0); --//last beam trigger
 		last_trig_pow_i	:	in	 average_power_16samp_type; 
@@ -603,6 +604,7 @@ port map(
 	clk_i					=> clk_i,
 	clk_iface_i			=> clk_iface_i,
 	clk_refrsh_i		=> pulse_refrsh_i,
+	gate_i				=> scaler_gate_i,
 	buffers_full_i		=> buffers_full,
 	trig_i				=> event_trigger_reg(1),
 	trig_type_i			=> internal_last_trigger_type,

@@ -29,7 +29,7 @@ entity external_trigger_manager is
 		ext_i			:	in		std_logic; --//external gate/trigger input
 		sys_trig_i	:	in		std_logic; --//firmware generated phased trigger
 		reg_i			:  in 	register_array_type; --//programmable registers
-		refrsh_pulse_1Hz : in std_logic;
+		refrsh_pulse_1Hz_i : in std_logic;
 		
 		sys_trig_o  :  out	std_logic; --//trigger to firmware
 		sys_gate_o	:	out	std_logic; --//scaler gate\
@@ -57,7 +57,7 @@ begin
 		when '0' =>
 			ext_trig_o <= internal_trig_generator_output;
 		when '1' =>
-			ext_trig_o <= refrsh_pulse_1Hz;
+			ext_trig_o <= refrsh_pulse_1Hz_i;
 	end case;
 end process;
 --//gate generator to firmware core:

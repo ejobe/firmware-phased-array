@@ -27,6 +27,7 @@ entity event_metadata is
 		
 		clk_refrsh_i	:	in		std_logic; --//clock to refresh dead-time counter (1 Hz, pulsed on clk_iface_i)
 		
+		gate_i			:	in		std_logic;
 		buffers_full_i	:	in		std_logic; --//for dead-time counting
 		trig_i			:	in		std_logic; --//for event counting and time-stamping
 		trig_type_i		:	in		std_logic_vector(1 downto 0);
@@ -100,6 +101,8 @@ signal internal_data_clk_time_reset : std_logic := '0';
 
 signal internal_pps_latch_sig : std_logic;
 signal internal_pps_latch_sig_data_clk : std_logic;
+
+signal internal_gate : std_logic;  --//flag if event is within a gate pulse
 ------------------------------------------------------------------------------------------------------------------------------
 component signal_sync is
 port(
@@ -242,10 +245,13 @@ proc_trig_tag: process(rst_i, clk_iface_i, reg_i, internal_trig_reg)
 begin
 	if rst_i = '1' then
 		internal_trig_counter <= (others=>'0');
+		internal_gate <= '0';
 	elsif rising_edge(clk_iface_i) and reg_i(126)(0) = '1' then
 		internal_trig_counter <= (others=>'0');
+		internal_gate <= '0';
 	elsif rising_edge(clk_iface_i) and internal_trig_reg(2 downto 1) = "01" then
 		internal_trig_counter <= internal_trig_counter + 1;
+		internal_gate <= gate_i;
 	end if;
 end process;
 ------------------------------------------------------------------------------------------------------------------------------
@@ -336,7 +342,7 @@ begin
 			internal_header_5(buf) <= internal_event_timestamp(47 downto 24);
 			internal_header_6(buf) <= internal_deadtime_counter;
 			internal_header_7(buf) <= current_buffer_i & reg_i(42)(0) & '0' & reg_i(76)(2 downto 0) & trig_type_i & trig_last_beam_i;
-			internal_header_8(buf) <= '0' & reg_i(48)(7 downto 0) & reg_i(80)(define_num_beams-1 downto 0);
+			internal_header_8(buf) <= internal_gate & reg_i(48)(7 downto 0) & reg_i(80)(define_num_beams-1 downto 0);
 			internal_header_9(buf) <= running_scaler_i; 
 			internal_header_10(buf) <= x"0" & last_trig_pow_i(0);
 			internal_header_11(buf) <= x"0" & last_trig_pow_i(1);

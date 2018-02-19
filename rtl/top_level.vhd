@@ -367,7 +367,7 @@ begin
 		ext_i					=> SYS_serial_in, --//external gate/trigger input, distributed by clock fanout board over RJ45
 		sys_trig_i			=> scalers_trig, --//firmware generated phased trigger
 		reg_i					=> registers, --//programmable registers
-		refrsh_pulse_1Hz 	=> clock_rfrsh_pulse_1Hz,
+		refrsh_pulse_1Hz_i=> clock_rfrsh_pulse_1Hz,
 		sys_trig_o  		=> external_trigger, --//trigger to firmware
 		sys_gate_o			=> scalers_gate, --//scaler gate
 		pps_gate_o			=> pps_timestamp_latch,
@@ -475,6 +475,7 @@ begin
 		clk_iface_i				=> clock_25MHz,
 		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
 		wr_busy_o				=> data_manager_write_busy,
+		scaler_gate_i			=> scalers_gate,
 		phased_trig_i			=> (the_phased_trigger and FIRMWARE_DEVICE) or the_phased_trigger_from_master,
 		last_trig_beam_i		=> last_trig_beams,
 		last_trig_pow_i		=> last_trig_power,

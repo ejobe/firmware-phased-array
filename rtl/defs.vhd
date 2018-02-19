@@ -33,7 +33,7 @@ constant pdat_size							:  integer := 2*define_serdes_factor*define_word_size; 
 
 --//waveform acq RAM:
 constant define_ram_width  				: 	integer := 128;
-constant define_ram_depth					: 	integer := 5; --// words for Rx receiving RAM
+constant define_ram_depth					: 	integer := 3; --// words for Rx receiving RAM (was 5 before 2/19/2018)
 constant define_data_ram_depth			: 	integer := 8; --// words for block RAM -- sets time window for triggered and saved event
 constant define_num_wfm_buffers			:	integer := 4; --// number of independent buffers for event waveform data
 
@@ -63,8 +63,8 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001B";
-constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"1" & x"09";
+constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001C";
+constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"2" & x"0F";
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////
 
