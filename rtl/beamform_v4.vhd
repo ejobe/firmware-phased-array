@@ -264,7 +264,7 @@ begin
 				internal_beams_8_pipe(i) <= internal_beams_8(i);
 			else
 				internal_beams_8_pipe(i) <= (others=>'0');
-			end if;
+			end if; 
 			--------------------------------------------------------
 			if internal_beam4a_enable = '1' then
 				internal_beams_4a_pipe(i) <= internal_beams_4a(i);

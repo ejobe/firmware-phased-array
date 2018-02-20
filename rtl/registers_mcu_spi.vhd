@@ -186,9 +186,9 @@ begin
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
 		registers_io(80) <= x"FFFFFF";   --// beam masks for trigger [80]
 		registers_io(81) <= x"0001FF";   --// trig holdoff - lower 16 bits [81]
-		registers_io(82) <= x"000700";	--// phased trigger/beam enables [82]
+		registers_io(82) <= x"000300";	--// phased trigger/beam enables [82]
 		registers_io(75) <= x"00FF00";   --// external trigger input configuration [75]
-		registers_io(83) <= x"000303";   --// external trigger output configuration [83]
+		registers_io(83) <= x"000C03";   --// external trigger output configuration [83]
 		registers_io(84) <= x"000000";   --// enable phased trigger to data manager (LSB=1 to enable)
 		registers_io(85) <= x"000001";   --// trigger verification mode (LSB=1 to enable)
 		

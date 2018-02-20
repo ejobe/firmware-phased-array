@@ -42,6 +42,7 @@ entity trigger_v2 is
 		trig_beam_o						:	out	std_logic_vector(define_num_beams-1 downto 0); --//for scalers
 
 		trig_clk_data_o				:	inout	std_logic;  --//trig flag on faster clock
+		trig_clk_data_copy_o			:	out	std_logic;  --//trig flag on faster clock, delayed by one clk cycle
 		last_trig_beam_clk_data_o 	: 	inout std_logic_vector(define_num_beams-1 downto 0); --//register the beam trigger 
 		trig_clk_iface_o				:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
 		
@@ -497,7 +498,9 @@ begin
 	if rst_i = '1'  or ENABLE_PHASED_TRIGGER = '0' then
 		internal_trig_clk_data <= '0';
 		trig_clk_data_o <= '0';
+		trig_clk_data_copy_o <= '0';
 	elsif rising_edge(clk_data_i) then
+		trig_clk_data_copy_o   <=  trig_clk_data_o;
 		internal_trig_clk_data <=  trig_clk_data_o;
 		trig_clk_data_o	<=	(verified_instantaneous_above_threshold(0) and internal_trigger_beam_mask(0)) or
 									(verified_instantaneous_above_threshold(1) and internal_trigger_beam_mask(1)) or

@@ -205,6 +205,7 @@ architecture rtl of top_level is
 	signal powsum_ev2samples	: sum_power_type;
 	--//trigger signals
 	signal the_phased_trigger		: std_logic;
+	signal the_phased_trigger_off_board : std_logic;
 	signal the_ext_trigger_out 	: std_logic := '0';
 	signal the_phased_trigger_from_master : std_logic := '0';
 	signal external_trigger			: std_logic;
@@ -344,7 +345,7 @@ begin
 		beams_8_o	=> beam_data_8,
 		sum_pow_o	=> powsum_ev2samples);
 	--///////////////////////////////////////
-	xPHASEDTRIGGER : entity work.trigger_v2 --//trigger_v2 adds power 'verification' feature. 
+	xPHASEDTRIGGER : entity work.trigger_v3 --//trigger_v2 adds power 'verification' feature. 
 	generic map( ENABLE_PHASED_TRIGGER => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
@@ -355,6 +356,7 @@ begin
 		data_write_busy_i => data_manager_write_busy,
 		last_trig_pow_o	=> last_trig_power,
 		trig_beam_o			=> scalers_beam_trigs, 	--//trigger on sloower MHz clock in each beam (for scalers, beam-tagging)
+		trig_clk_data_copy_o => the_phased_trigger_off_board,
 		trig_clk_data_o	=> the_phased_trigger,	--//OR of all beam triggers on 93 MHz data clock, maskable. Triggers event saving in data_manager module
 		last_trig_beam_clk_data_o => last_trig_beams,
 		trig_clk_iface_o	=> scalers_trig);       --//trig_clk_data_o synced to slower clock
@@ -363,9 +365,10 @@ begin
 	generic map( FIRMWARE_DEVICE => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
+		trig_clk_i			=> clock_93MHz, --//fast clock on which the phased trigger is registered
 		clk_i					=> clock_25MHz, --//clock
 		ext_i					=> SYS_serial_in, --//external gate/trigger input, distributed by clock fanout board over RJ45
-		sys_trig_i			=> scalers_trig, --//firmware generated phased trigger
+		sys_trig_i			=> the_phased_trigger_off_board, --scalers_trig, --//firmware generated phased trigger
 		reg_i					=> registers, --//programmable registers
 		refrsh_pulse_1Hz_i=> clock_rfrsh_pulse_1Hz,
 		sys_trig_o  		=> external_trigger, --//trigger to firmware

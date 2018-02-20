@@ -1810,7 +1810,7 @@ agreement for further details.
 	)
 	(parameter
 		"FIRMWARE_DEVICE"
-		"'0'"
+		"'1'"
 		""
 		(type "PARAMETER_ENUM")	)
 	(drawing
@@ -1828,6 +1828,6 @@ agreement for further details.
 	(pt -392 1000)
 	(bus)
 )
-(text "RJ45: 3-IN(master_clock [split into 2 copies pre-FPGA] + DIGIN_0 + uC_SPI [to uC, not to FPGA]), 1-OUT (DIGOUT_0)" (rect -1056 224 1344 249)(font "Times New Roman" (font_size 14)(bold_italic)))
-(text "RJ45: 2-IN(DIGIN_1 + DIGIN_2), 2-OUT(DIGOUT_1 + DIGOUT_2)" (rect -1056 240 154 265)(font "Times New Roman" (font_size 14)(bold_italic)))
-(text "RJ45: 2-IN(DIGIN_3+ DIGIN_4),  2-OUT(DIGOUT_3 + DIGOUT_4) [BROKEN]" (rect -1056 256 345 281)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 3-IN(master_clock [split into 2 copies pre-FPGA] + DIGIN_0 + uC_SPI [to uC, not to FPGA]), 1-OUT (DIGOUT_0)" (rect -1056 224 1210 249)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 2-IN(DIGIN_1 + DIGIN_2), 2-OUT(DIGOUT_1 + DIGOUT_2)" (rect -1056 240 87 265)(font "Times New Roman" (font_size 14)(bold_italic)))
+(text "RJ45: 2-IN(DIGIN_3+ DIGIN_4),  2-OUT(DIGOUT_3 + DIGOUT_4) [BROKEN]" (rect -1056 256 267 281)(font "Times New Roman" (font_size 14)(bold_italic)))

@@ -25,6 +25,7 @@ entity external_trigger_manager is
 		FIRMWARE_DEVICE : std_logic := '1');
 	port(
 		rst_i			:	in		std_logic; --//async reset
+		trig_clk_i	:	in		std_logic;
 		clk_i			:	in		std_logic; --//clock
 		ext_i			:	in		std_logic; --//external gate/trigger input
 		sys_trig_i	:	in		std_logic; --//firmware generated phased trigger
@@ -108,13 +109,27 @@ port map(
 	pulse_i	=> internal_gate_reg(1),
 	pulse_o	=> internal_gate_generator_output);
 	
+--//old version used phased trigger on 25Mhz clock:
+----//send trigger out:
+--xEXT_TRIG_OUT : entity work.pulse_stretcher_sync_programmable(rtl)
+--generic map(
+--	stretch_width => 8)
+--port map(
+--	rst_i		=> rst_i or (not reg_i(83)(0)) or (not FIRMWARE_DEVICE),
+--	clk_i		=> clk_i,
+--	stretch_i => reg_i(83)(15 downto 8),
+--	out_pol_i => reg_i(83)(1),
+--	pulse_i	=> sys_trig_i,
+--	pulse_o	=> internal_trig_generator_output);
+
+--//new version used phased trigger on 93Mhz clock to get it out quicker:
 --//send trigger out:
 xEXT_TRIG_OUT : entity work.pulse_stretcher_sync_programmable(rtl)
 generic map(
 	stretch_width => 8)
 port map(
 	rst_i		=> rst_i or (not reg_i(83)(0)) or (not FIRMWARE_DEVICE),
-	clk_i		=> clk_i,
+	clk_i		=> trig_clk_i,
 	stretch_i => reg_i(83)(15 downto 8),
 	out_pol_i => reg_i(83)(1),
 	pulse_i	=> sys_trig_i,
