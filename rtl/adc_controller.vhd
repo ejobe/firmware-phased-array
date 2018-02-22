@@ -294,7 +294,10 @@ begin
 			rxdatapipe2(i) <= (others=>'0');
 		end loop;
 		
-	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
+	--elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 12 then --//arbitrary -- FIFO is 32 words deep
+	--//remove extra data pipeline-ing 2/19/2018. FIFO now only 8 words deep
+	elsif rising_edge(clk_core_i) and rx_fifo_usedwrd_i(0) > 4 then --//arbitrary -- FIFO is 8 words deep
+
 		rx_ram_rd_en_o <= '1';
 		internal_data_good <='1';
 		rxdatapipe2	<= rxdatapipe;

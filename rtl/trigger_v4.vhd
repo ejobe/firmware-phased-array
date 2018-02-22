@@ -3,7 +3,7 @@
 --    --KICP--
 --
 -- PROJECT:      phased-array trigger board
--- FILE:         trigger_v3.vhd [don't use this version]
+-- FILE:         trigger_v4.vhd
 -- AUTHOR:       e.oberla
 -- EMAIL         ejo@uchicago.edu
 -- DATE:         6/2017...
@@ -15,8 +15,6 @@
 --					  ADDED in v2 file [10/2017]: ability to trigger on ONLY the beam with the maximum power, in the cases
 --					  with a high SNR pulse that might fire all beams. Add copies of trig flag outputs to send
 --					  to another set of scalers with this 'max power' capability
---
---					  in v3 file: try to speed up trig verification comparisons: squeeze into single clock cycle. Check timing (?)
 ---------------------------------------------------------------------------------
 library IEEE;
 use ieee.std_logic_1164.all;
@@ -26,7 +24,7 @@ use ieee.numeric_std.all;
 use work.defs.all;
 use work.register_map.all;
 ------------------------------------------------------------------------------------------------------------------------------
-entity trigger_v3 is
+entity trigger_v4 is
 	generic(
 		ENABLE_PHASED_TRIGGER : std_logic := '1'); --//compile-time flag
 	port(
@@ -48,9 +46,9 @@ entity trigger_v3 is
 		last_trig_beam_clk_data_o 	: 	inout std_logic_vector(define_num_beams-1 downto 0); --//register the beam trigger 
 		trig_clk_iface_o				:	out	std_logic); --//trigger on clk_iface_i [trig_o is high for one clk_iface_i cycle (use for scalers)]
 		
-end trigger_v3;
+end trigger_v4;
 ------------------------------------------------------------------------------------------------------------------------------
-architecture rtl of trigger_v3 is
+architecture rtl of trigger_v4 is
 ------------------------------------------------------------------------------------------------------------------------------
 type buffered_powersum_type is array(define_num_beams-1 downto 0) of 
 	std_logic_vector(2*define_num_power_sums*(define_pow_sum_range+1)-1 downto 0);
@@ -269,23 +267,33 @@ begin
 				end case;
 			
 			--// loop thru beams, find beam w/ max power
-			------- in trigger_v3, try to do comparisons in single clock cycle [as a loop, this obviously didn't work; don't use this version]
+			------- this adds 5 extra clk_data_i cycles to trigger (assumes 15 beams, need adjusted if define_num_beams changes.. 0--
 			when trig_verify_1_st =>
 				internal_global_trigger_holdoff <= '1';
 				trigger_holdoff_counter <= (others=>'0');
 
 				verified_instantaneous_above_threshold <= (others=>'0');
 				
-				for i in 0 to define_num_beams-2 loop
-					if last_trig_pow_o(i+1) > last_trig_pow_o(to_integer(unsigned(verification_current_max_beam))) then
-						verification_current_max_beam <= std_logic_vector(to_unsigned(i+1, verification_current_max_beam'length));
-					else
-						verification_current_max_beam <= verification_current_max_beam;
-					end if;
-				end loop;
+				--//added 2/21/2018: check 2 beams per clock cycle to reduce output latency (see trigger_v2.vhd for previous FSM
 				
-				trig_verification_state <= trig_verify_2_st;
+				if (last_trig_pow_o(to_integer(unsigned(verification_counter))+2) > last_trig_pow_o(to_integer(unsigned(verification_current_max_beam)))) and
+							(last_trig_pow_o(to_integer(unsigned(verification_counter))+2) > (last_trig_pow_o(to_integer(unsigned(verification_counter))+1)))  then
+					verification_current_max_beam <= (verification_counter + 2);			
+
+				elsif last_trig_pow_o(to_integer(unsigned(verification_counter))+1) > last_trig_pow_o(to_integer(unsigned(verification_current_max_beam))) then
+					verification_current_max_beam <= (verification_counter + 1);
 				
+				else
+					verification_current_max_beam <= verification_current_max_beam;
+				end if;
+
+				if verification_counter = (define_num_beams-3) then 
+					verification_counter <= (others=>'0');
+					trig_verification_state <= trig_verify_2_st;
+				else
+					verification_counter <= verification_counter +2;
+					trig_verification_state <= trig_verify_1_st;
+				end if;
 			
 			--// verify beam with max power is above threshold
 			------- this adds another clk_data_i cycle, for 15 clk_data_i total cycles longer than over non-verified trigger

@@ -13,7 +13,7 @@
 --
 --							To do this, also needed to increase pipeline data size (5*pdat size -> 9*pdat size)
 --
---					  v4: update beams tp reflect working downhole rx units
+--					  v4: update beams to reflect working downhole rx units
 -----////////////////////////////////////////////////////////////////////////////////////////////////////
 ---------------------------------------------------------------------------------------------------------
 library IEEE;
@@ -66,7 +66,7 @@ signal dat : internal_buf_data_type;
 constant slice_base : integer := 4*pdat_size;  --//increased from 2*pdat_size
 constant slice_lo   : integer := define_wave2beam_lo_bit+slice_base;
 constant slice_hi   : integer := define_wave2beam_hi_bit+slice_base;
-constant ch7_del	  : integer := 5;
+constant ch7_del	  : integer := 5;  --//extra delay for ch7; after remapping channels at Pole, this CH ended up on a shorter fiber
 
 --// we will form more downward-looking beams than upward
 --// since there is a fixed added delay at each next antenna updwards
@@ -95,7 +95,7 @@ signal beam_7_p10	:	beam_data_type; --//+2 sample delay beam
 signal beam_7_p11	:	beam_data_type; --//+3 sample delay beam
 signal beam_7_p12	:	beam_data_type; --//+4 sample delay beam
 signal beam_7_p13	:	beam_data_type; --//+5 sample delay beam
-signal beam_7_p14	:	beam_data_type; --//+6 sample delay beam
+signal beam_7_p14	:	beam_data_type; --//+6 sample delay beam 
 
 --//add odd beams of next-largest baseline to fill in gaps in coverage
 --signal beam_4a_m11		:	beam_data_type;
@@ -188,7 +188,7 @@ port map(
 	SignalIn_clkA	=> reg_i(82)(10), 
 	SignalOut_clkB	=> internal_beam4b_enable);
 --------------------------------------------
-proc_buffer_data : process(rst_i, clk_i, data_pipe)
+proc_buffer_data : process(rst_i, clk_i, data_i)
 begin
 	for i in 0 to 7 loop
 		
@@ -223,17 +223,29 @@ begin
 			buf_data_0(i) <= data_pipe_railed(i);		
 			
 			---rail wavefroms if exceed +15/-16 counts from mid-scale 64
+--			for j in 0 to 2*define_serdes_factor-1 loop
+--				if data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) < 48 then
+--					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "0110000";
+--				elsif data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) > 79 then
+--					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "1001111";
+--				else
+--					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size);
+--				end if;
+--			end loop;
+--			
+--			data_pipe(i)  <= data_i(i);
+
+			--//same function as above commented section, w/ one clk cycle pipeline removed
 			for j in 0 to 2*define_serdes_factor-1 loop
-				if data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) < 48 then
+				if data_i(i)((j+1)*define_word_size-1 downto j*define_word_size) < 48 then
 					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "0110000";
-				elsif data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size) > 79 then
+				elsif data_i(i)((j+1)*define_word_size-1 downto j*define_word_size) > 79 then
 					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= '0' & "1001111";
 				else
-					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= data_pipe(i)((j+1)*define_word_size-1 downto j*define_word_size);
+					data_pipe_railed(i)((j+1)*define_word_size-1 downto j*define_word_size) <= data_i(i)((j+1)*define_word_size-1 downto j*define_word_size);
 				end if;
 			end loop;
 			
-			data_pipe(i)  <= data_i(i);
 
 		end if;
 	end loop;

@@ -39,7 +39,7 @@ signal instantaneous_power			 	: pipe_full_inst_power_array_type;
 
 signal internal_beams					: array_of_beams_type;
 
-signal sum_power	: sum_power_type;
+--signal sum_power	: sum_power_type;
 
 constant ref : integer := define_serdes_factor*define_pow_sum_range;
 
@@ -51,19 +51,24 @@ proc_sum_power : process(rst_i, clk_i)
 begin
 	for i in 0 to define_num_beams-1 loop
 		if rst_i = '1' then
-			sum_power(i) <= (others=>'0');
+			--sum_power(i) <= (others=>'0');
 			sum_pow_o(i) <= (others=>'0');
 
 		elsif rising_edge(clk_i) then
 	
-			sum_pow_o(i) <= sum_power(i);
+			--sum_pow_o(i) <= sum_power(i);
 	 				
 			for j in 0 to define_num_power_sums-1 loop
 
 				--//sum_power at each step is 17 bits wide (define_pow_sum_range+1)
-				sum_power(i)((j+1)*(define_pow_sum_range+1)-1 downto j*(define_pow_sum_range+1)) <=
+				sum_pow_o(i)((j+1)*(define_pow_sum_range+1)-1 downto j*(define_pow_sum_range+1)) <=
 		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref+(2*j)*define_pow_sum_range) ), define_pow_sum_range+1)) + 
 		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref+(2*j+1)*define_pow_sum_range)), define_pow_sum_range+1)); 
+				
+		--extra pipeline stage (sum_power signal) removed 2/22/2018 to speed up trigger
+--				sum_power(i)((j+1)*(define_pow_sum_range+1)-1 downto j*(define_pow_sum_range+1)) <=
+--		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+1)*define_pow_sum_range-1 downto ref+(2*j)*define_pow_sum_range) ), define_pow_sum_range+1)) + 
+--		std_logic_vector(resize(unsigned(instantaneous_power(i)( ref+(2*j+2)*define_pow_sum_range-1 downto ref+(2*j+1)*define_pow_sum_range)), define_pow_sum_range+1)); 
 					--instantaneous_power(i)( ref+(2*j+3)*define_pow_sum_range-1 downto ref + (2*j+2)*define_pow_sum_range ) + 
 					--instantaneous_power(i)( ref+(2*j+4)*define_pow_sum_range-1 downto ref + (2*j+3)*define_pow_sum_range ); 
 				

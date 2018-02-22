@@ -345,7 +345,7 @@ begin
 		beams_8_o	=> beam_data_8,
 		sum_pow_o	=> powsum_ev2samples);
 	--///////////////////////////////////////
-	xPHASEDTRIGGER : entity work.trigger_v3 --//trigger_v2 adds power 'verification' feature. 
+	xPHASEDTRIGGER : entity work.trigger_v4 --//trigger_v2 adds power 'verification' feature. 
 	generic map( ENABLE_PHASED_TRIGGER => FIRMWARE_DEVICE)
 	port map(
 		rst_i					=> reset_global or reset_global_except_registers,
@@ -427,7 +427,7 @@ begin
 	--///////////////////////////////////////////////////////////	
 	--//ADC data receiver block
 	ReceiverBlock	:	 for i in 0 to 3 generate
-		xDATA_RECEIVER : entity work.RxData
+		xDATA_RECEIVER : entity work.RxData_v2
 		port map(
 			rst_i					=>	reset_global_except_registers or reset_global or (not startup_adc) or rx_pll_reset or adc_pd_sig(i),		
 			rx_dat_valid_i		=>	adc_data_valid,
