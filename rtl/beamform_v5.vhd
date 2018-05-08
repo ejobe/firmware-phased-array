@@ -59,6 +59,9 @@ signal buf_data_6 		: 	full_data_type;
 signal buf_data_7 		: 	full_data_type;
 signal buf_data_8 		: 	full_data_type;
 
+signal channel_mask		: full_data_type; --//added 5/8/2018
+signal channel_mask_meta: full_data_type; --//added 5/8/2018
+
 --//buffer the data 5x every clock cycle --> allows beam-forming +/- the central buffer
 type internal_buf_data_type is array (7 downto 0) of std_logic_vector(9*pdat_size-1 downto 0);
 signal dat : internal_buf_data_type;
@@ -196,6 +199,7 @@ end process;
 ---		
 proc_buffer_data : process(rst_i, clk_i, data_i)
 begin
+	--//loop over channels
 	for i in 0 to 7 loop
 		
 		if rst_i = '1' or ENABLE_BEAMFORMING = '0' then
@@ -210,7 +214,9 @@ begin
 			buf_data_8(i)<= (others=>'0');
 			data_pipe_railed(i) <= (others=>'0');	
 			data_pipe(i) <= (others=>'0');
-			
+			 
+			channel_mask(i)<= (others=>'1'); --//added 5/8/2018 (moved from adc_controller.vhd)
+			channel_mask_meta(i) <= (others=>'1');
 			
 			sample_delay_data(i) <= (others=>'0');
 			trigger_delay_sel(i) <= (others=>'0');
@@ -218,6 +224,9 @@ begin
 			dat(i) <= (others=>'0');
 			
 		elsif rising_edge(clk_i) then
+		
+			channel_mask(i) <= channel_mask_meta(i);
+			channel_mask_meta(i) <= (others=> reg_i(48)(i)); --//added 5/8/2018 (moved from adc_controller.vhd)
 		
 			trigger_delay_sel(i)	<= trigger_delay_sel_meta(i);			
 		
@@ -231,16 +240,17 @@ begin
 			buf_data_4(i) <= buf_data_3(i);
 			buf_data_3(i) <= buf_data_2(i);
 			buf_data_2(i) <= buf_data_1(i);
-			buf_data_1(i) <= buf_data_0(i);			
+			buf_data_1(i) <= buf_data_0(i); 			
 			--buf_data_0(i) <= data_pipe_railed(i); --//3/16/2018, added programmable sample-level delays to 'line up' trigger, 
 			                                        --//            based on measuring systematic time-offsets between channels			
 			--//can add up to 3 sample step delays per channel:
+			--//add channel masking in the beamformer here (added 5/8/2018, was previously assigned in adc_controller.vhd)
 			case trigger_delay_sel(i) is
-				when "00" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size*2-1 downto 16*define_word_size);
-				when "01" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+15*define_word_size downto 15*define_word_size);
-				when "10" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+14*define_word_size downto 14*define_word_size);
-				when "11" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+13*define_word_size downto 13*define_word_size);
-				when others=> buf_data_0(i) <= sample_delay_data(i)(16*define_word_size*2-1 downto 16*define_word_size);
+				when "00" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size*2-1 downto 16*define_word_size) and channel_mask(i);
+				when "01" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+15*define_word_size downto 15*define_word_size) and channel_mask(i);
+				when "10" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+14*define_word_size downto 14*define_word_size) and channel_mask(i);
+				when "11" =>  buf_data_0(i) <= sample_delay_data(i)(16*define_word_size-1+13*define_word_size downto 13*define_word_size) and channel_mask(i);
+				when others=> buf_data_0(i) <= sample_delay_data(i)(16*define_word_size*2-1 downto 16*define_word_size) and channel_mask(i);
 			end case;
 			
 			sample_delay_data(i)(define_ram_width-1 downto 0) <= sample_delay_data(i)(2*define_ram_width-1 downto define_ram_width);

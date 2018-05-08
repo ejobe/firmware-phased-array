@@ -410,13 +410,18 @@ begin
 			--//first pipeline stage
 			data_pipe(i)(define_ram_width-1 downto 0) <= data_pipe(i)(2*define_ram_width-1 downto define_ram_width);
 			--//apply channel-level mask here:
+			--//UPDATE 5/8/2018, move channel masking to beamformer module
 			case delay_en(i)(1) is
 				--//normal delay
 				when '0' =>
-					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i) and channel_mask(i); 
+					--data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i) and channel_mask(i); 
+					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe(i); 
+
 				--//extra clk_core_i cycle of data delay
 				when '1' =>
-					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i) and channel_mask(i);
+					--data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i) and channel_mask(i);
+					data_pipe(i)(2*define_ram_width-1 downto define_ram_width) <= rxdatapipe2(i);
+
 			end case;	
 		end if;
 	end loop;
