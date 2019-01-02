@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2017.10.20.19:58:45"
+ outputDirectory="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Arria V"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="5AGXFB5H4F35C4"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="4_H4"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLOCK_CLOCK_RATE"
+     type="Long"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLOCK_CLOCK_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLOCK_RESET_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="busy" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="busy" direction="output" role="busy" width="1" />
+  </interface>
+  <interface name="clock" kind="clock" start="0">
+   <property name="clockRate" value="0" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="clock" direction="input" role="clk" width="1" />
+  </interface>
+  <interface name="data_in" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="data_in" direction="input" role="data_in" width="32" />
+  </interface>
+  <interface name="data_out" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="data_out" direction="output" role="data_out" width="32" />
+  </interface>
+  <interface name="param" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="param" direction="input" role="param" width="3" />
+  </interface>
+  <interface name="read_param" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="read_param" direction="input" role="read_param" width="1" />
+  </interface>
+  <interface name="reconfig" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="reconfig" direction="input" role="reconfig" width="1" />
+  </interface>
+  <interface name="reset" kind="reset" start="0">
+   <property name="associatedClock" value="clock" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port name="reset" direction="input" role="reset" width="1" />
+  </interface>
+  <interface name="reset_timer" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="reset_timer" direction="input" role="reset_timer" width="1" />
+  </interface>
+  <interface name="write_param" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="write_param" direction="input" role="write_param" width="1" />
+  </interface>
+ </perimeter>
+ <entity
+   path=""
+   parameterizationKey="remote_update:1.0:AUTO_CLOCK_CLOCK_DOMAIN=-1,AUTO_CLOCK_CLOCK_RATE=-1,AUTO_CLOCK_RESET_DOMAIN=-1,AUTO_DEVICE=5AGXFB5H4F35C4,AUTO_DEVICE_FAMILY=Arria V,AUTO_DEVICE_SPEEDGRADE=4_H4,AUTO_GENERATION_ID=1508547524,AUTO_UNIQUE_ID=(altera_remote_update:15.1:AUTO_DEVICE_SPEEDGRADE=4_H4,CBX_AUTO_BLACKBOX=ALL,DEVICE=5AGXFB5H4F35C4,DEVICE_FAMILY=Arria V,GUI_config_device=EPCQ256,check_app_pof=false,check_avalon_interface=false,config_device_addr_width=32,in_data_width=32,is_epcq=true,m_support_write_config_check=true,operation_mode=REMOTE,out_data_width=32(altera_clock_bridge:15.1:DERIVED_CLOCK_RATE=0,EXPLICIT_CLOCK_RATE=0,NUM_CLOCK_OUTPUTS=1)(altera_reset_bridge:15.1:ACTIVE_LOW_RESET=0,AUTO_CLK_CLOCK_RATE=0,NUM_RESET_OUTPUTS=1,SYNCHRONOUS_EDGES=deassert,USE_RESET_REQUEST=0)(altera_remote_update_core:15.1:CBX_AUTO_BLACKBOX=ALL,DEVICE=5AGXFB5H4F35C4,DEVICE_FAMILY=Arria V,GUI_config_device=EPCQ256,check_app_pof=false,config_device_addr_width=32,in_data_width=32,is_epcq=true,m_support_write_config_check=true,operation_mode=REMOTE,out_data_width=32)(clock:15.1:)(clock:15.1:)(reset:15.1:))"
+   instancePathKey="remote_update"
+   kind="remote_update"
+   version="1.0"
+   name="remote_update">
+  <parameter name="AUTO_CLOCK_CLOCK_RATE" value="-1" />
+  <parameter name="AUTO_CLOCK_CLOCK_DOMAIN" value="-1" />
+  <parameter name="AUTO_CLOCK_RESET_DOMAIN" value="-1" />
+  <parameter name="AUTO_GENERATION_ID" value="1508547524" />
+  <parameter name="AUTO_DEVICE" value="5AGXFB5H4F35C4" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Arria V" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="4_H4" />
+  <generatedFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/remote_update.vhd"
+       type="VHDL" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/submodules/remote_update_remote_update_0.v"
+       type="VERILOG" />
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/submodules/altera_remote_update_core.v"
+       type="VERILOG"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update.qsys" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="C:/altera/15.1/ip/altera/altera_remote_update/altera_remote_update_hw.tcl" />
+   <file
+       path="C:/altera/15.1/ip/altera/altera_remote_update/altera_remote_update_core_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:remote_update "remote_update"</message>
+   <message level="Progress" culprit="min"></message>
+   <message level="Progress" culprit="max"></message>
+   <message level="Progress" culprit="current"></message>
+   <message level="Debug">Transform: CustomInstructionTransform</message>
+   <message level="Debug">No custom instruction connections, skipping transform </message>
+   <message level="Debug" culprit="merlin_custom_instruction_transform"><![CDATA[After transform: <b>1</b> modules, <b>0</b> connections]]></message>
+   <message level="Debug">Transform: MMTransform</message>
+   <message level="Debug">Transform: InterruptMapperTransform</message>
+   <message level="Debug">Transform: InterruptSyncTransform</message>
+   <message level="Debug">Transform: InterruptFanoutTransform</message>
+   <message level="Debug">Transform: AvalonStreamingTransform</message>
+   <message level="Debug">Transform: ResetAdaptation</message>
+   <message level="Debug" culprit="remote_update"><![CDATA["<b>remote_update</b>" reuses <b>altera_remote_update</b> "<b>submodules/remote_update_remote_update_0</b>"]]></message>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:altera_remote_update "submodules/remote_update_remote_update_0"</message>
+   <message level="Progress" culprit="min"></message>
+   <message level="Progress" culprit="max"></message>
+   <message level="Progress" culprit="current"></message>
+   <message level="Debug">Transform: CustomInstructionTransform</message>
+   <message level="Debug">No custom instruction connections, skipping transform </message>
+   <message level="Debug" culprit="merlin_custom_instruction_transform"><![CDATA[After transform: <b>3</b> modules, <b>3</b> connections]]></message>
+   <message level="Debug">Transform: MMTransform</message>
+   <message level="Debug">Transform: InterruptMapperTransform</message>
+   <message level="Debug">Transform: InterruptSyncTransform</message>
+   <message level="Debug">Transform: InterruptFanoutTransform</message>
+   <message level="Debug">Transform: AvalonStreamingTransform</message>
+   <message level="Debug">Transform: ResetAdaptation</message>
+   <message level="Debug" culprit="remote_update_0"><![CDATA["<b>remote_update_0</b>" reuses <b>altera_remote_update_core</b> "<b>submodules/altera_remote_update_core</b>"]]></message>
+   <message level="Info" culprit="remote_update_0"><![CDATA["<b>remote_update</b>" instantiated <b>altera_remote_update</b> "<b>remote_update_0</b>"]]></message>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:altera_remote_update_core "submodules/altera_remote_update_core"</message>
+   <message level="Info" culprit="remote_update_core">Generating top-level entity altera_remote_update_core.</message>
+   <message level="Info" culprit="remote_update_core"><![CDATA["<b>remote_update_0</b>" instantiated <b>altera_remote_update_core</b> "<b>remote_update_core</b>"]]></message>
+  </messages>
+ </entity>
+ <entity
+   path="submodules/"
+   parameterizationKey="altera_remote_update:15.1:AUTO_DEVICE_SPEEDGRADE=4_H4,CBX_AUTO_BLACKBOX=ALL,DEVICE=5AGXFB5H4F35C4,DEVICE_FAMILY=Arria V,GUI_config_device=EPCQ256,check_app_pof=false,check_avalon_interface=false,config_device_addr_width=32,in_data_width=32,is_epcq=true,m_support_write_config_check=true,operation_mode=REMOTE,out_data_width=32(altera_clock_bridge:15.1:DERIVED_CLOCK_RATE=0,EXPLICIT_CLOCK_RATE=0,NUM_CLOCK_OUTPUTS=1)(altera_reset_bridge:15.1:ACTIVE_LOW_RESET=0,AUTO_CLK_CLOCK_RATE=0,NUM_RESET_OUTPUTS=1,SYNCHRONOUS_EDGES=deassert,USE_RESET_REQUEST=0)(altera_remote_update_core:15.1:CBX_AUTO_BLACKBOX=ALL,DEVICE=5AGXFB5H4F35C4,DEVICE_FAMILY=Arria V,GUI_config_device=EPCQ256,check_app_pof=false,config_device_addr_width=32,in_data_width=32,is_epcq=true,m_support_write_config_check=true,operation_mode=REMOTE,out_data_width=32)(clock:15.1:)(clock:15.1:)(reset:15.1:)"
+   instancePathKey="remote_update:.:remote_update_0"
+   kind="altera_remote_update"
+   version="15.1"
+   name="remote_update_remote_update_0">
+  <parameter name="GUI_config_device" value="EPCQ256" />
+  <parameter name="check_avalon_interface" value="false" />
+  <parameter name="in_data_width" value="32" />
+  <parameter name="out_data_width" value="32" />
+  <parameter name="check_app_pof" value="false" />
+  <parameter name="DEVICE_FAMILY" value="Arria V" />
+  <parameter name="DEVICE" value="5AGXFB5H4F35C4" />
+  <parameter name="operation_mode" value="REMOTE" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="4_H4" />
+  <parameter name="config_device_addr_width" value="32" />
+  <parameter name="m_support_write_config_check" value="true" />
+  <parameter name="is_epcq" value="true" />
+  <parameter name="CBX_AUTO_BLACKBOX" value="ALL" />
+  <generatedFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/submodules/remote_update_remote_update_0.v"
+       type="VERILOG" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/submodules/altera_remote_update_core.v"
+       type="VERILOG"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="C:/altera/15.1/ip/altera/altera_remote_update/altera_remote_update_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="C:/altera/15.1/ip/altera/altera_remote_update/altera_remote_update_core_hw.tcl" />
+  </childSourceFiles>
+  <instantiator instantiator="remote_update" as="remote_update_0" />
+  <messages>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:altera_remote_update "submodules/remote_update_remote_update_0"</message>
+   <message level="Progress" culprit="min"></message>
+   <message level="Progress" culprit="max"></message>
+   <message level="Progress" culprit="current"></message>
+   <message level="Debug">Transform: CustomInstructionTransform</message>
+   <message level="Debug">No custom instruction connections, skipping transform </message>
+   <message level="Debug" culprit="merlin_custom_instruction_transform"><![CDATA[After transform: <b>3</b> modules, <b>3</b> connections]]></message>
+   <message level="Debug">Transform: MMTransform</message>
+   <message level="Debug">Transform: InterruptMapperTransform</message>
+   <message level="Debug">Transform: InterruptSyncTransform</message>
+   <message level="Debug">Transform: InterruptFanoutTransform</message>
+   <message level="Debug">Transform: AvalonStreamingTransform</message>
+   <message level="Debug">Transform: ResetAdaptation</message>
+   <message level="Debug" culprit="remote_update_0"><![CDATA["<b>remote_update_0</b>" reuses <b>altera_remote_update_core</b> "<b>submodules/altera_remote_update_core</b>"]]></message>
+   <message level="Info" culprit="remote_update_0"><![CDATA["<b>remote_update</b>" instantiated <b>altera_remote_update</b> "<b>remote_update_0</b>"]]></message>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:altera_remote_update_core "submodules/altera_remote_update_core"</message>
+   <message level="Info" culprit="remote_update_core">Generating top-level entity altera_remote_update_core.</message>
+   <message level="Info" culprit="remote_update_core"><![CDATA["<b>remote_update_0</b>" instantiated <b>altera_remote_update_core</b> "<b>remote_update_core</b>"]]></message>
+  </messages>
+ </entity>
+ <entity
+   path="submodules/"
+   parameterizationKey="altera_remote_update_core:15.1:CBX_AUTO_BLACKBOX=ALL,DEVICE=5AGXFB5H4F35C4,DEVICE_FAMILY=Arria V,GUI_config_device=EPCQ256,check_app_pof=false,config_device_addr_width=32,in_data_width=32,is_epcq=true,m_support_write_config_check=true,operation_mode=REMOTE,out_data_width=32"
+   instancePathKey="remote_update:.:remote_update_0:.:remote_update_core"
+   kind="altera_remote_update_core"
+   version="15.1"
+   name="altera_remote_update_core">
+  <parameter name="GUI_config_device" value="EPCQ256" />
+  <parameter name="in_data_width" value="32" />
+  <parameter name="out_data_width" value="32" />
+  <parameter name="check_app_pof" value="false" />
+  <parameter name="DEVICE_FAMILY" value="Arria V" />
+  <parameter name="DEVICE" value="5AGXFB5H4F35C4" />
+  <parameter name="operation_mode" value="REMOTE" />
+  <parameter name="config_device_addr_width" value="32" />
+  <parameter name="m_support_write_config_check" value="true" />
+  <parameter name="is_epcq" value="true" />
+  <parameter name="CBX_AUTO_BLACKBOX" value="ALL" />
+  <generatedFiles>
+   <file
+       path="C:/Users/eric/Desktop/firmware-phased-array/rtl/altera_ip/remote_update/remote_update/synthesis/submodules/altera_remote_update_core.v"
+       type="VERILOG"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles/>
+  <sourceFiles>
+   <file
+       path="C:/altera/15.1/ip/altera/altera_remote_update/altera_remote_update_core_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="remote_update_remote_update_0" as="remote_update_core" />
+  <messages>
+   <message level="Debug" culprit="remote_update">queue size: 0 starting:altera_remote_update_core "submodules/altera_remote_update_core"</message>
+   <message level="Info" culprit="remote_update_core">Generating top-level entity altera_remote_update_core.</message>
+   <message level="Info" culprit="remote_update_core"><![CDATA["<b>remote_update_0</b>" instantiated <b>altera_remote_update_core</b> "<b>remote_update_core</b>"]]></message>
+  </messages>
+ </entity>
+</deploy>

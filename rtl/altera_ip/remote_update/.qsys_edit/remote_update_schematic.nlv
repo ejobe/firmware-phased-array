@@ -1,0 +1,26 @@
+# # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
+# 
+preplace inst remote_update.remote_update_0 -pg 1 -lvl 1 -y 50
+preplace inst remote_update.remote_update_0.remote_update_core -pg 1
+preplace inst remote_update.remote_update_0.reset_bridge -pg 1
+preplace inst remote_update -pg 1 -lvl 1 -y 40 -regy -20
+preplace inst remote_update.remote_update_0.clk_bridge -pg 1
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.data_in,(SLAVE)remote_update.data_in) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.asmi_dataout,(SLAVE)remote_update.asmi_dataout) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.clock,(SLAVE)remote_update_0.clock) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.reset_timer,(SLAVE)remote_update_0.reset_timer) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.read_param,(SLAVE)remote_update_0.read_param) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.reset,(SLAVE)remote_update.reset) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.pof_error,(SLAVE)remote_update.pof_error) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.param,(SLAVE)remote_update_0.param) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.data_out,(SLAVE)remote_update_0.data_out) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.reconfig,(SLAVE)remote_update.reconfig) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.write_param,(SLAVE)remote_update_0.write_param) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.asmi_data_valid,(SLAVE)remote_update_0.asmi_data_valid) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.asmi_addr,(SLAVE)remote_update_0.asmi_addr) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.busy,(SLAVE)remote_update.busy) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.asmi_read,(SLAVE)remote_update.asmi_read) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update_0.asmi_busy,(SLAVE)remote_update.asmi_busy) 1 0 1 NJ
+preplace netloc EXPORT<net_container>remote_update</net_container>(SLAVE)remote_update.asmi_rden,(SLAVE)remote_update_0.asmi_rden) 1 0 1 NJ
+levelinfo -pg 1 0 110 360
+levelinfo -hier remote_update 120 240 350

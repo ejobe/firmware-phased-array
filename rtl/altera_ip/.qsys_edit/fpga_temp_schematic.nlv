@@ -1,0 +1,10 @@
+# # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
+# 
+preplace inst fpga_temp.temp_sense_0 -pg 1 -lvl 1 -y 30
+preplace inst fpga_temp -pg 1 -lvl 1 -y 40 -regy -20
+preplace netloc EXPORT<net_container>fpga_temp</net_container>(SLAVE)temp_sense_0.clr,(SLAVE)fpga_temp.clr) 1 0 1 NJ
+preplace netloc EXPORT<net_container>fpga_temp</net_container>(SLAVE)fpga_temp.tsdcalo,(SLAVE)temp_sense_0.tsdcalo) 1 0 1 NJ
+preplace netloc EXPORT<net_container>fpga_temp</net_container>(SLAVE)temp_sense_0.tsdcaldone,(SLAVE)fpga_temp.tsdcaldone) 1 0 1 NJ
+preplace netloc EXPORT<net_container>fpga_temp</net_container>(SLAVE)temp_sense_0.clk,(SLAVE)fpga_temp.clk) 1 0 1 NJ
+levelinfo -pg 1 0 80 240
+levelinfo -hier fpga_temp 90 120 230

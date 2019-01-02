@@ -1,0 +1,20 @@
+# system info remote_update on 2017.10.20.16:48:44
+system_info:
+name,value
+DEVICE,5AGXFB5H4F35C4
+DEVICE_FAMILY,Arria V
+GENERATION_ID,1508536122
+#
+#
+# Files generated for remote_update on 2017.10.20.16:48:44
+files:
+filepath,kind,attributes,module,is_top
+simulation/remote_update.vhd,VHDL,,remote_update,true
+simulation/submodules/remote_update_remote_update_0.vhd,VHDL,,remote_update_remote_update_0,false
+simulation/submodules/altera_remote_update_core.vhd,VHDL,,altera_remote_update_core,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+remote_update.remote_update_0,remote_update_remote_update_0
+remote_update.remote_update_0.remote_update_core,altera_remote_update_core
