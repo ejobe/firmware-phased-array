@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="fpga_temp" kind="fpga_temp" version="1.0" fabric="QSYS">
  <!-- Format version 15.1 185 (Future versions may contain additional information.) -->
- <!-- 2018.12.08.14:35:44 -->
+ <!-- 2019.01.02.12:42:49 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1544232944</value>
+  <value>1546454569</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>

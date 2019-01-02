@@ -53,6 +53,7 @@ type aux_data_link_type is array (1 downto 0) of std_logic_vector(7 downto 0);
 --//
 constant surface_channels : integer := 6;
 type surface_data_type is array (surface_channels-1 downto 0) of std_logic_vector(define_ram_width-1 downto 0);
+
 --//
 type event_metadata_type is array(24 downto 0) of std_logic_vector(23 downto 0);
 
@@ -66,8 +67,10 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001F";
-constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"C" & x"02";
+constant slave_firmware_version 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001F";
+constant slave_firmware_date 			: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"C" & x"02";
+constant master_firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001F";
+constant master_firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"C" & x"02";
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////
 
@@ -103,7 +106,7 @@ type pipe_full_inst_power_array_type is array(define_num_beams-1 downto 0) of
 constant define_num_power_sums : integer := 8; --//number of sums within parallel data clock
 type sum_power_type is array(define_num_beams-1 downto 0) of 
 	std_logic_vector(define_num_power_sums*(define_pow_sum_range+1)-1 downto 0);  --//define_pos_sum_range+1 (sum of adjacent samples)
-
+	
 --/////////
 constant define_16avg_pow_sum_range : integer := 20; --//20 bits (16 bits per sample, 16 samples)
 type average_power_16samp_type is array(define_num_beams-1 downto 0) of std_logic_vector(define_16avg_pow_sum_range-1 downto 0);

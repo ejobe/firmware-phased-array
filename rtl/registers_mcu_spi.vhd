@@ -86,15 +86,18 @@ begin
 		--////////////////////////////////////////////////////////////////////////////
 		--//for a few registers, only set defaults on power up:
 		if rst_powerup_i = '1' then
-			registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or firmware_version; --//firmware version (see defs.vhd)
-			registers_io(2) <= firmware_date;  	 --//date             (see defs.vhd)
+			
 			--//setting clock source:
 			registers_io(124) <= x"000000"; --//set 100 MHz clock source: external LVDS input (LSB=0) or local oscillator (LSB=1) [124]
 			case FIRMWARE_DEVICE is 
 				when '1' =>
 					registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
+					registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or master_firmware_version; --//firmware version (see defs.vhd)
+					registers_io(2) <= master_firmware_date;  	 --//date             (see defs.vhd)
 				when '0' =>
 					registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60) NO longer turn off any ADCs on slave board
+					registers_io(1) <= ("0000000" & FIRMWARE_DEVICE & x"0000") or slave_firmware_version; --//firmware version (see defs.vhd)
+					registers_io(2) <= slave_firmware_date;  	 --//date             (see defs.vhd)
 			end case;
 		end if;
 		
@@ -186,6 +189,9 @@ begin
 		--//electronics cal pulse:
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
+		
+		--//surface trigger
+		registers_io(46) <= x"000014"; --//lower byte = vpp threshold ; 
 		
 		--//masking + trigger configurations
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
