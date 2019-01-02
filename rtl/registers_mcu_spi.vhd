@@ -94,7 +94,7 @@ begin
 				when '1' =>
 					registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60)
 				when '0' =>
-					registers_io(base_adrs_adc_cntrl+6) <= x"00000E"; --//ADC PD control (60) TURN OFF ADC's 2 and 3 on slave board by default
+					registers_io(base_adrs_adc_cntrl+6) <= x"000000"; --//ADC PD control (60) NO longer turn off any ADCs on slave board
 			end case;
 		end if;
 		

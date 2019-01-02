@@ -41,7 +41,7 @@ constant define_num_wfm_buffers			:	integer := 4; --// number of independent buf
 constant define_address_size				:	integer := 8; --//8 bits for now
 constant define_register_size				:	integer := 32;
 
-
+--//
 type adc_output_data_type is array (3 downto 0) of std_logic_vector(define_adc_data_width-1 downto 0);
 type full_data_type	is array	(7 downto 0) of std_logic_vector(define_ram_width-1 downto 0);	
 type ram_adr_chunked_data_type is array(3 downto 0) of std_logic_vector(31 downto 0);
@@ -50,7 +50,10 @@ type half_address_type  is array	(3 downto 0) of std_logic_vector(define_ram_dep
 type two_chan_address_type is array	(1 downto 0) of std_logic_vector(define_ram_depth-1 downto 0);
 type full_data_address_type	is array	(7 downto 0) of std_logic_vector(define_data_ram_depth-1 downto 0);	
 type aux_data_link_type is array (1 downto 0) of std_logic_vector(7 downto 0);
-
+--//
+constant surface_channels : integer := 6;
+type surface_data_type is array (surface_channels-1 downto 0) of std_logic_vector(define_ram_width-1 downto 0);
+--//
 type event_metadata_type is array(24 downto 0) of std_logic_vector(23 downto 0);
 
 type rx_data_delay_type is array (7 downto 0) of std_logic_vector(3 downto 0); --//delay range for rx data to align ADCs
@@ -63,8 +66,8 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001E";
-constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"5" & x"08";
+constant firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001F";
+constant firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"C" & x"02";
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --///////////////////////////////////////////////
 

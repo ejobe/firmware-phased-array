@@ -438,11 +438,11 @@ begin
 			rx_fifo_read_req_i		=> rx_ram_rd_en,
 			rx_fifo_used_words0_o	=> rx_fifo_usedwords(2*i),
 			rx_fifo_used_words1_o   => rx_fifo_usedwords(2*i+1),
-			ram_wr_adr_rst_i	=> '0', 
-			rx_ram_write_adr_o=> rx_ram_wr_address(i),
-			rx_locked_o		   => adc_rx_lvds_locked(i),
-			data_ram_ch0_o		=> rx_ram_data(2*i), 
-			data_ram_ch1_o		=> rx_ram_data(2*i+1));
+			ram_wr_adr_rst_i		=> '0', 
+			rx_ram_write_adr_o	=> rx_ram_wr_address(i),
+			rx_locked_o		   	=> adc_rx_lvds_locked(i),
+			data_ram_ch0_o			=> rx_ram_data(2*i), 
+			data_ram_ch1_o			=> rx_ram_data(2*i+1));
 	end generate ReceiverBlock;
 	
 --//////////////////////////////////////////////////////////////////////////
@@ -511,15 +511,15 @@ begin
 	--///////////////////////////////////////	
 	xSCALERS : entity work.scalers_top
 	port map(
-		rst_i				=>	reset_global or reset_global_except_registers,	
-		clk_i				=> clock_25MHz,
-		pulse_refrsh_i	=> clock_rfrsh_pulse_100mHz,
-		pulse_refrshHz_i=> clock_rfrsh_pulse_1Hz,
-		gate_i			=> scalers_gate,
-		reg_i				=> registers,
-		trigger_i		=> scalers_trig,
-		beam_trig_i		=> scalers_beam_trigs,
-		pps_timestamp_i		  	=> pps_timestamp,
+		rst_i					=>	reset_global or reset_global_except_registers,	
+		clk_i					=> clock_25MHz,
+		pulse_refrsh_i		=> clock_rfrsh_pulse_100mHz,
+		pulse_refrshHz_i	=> clock_rfrsh_pulse_1Hz,
+		gate_i				=> scalers_gate,
+		reg_i					=> registers,
+		trigger_i			=> scalers_trig,
+		beam_trig_i			=> scalers_beam_trigs,
+		pps_timestamp_i	=> pps_timestamp,
 		pps_timestamp_latched_o => pps_timestamp_to_read,
 		running_scalers_o => running_scalers,
 		scaler_to_read_o  => scaler_to_read);
