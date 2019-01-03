@@ -34,10 +34,12 @@ entity registers_mcu_spi is
 		fpga_temp_i							:  in		std_logic_vector(7 downto 0);
 		scaler_to_read_i					:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_data_manager_i			:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
+		status_data_manager_surface_i	:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		status_data_manager_latched_i :  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
 		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
+		current_ram_adr_data_surface_i:	in		ram_adr_chunked_data_type;
 		remote_upgrade_data_i			:  in		std_logic_vector(31 downto 0);
 		remote_upgrade_epcq_data_i    :  in		std_logic_vector(31 downto 0);
 		remote_upgrade_status_i			:  in		std_logic_vector(23 downto 0);
@@ -192,6 +194,7 @@ begin
 		
 		--//surface trigger
 		registers_io(46) <= x"000014"; --//lower byte = vpp threshold ; 
+		registers_io(47) <= x"010002"; --//
 		
 		--//masking + trigger configurations
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
@@ -276,19 +279,39 @@ begin
 		
 		--//read data chunk 0
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"23" then
-			read_reg_o <= current_ram_adr_data_i(0);
+			case registers_io(47)(8) is 
+				when '0' =>
+					read_reg_o <= current_ram_adr_data_i(0);
+				when '1' =>
+					read_reg_o <= current_ram_adr_data_surface_i(0);
+			end case;
 			address_o <= x"47";  --//initiate a read
 		--//read data chunk 1
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"24" then
-			read_reg_o <= current_ram_adr_data_i(1);
+			case registers_io(47)(8) is 
+				when '0' =>
+					read_reg_o <= current_ram_adr_data_i(1);
+				when '1' =>
+					read_reg_o <= current_ram_adr_data_surface_i(1);
+			end case;
 			address_o <= x"47";  --//initiate a read			
 		--//read data chunk 2
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"25" then
-			read_reg_o <= current_ram_adr_data_i(2);
+			case registers_io(47)(8) is 
+				when '0' =>
+					read_reg_o <= current_ram_adr_data_i(2);
+				when '1' =>
+					read_reg_o <= current_ram_adr_data_surface_i(2);
+			end case;
 			address_o <= x"47";  --//initiate a read				
 		--//read data chunk 3	
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
-			read_reg_o <= current_ram_adr_data_i(3);
+			case registers_io(47)(8) is 
+				when '0' =>
+					read_reg_o <= current_ram_adr_data_i(3);
+				when '1' =>
+					read_reg_o <= current_ram_adr_data_surface_i(3);
+			end case;
 			address_o <= x"47";  --//initiate a read
 			
 		--//catch a sync command, if master board. 
@@ -336,6 +359,13 @@ begin
 				registers_io(6) <= fpga_temp_i & unique_chip_id(63 downto 48);	
 			end if;
 		end if;
+		
+		--//turn off surface ADCs if specified
+		if registers_io(47)(16) = '0' and FIRMWARE_DEVICE = '0' then
+			registers_io(base_adrs_adc_cntrl+6) <= x"00000E";
+		end if;
+		--/requires power cycle to turn them back on	
+		
 	end if;
 end process;
 --/////////////////////////////////////////////////////////////////

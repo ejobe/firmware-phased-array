@@ -31,6 +31,8 @@ entity scalers_top is
 		
 		reg_i				:		in		register_array_type;
 		trigger_i		:		in		std_logic;
+		surface_trigger_i		:		in		std_logic;
+
 		beam_trig_i		:		in		std_logic_vector(define_num_beams-1 downto 0);
 		pps_timestamp_i		  :		in		std_logic_vector(47 downto 0);
 		pps_timestamp_latched_o :		out	std_logic_vector(47 downto 0);
@@ -42,7 +44,7 @@ end scalers_top;
 
 architecture rtl of scalers_top is
 
-constant num_scalers : integer := 48;
+constant num_scalers : integer := 52;
 type scaler_array_type is array(num_scalers-1 downto 0) of std_logic_vector(scaler_width-1 downto 0);
 
 signal internal_scaler_array : scaler_array_type;
@@ -120,7 +122,32 @@ BeamTrigScalersHz : for i in 0 to define_num_beams-1 generate
 		count_i => beam_trig_i(i),
 		scaler_o => internal_scaler_array(i+1+32));
 end generate;
-
+-------------------------------------
+--//SURFACE TRIG SCALERS, only sensible on the slave board
+--//scaler 49
+xSURFACETRIGSCALER1 : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrsh_i,
+		count_i => surface_trigger_i,
+		scaler_o => internal_scaler_array(49));
+xSURFACETRIGSCALER2 : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrsh_i,
+		count_i => surface_trigger_i and gate_i,
+		scaler_o => internal_scaler_array(50));
+xSURFACETRIGSCALER3 : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrshHz_i,
+		count_i => surface_trigger_i,
+		scaler_o => internal_scaler_array(51));
+--// end SURFACE SCALERS
+-------------------------------------		
 proc_save_scalers : process(rst_i, clk_i, reg_i)
 begin
 	if rst_i = '1' then
@@ -185,7 +212,11 @@ begin
 				scaler_to_read_o <= latched_scaler_array(45) & latched_scaler_array(44);
 			when x"17" =>
 				scaler_to_read_o <= latched_scaler_array(47) & latched_scaler_array(46);
-			
+			when x"18" =>
+				scaler_to_read_o <= latched_scaler_array(49) & latched_scaler_array(48);
+			when x"19" =>
+				scaler_to_read_o <= latched_scaler_array(51) & latched_scaler_array(50);	
+				
 			when others =>
 				scaler_to_read_o <= latched_scaler_array(1) & latched_scaler_array(0);
 		end case;

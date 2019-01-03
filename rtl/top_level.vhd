@@ -169,6 +169,7 @@ architecture rtl of top_level is
 	signal beam_ram_data			:  array_of_beams_type;
 	--signal ram_data				:	full_data_type;
 	signal ram_data				:	ram_adr_chunked_data_type;
+	signal ram_data_surface		:	ram_adr_chunked_data_type;
 	signal ram_read_address		:  std_logic_vector(define_data_ram_depth-1 downto 0);
 	--//signal to/from rx RAM
 	signal rx_ram_data			:	full_data_type;
@@ -209,6 +210,8 @@ architecture rtl of top_level is
 	signal the_ext_trigger_out 	: std_logic := '0';
 	signal the_phased_trigger_from_master : std_logic := '0';
 	signal external_trigger			: std_logic;
+	signal surface_trigger			: std_logic := '0';
+	signal surface_trigger_scaler : std_logic := '0';
 	signal last_trig_beams			: std_logic_vector(define_num_beams-1 downto 0);
 	signal last_trig_power			: average_power_16samp_type;
 	signal pps_timestamp_latch		: std_logic_vector(1 downto 0);
@@ -217,6 +220,7 @@ architecture rtl of top_level is
 	--//module status registers
 	signal status_reg_data_manager : std_logic_vector(23 downto 0);
 	signal status_reg_latched_data_manager :  std_logic_vector(23 downto 0);
+	signal status_reg_data_manager_surface : std_logic_vector(23 downto 0);
 	signal status_reg_adc	: std_logic_vector(23 downto 0);
 	--//self-generated cal pulse signals
 	signal cal_pulse_rf_switch_ctl : std_logic;
@@ -224,6 +228,7 @@ architecture rtl of top_level is
 	--//signals driven from the data manager module
 	signal data_manager_write_busy : std_logic;
 	signal event_meta_data	: event_metadata_type;
+	signal event_meta_data_surface	: event_metadata_type;
 	--//signals for scalers
 	signal scalers_beam_trigs	: std_logic_vector(define_num_beams-1 downto 0);
 	signal scalers_beam_verified_trigs	: std_logic_vector(define_num_beams-1 downto 0);
@@ -493,6 +498,42 @@ begin
 		wfm_data_i				=> wfm_data,
 		running_scalers_i		=> running_scalers,
 		data_ram_at_current_adr_o => ram_data);
+	--///////////////////////////////////////-------------------------------------------------
+	--// SURFACE CHANNELS - SLAVE BOARD ONLy, compile-time flag takes care of this
+	xDATA_MANAGER_SURFACE : entity work.data_manager_surface
+	generic map( FIRMWARE_DEVICE => not FIRMWARE_DEVICE)
+	port map(
+		rst_i						=> reset_global or reset_global_except_registers,
+		clk_i						=> clock_93MHz,
+		clk_iface_i				=> clock_25MHz,
+		pulse_refrsh_i			=> clock_rfrsh_pulse_1Hz,
+		wr_busy_o				=> open,
+		scaler_gate_i			=> scalers_gate,
+		surface_trig_i			=> surface_trigger,
+		reg_i						=> registers,
+		reg_adr_i				=> register_adr,
+		event_meta_o			=> event_meta_data_surface,
+		pps_latch_reg_i			=> pps_timestamp_latch,
+		pps_latched_timestamp_o => open,
+		status_reg_o			=> status_reg_data_manager_surface,
+		status_reg_latched_o => open,
+		wfm_data_i				=> wfm_data,
+		running_scalers_i		=> running_scalers,
+		data_ram_at_current_adr_o => ram_data_surface);
+	
+	xSURFACE_TRIGGER : entity work.surface_trigger
+	generic map(ENABLE_SURFACE_TRIGGER => not FIRMWARE_DEVICE) --//compile-time flag
+	port map(
+		rst_i				=>	reset_global or reset_global_except_registers,
+		clk_i				=>	clock_93MHz,
+		clk_iface_i		=>	clock_25MHz,		
+		reg_i				=>	registers,
+		surface_data_i	=>	wfm_data, --//surface antennas plugged into channels 3-8 on slave board (ch's 1&2 are deep Hpols)
+		trig_o			=>	surface_trigger,
+		trig_slow_o		=>	surface_trigger_scaler);
+	--// END surface stuff
+	--///////////////////////////////////////-------------------------------------------------
+
 	--///////////////////////////////////////
 	--//readout controller using MCU/BeagleBone
 	xREADOUT_CONTROLLER : entity work.rdout_controller_mcu
@@ -518,6 +559,7 @@ begin
 		gate_i				=> scalers_gate,
 		reg_i					=> registers,
 		trigger_i			=> scalers_trig,
+		surface_trigger_i => surface_trigger_scaler,
 		beam_trig_i			=> scalers_beam_trigs,
 		pps_timestamp_i	=> pps_timestamp,
 		pps_timestamp_latched_o => pps_timestamp_to_read,
@@ -537,10 +579,12 @@ begin
 		fpga_temp_i							=> fpga_temp,
 		scaler_to_read_i 					=> scaler_to_read,
 		status_data_manager_i 			=> status_reg_data_manager,
+		status_data_manager_surface_i	=> status_reg_data_manager_surface,
 		status_data_manager_latched_i => status_reg_latched_data_manager,
 		status_adc_i	 					=> status_reg_adc,
 		event_metadata_i 					=> event_meta_data,
 		current_ram_adr_data_i 			=> ram_data,
+		current_ram_adr_data_surface_i=> ram_data_surface,
 		remote_upgrade_data_i			=> remote_upgrade_data,	
 		remote_upgrade_epcq_data_i		=> remote_upgrade_epcq_data,
 		remote_upgrade_status_i			=> remote_upgrade_status,
@@ -686,17 +730,28 @@ begin
 	--//debug headers & LEDs
 	--///////////////////////////////////////////////////////////////
 	--DEBUG(0) <=  '0'; --LMK_DAT_uWire;
-	DEBUG(1) <=  rx_ram_wr_address(0)(0); --clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
-	DEBUG(2) <=  rx_ram_wr_address(0)(1); --clock_15MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
-	DEBUG(3) <=  rx_ram_wr_address(2)(0);--ram_write_address(3)(0); --lmk_start_write;
-	DEBUG(4) <=  rx_ram_wr_address(3)(0);--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
-	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
-	DEBUG(6) <=  rx_ram_read_address(0); --adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
-	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
+--	DEBUG(1) <=  rx_ram_wr_address(0)(0); --clock_rfrsh_pulse_1Hz;--ram_write_address(1)(0); -- LMK_CLK_uWire;
+--	DEBUG(2) <=  rx_ram_wr_address(0)(1); --clock_15MHz;--ram_write_address(2)(0); --LMK_LEu_uWire;
+--	DEBUG(3) <=  rx_ram_wr_address(2)(0);--ram_write_address(3)(0); --lmk_start_write;
+--	DEBUG(4) <=  rx_ram_wr_address(3)(0);--adc_rx_serdes_clk(0); --adc_data_clock(0); --lmk_done_write;
+--	DEBUG(5) <=  clock_10Hz;--adc_rx_serdes_clk(1);--adc_data_clock(1);--USB_CTL(2);
+--	DEBUG(6) <=  rx_ram_read_address(0); --adc_rx_serdes_clk(2);--adc_data_clock(2);--ram_write_address(3)(3);
+--	DEBUG(7) <=  rx_ram_read_address(1);--adc_rx_serdes_clk(3);--adc_data_clock(3);--ram_read_address(3);
+--	DEBUG(8) <=  '0';
+--	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
+--	DEBUG(10)<=  '0'; --clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
+--	DEBUG(11)<=  scalers_gate;--adc_cal_sig; --usb_slwr;
+	DEBUG(1) <=  '0';
+	DEBUG(2) <=  '0'; 
+	DEBUG(3) <=  '0';
+	DEBUG(4) <=  '0';
+	DEBUG(5) <=  '0';
+	DEBUG(6) <=  '0';
+	DEBUG(7) <=  '0';
 	DEBUG(8) <=  '0';
-	DEBUG(9) <=  '0'; --DSA_LE;--usb_read_packet_rdy;
-	DEBUG(10)<=  '0'; --clock_25MHz;--adc_pd_sig(1); --rdout_start_flag;--registers(127)(0); --
-	DEBUG(11)<=  scalers_gate;--adc_cal_sig; --usb_slwr;
+	DEBUG(9) <=  '0'; 
+	DEBUG(10)<=  '0'; 
+	DEBUG(11)<=  '0';
 	--/////////////////////////////////
 	
 	-------------------------------------------------------------
