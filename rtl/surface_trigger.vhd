@@ -39,8 +39,9 @@ entity surface_trigger is
 		clk_iface_i		: 	in		std_logic; --//slow logic clock =7.5 MHz
 					
 		reg_i				: 	in		register_array_type;
-		
-		surface_data_i	:	in	   surface_data_type);		
+		surface_data_i	:	in	   surface_data_type;	
+	
+		trig_o			: 	out	std_logic);
 
 end surface_trigger;
 
@@ -85,11 +86,22 @@ begin
 	end if;
 end function get_vpp;
 ---//
+-- signal definitions
 type internal_vpp_type is array (surface_channels-1 downto 0) of integer range -1 to 512;
 signal internal_vpp: internal_vpp_type;
 signal internal_vpp_threshold : std_logic_vector(7 downto 0);
+signal internal_trig_window_length : std_logic_vector(7 downto 0);
+signal internal_trig_mask : std_logic_vector(surface_channels-1 downto 0);
+signal internal_trig_fsm_block : std_logic_vector(surface_channels-1 downto 0);
+signal internal_trig_min_abv_thresh : std_logic_vector(1 downto 0);
 signal internal_trigger_bits : std_logic_vector(surface_channels-1 downto 0);
-
+signal internal_trigger_count : std_logic_vector(7 downto 0);
+signal internal_trigger_counter : std_logic_vector(7 downto 0); --//256 clk_i counts max window
+signal trig : std_logic;
+--
+type surface_trig_state_type is (idle_st, open_window_st, clear_st, trig_st);
+signal surface_trig_state : surface_trig_state_type;
+--
 signal buf_data_0 		: 	surface_data_type;
 signal buf_data_1 		: 	surface_data_type;
 
@@ -97,6 +109,8 @@ type internal_buf_data_type is array (surface_channels-1 downto 0) of std_logic_
 signal dat : internal_buf_data_type;
 
 begin
+--//
+------clock in some programmable settings:
 --//
 GetThreshold	:	 for i in 0 to 7 generate	
 	xGET_THRESHOLD : signal_sync
@@ -106,12 +120,37 @@ GetThreshold	:	 for i in 0 to 7 generate
 		SignalIn_clkA	=> reg_i(46)(i), 
 		SignalOut_clkB	=> internal_vpp_threshold(i));
 end generate;
+GetWindow	:	 for i in 0 to 7 generate	
+	xGET_WINDOW : signal_sync
+	port map(
+		clkA				=> clk_iface_i,
+		clkB				=> clk_i,
+		SignalIn_clkA	=> reg_i(46)(i+8), 
+		SignalOut_clkB	=> internal_trig_window_length(i));
+end generate;
+GetMask	:	 for i in 0 to surface_channels-1 generate	
+	xGET_THRESHOLD : signal_sync
+	port map(
+		clkA				=> clk_iface_i,
+		clkB				=> clk_i,
+		SignalIn_clkA	=> reg_i(46)(i+16), 
+		SignalOut_clkB	=> internal_trig_mask(i));
+end generate;
+GetCondition	:	 for i in 0 to 1 generate	
+	xGET_CONDITION : signal_sync
+	port map(
+		clkA				=> clk_iface_i,
+		clkB				=> clk_i,
+		SignalIn_clkA	=> reg_i(46)(i+22), 
+		SignalOut_clkB	=> internal_trig_min_abv_thresh(i));
+end generate;
 --------------------------------------------
---------------//
+--------- fsm's:
+--//
 proc_buffer_data : process(rst_i, clk_i, data_i)
 begin
 	--//loop over trigger channels
-	for i in 0 to surface_channels loop
+	for i in 0 to surface_channels-1 loop
 		
 		if rst_i = '1' then
 		
@@ -131,27 +170,103 @@ begin
 	end loop;
 end process;
 --------------//
-proc_trigger_bits: process(rst_i, clk_i, dat, internal_vpp_threshold)
+proc_trigger_bits: process(rst_i, clk_i, dat, internal_vpp_threshold, internal_trig_mask, 
+									surface_trig_state)
 begin
-	for i in 0 to surface_channels loop
+	for i in 0 to surface_channels-1 loop
 		if rst_i = '1' then
 			internal_vpp(i) <= 0;
 			internal_trigger_bits(i) <= '0';
+			internal_trig_fsm_block(i) <= '0';
+
 		elsif rising_edge(clk_i) then
 			internal_vpp(i) <= get_vpp(dat(i));
 			
-			if internal_vpp(i) >= internal_vpp_threshold then
-				internal_trigger_bits <= '1';
+			if internal_vpp(i) >= internal_vpp_threshold and internal_trig_mask(i) = '1' --//mask from sw
+																		and internal_trig_fsm_block(i) = '0' then --//'block', see below
+				internal_trigger_bits(i) <= '1';
 			else
-				internal_trigger_bits <= '0';
+				internal_trigger_bits(i) <= '0';
 			end if;
+			--//----------------------------
+			-- this blocks the same channel from re-triggering the state machine that follows. 
+			-- It gets reset when the fsm either trigs or resets
+			--
+			-- latch the block signal:
+			if internal_trigger_bits(i) = '1' then
+				internal_trig_fsm_block(i) <= '1';
+			-- clear the block signal based on fsm state condition
+			elsif surface_trig_state = clear_st or surface_trig_state = trig_st then
+				internal_trig_fsm_block(i) <= '0';
+			else
+				internal_trig_fsm_block(i) <= internal_trig_fsm_block(i);
+			end if;
+			--//--
 		end if;
 		
 	end loop;
 end process;
 -----------//
-
-	
-
-
+prog_gen_trig: process(rst_i, clk_i, internal_trigger_bits, internal_trig_window_length)
+begin
+	if rst_i = '1' then
+		internal_trigger_count <= (others=>'0');
+		internal_trigger_counter <= (others=>'0');
+		trig <= '0';
+		surface_trig_state <= idle_st;
+		
+	elsif rising_edge(clk_i) then
+		case surface_trig_state is
+			-------------
+			when idle_st => 
+				internal_trigger_count <= (others=>'0');
+				internal_trigger_counter <= (others=>'0');
+				trig <= '0';
+				if internal_trigger_bits > 0 then
+					surface_trig_state <= open_window_st;
+				else
+					surface_trig_state <= idle_st;
+				end if;
+			-------------
+			when open_window_st =>
+				internal_trigger_counter <= internal_trigger_counter + 1;
+				trig <= '0';
+				
+				if internal_trigger_bits > 0 then
+					internal_trigger_count <= internal_trigger_count + 1;
+				end if;
+				
+				--//check if minimum number of channels above threshold
+				if internal_trigger_count >= (internal_trig_min_abv_thresh - 1) then
+					surface_trig_state <= trig_st;
+				else
+					surface_trig_state <= open_window_st;
+				end if;
+				--//check trigger window length, if exceeds settable length goto reset
+				if internal_trigger_counter >= internal_trig_window_length then
+					surface_trig_state <= clear_st;
+				else
+					surface_trig_state <= open_window_st;
+				end if;
+			-------------
+			when clear_st=>
+				internal_trigger_count <= (others=>'0');
+				internal_trigger_counter <= (others=>'0');
+				trig <= '0';
+				surface_trig_state <= idle_st;
+			-------------
+			when trig_st=>
+				internal_trigger_count <= (others=>'0');
+				internal_trigger_counter <= (others=>'0');
+				trig <= '1';
+				surface_trig_state <= idle_st;
+		
+			when others=> surface_trig_state <= idle_st;
+			
+		end case;
+	end if;
+end process;	
+				
+trig_o <= trig;
+				
 end rtl;
