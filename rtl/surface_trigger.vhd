@@ -111,7 +111,7 @@ signal internal_trig_mask : std_logic_vector(surface_channels-1 downto 0);
 signal internal_trig_fsm_block : std_logic_vector(surface_channels-1 downto 0);
 signal internal_trig_min_abv_thresh : std_logic_vector(2 downto 0);
 signal internal_trigger_bits : std_logic_vector(surface_channels-1 downto 0);
-signal internal_trigger_count : std_logic_vector(7 downto 0);
+signal internal_trigger_count : std_logic_vector(2 downto 0);
 signal internal_trigger_counter : std_logic_vector(7 downto 0); --//256 clk_i counts max window
 signal internal_trig_enable : std_logic;
 signal trig : std_logic;
@@ -211,6 +211,7 @@ begin
 
 		elsif rising_edge(clk_i) then
 			internal_vpp(i) <= get_vpp(dat(i));
+			--internal_vpp(i) <= 10; 
 			
 			if (internal_vpp(i) >= to_integer(unsigned(internal_vpp_threshold)))
 												and internal_trig_mask(i) = '1' --//mask from sw
@@ -254,6 +255,7 @@ begin
 				internal_trigger_count <= (others=>'0');
 				internal_trigger_counter <= (others=>'0');
 				trig <= '0';
+
 				if internal_trigger_bits > 0 then
 					surface_trig_state <= open_window_st;
 				else
@@ -268,14 +270,13 @@ begin
 					internal_trigger_count <= internal_trigger_count + 1;
 				end if;
 				
+				--internal_trigger_count <= "011";
+				
 				--//check if minimum number of channels above threshold
-				if internal_trigger_count(2 downto 0) >= (internal_trig_min_abv_thresh - 1) then
+				if (internal_trigger_count + 1) >= internal_trig_min_abv_thresh then
 					surface_trig_state <= trig_st;
-				else
-					surface_trig_state <= open_window_st;
-				end if;
 				--//check trigger window length, if exceeds settable length goto reset
-				if internal_trigger_counter >= internal_trig_window_length then
+				elsif internal_trigger_counter >= internal_trig_window_length then
 					surface_trig_state <= clear_st;
 				else
 					surface_trig_state <= open_window_st;

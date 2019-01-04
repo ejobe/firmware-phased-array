@@ -38,6 +38,7 @@ entity registers_mcu_spi is
 		status_data_manager_latched_i :  in		std_logic_vector(define_register_size-define_address_size-1 downto 0);
 		status_adc_i						:  in		std_logic_vector(define_register_size-define_address_size-1 downto 0); 
 		event_metadata_i					:	in		event_metadata_type;
+		event_metadata_surface_i		:	in		event_metadata_type;
 		current_ram_adr_data_i			:	in		ram_adr_chunked_data_type;
 		current_ram_adr_data_surface_i:	in		ram_adr_chunked_data_type;
 		remote_upgrade_data_i			:  in		std_logic_vector(31 downto 0);
@@ -193,7 +194,7 @@ begin
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
 		
 		--//surface trigger
-		registers_io(46) <= x"000014"; --//lower byte = vpp threshold ; 
+		registers_io(46) <= x"380914"; --//lower byte = vpp threshold ; 
 		registers_io(47) <= x"010002"; --//
 		
 		--//masking + trigger configurations
@@ -280,37 +281,29 @@ begin
 		--//read data chunk 0
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"23" then
 			case registers_io(47)(8) is 
-				when '0' =>
-					read_reg_o <= current_ram_adr_data_i(0);
-				when '1' =>
-					read_reg_o <= current_ram_adr_data_surface_i(0);
+				when '0' => read_reg_o <= current_ram_adr_data_i(0);
+				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(0);
 			end case;
 			address_o <= x"47";  --//initiate a read
 		--//read data chunk 1
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"24" then
 			case registers_io(47)(8) is 
-				when '0' =>
-					read_reg_o <= current_ram_adr_data_i(1);
-				when '1' =>
-					read_reg_o <= current_ram_adr_data_surface_i(1);
+				when '0' => read_reg_o <= current_ram_adr_data_i(1);
+				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(1);
 			end case;
 			address_o <= x"47";  --//initiate a read			
 		--//read data chunk 2
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"25" then
 			case registers_io(47)(8) is 
-				when '0' =>
-					read_reg_o <= current_ram_adr_data_i(2);
-				when '1' =>
-					read_reg_o <= current_ram_adr_data_surface_i(2);
+				when '0' => read_reg_o <= current_ram_adr_data_i(2);
+				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(2);
 			end case;
 			address_o <= x"47";  --//initiate a read				
 		--//read data chunk 3	
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
 			case registers_io(47)(8) is 
-				when '0' =>
-					read_reg_o <= current_ram_adr_data_i(3);
-				when '1' =>
-					read_reg_o <= current_ram_adr_data_surface_i(3);
+				when '0' => read_reg_o <= current_ram_adr_data_i(3);
+				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(3);
 			end case;
 			address_o <= x"47";  --//initiate a read
 			
@@ -340,7 +333,10 @@ begin
 			registers_io(9) <= status_data_manager_latched_i; 
 			--//assign event meta data
 			for j in 0 to 24 loop
-				registers_io(j+10) <= event_metadata_i(j);
+				case registers_io(47)(8) is 
+					when '0' => registers_io(j+10) <= event_metadata_i(j);
+					when '1' => registers_io(j+10) <= event_metadata_surface_i(j);
+				end case;
 			end loop;
 			--////////////////////////////////////////////////
 			--//clear pulsed registers

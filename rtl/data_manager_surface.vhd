@@ -59,11 +59,6 @@ type internal_ram_write_adr_type is array(define_num_wfm_buffers-1 downto 0) of 
 signal internal_ram_write_adrs : internal_ram_write_adr_type;
 constant internal_address_max : std_logic_vector(define_data_ram_depth-1 downto 0) := (others=>'1');		
 
---//squeeze the powsum data into 16-bit chunks (basically just chop off MSB: don't really care here since
---//only time to read out power sum info is for debugging)
-type internal_sum_power_type is array(define_num_beams-1 downto 0) of 
-	std_logic_vector(define_num_power_sums*define_pow_sum_range-1 downto 0);  
-signal internal_powsum_data : internal_sum_power_type;
 --//RAM input data (on write clk)
 signal internal_wfm_data : full_data_type;  --//delayed data for pre-trig window
 signal internal_wfm_data_pipe_0a : full_data_type;
@@ -95,7 +90,6 @@ signal internal_buffer_reset_to_zero_wait : std_logic;
 signal status_reg_update_reg 	: std_logic_vector(2 downto 0) := (others=>'0');
 
 signal internal_last_trigger_type : std_logic_vector(1 downto 0) := "00"; --//record trigger type
-signal internal_last_beam_trigger : std_logic_vector(define_num_beams-1 downto 0);
 signal event_trigger_reg : std_logic_vector(2 downto 0) := (others=>'0');
 signal buffers_full	: std_logic;
 
@@ -188,7 +182,6 @@ proc_reg_trig : process(rst_i, clk_i, surface_trig_i)
 begin
 	if rst_i = '1' then
 		event_trigger_reg(0) <= '0';
-		internal_last_beam_trigger <= (others=>'0');
 		internal_last_trigger_type <= (others=>'0');
 	elsif rising_edge(clk_i) and surface_trig_i = '1' then
 		event_trigger_reg(0) <= '1';
@@ -245,7 +238,7 @@ begin
 		internal_current_buffer 		<= "00";
 		internal_buffer_reset_to_zero_wait <= '0';
 		buf 									:= 0;
-		--internal_next_buffer 			<= "00";
+		internal_next_buffer 			<= "00";
 		buffers_full 						<= '0';
 		wr_busy_o 							<= '0';
 		save_event_state 					<= buffer_sel_st;

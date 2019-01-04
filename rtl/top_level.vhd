@@ -583,6 +583,7 @@ begin
 		status_data_manager_latched_i => status_reg_latched_data_manager,
 		status_adc_i	 					=> status_reg_adc,
 		event_metadata_i 					=> event_meta_data,
+		event_metadata_surface_i		=> event_meta_data_surface,
 		current_ram_adr_data_i 			=> ram_data,
 		current_ram_adr_data_surface_i=> ram_data_surface,
 		remote_upgrade_data_i			=> remote_upgrade_data,	
