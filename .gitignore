@@ -28,6 +28,7 @@ sig_tap/**
 **_inst.vhd
 **.html
 **.tcl
+**.pin
 **~**
 **#**
 
