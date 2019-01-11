@@ -131,7 +131,7 @@ ClearBufSync : for i in 0 to define_num_wfm_buffers-1 generate
 	port map(
 		clkA 			=> clk_iface_i,
 		clkB			=> clk_i,
-		in_clkA		=> reg_i(base_adrs_rdout_cntrl+13)(i),
+		in_clkA		=> reg_i(base_adrs_rdout_cntrl+13)(i+16), --//2 byte offset unique to surface data manager
 		busy_clkA	=> open,
 		out_clkB		=> internal_clear_buffer(i));
 end generate;
@@ -281,11 +281,11 @@ begin
 				
 				internal_buffer_reset_to_zero_wait <= '0';
 				--//software option to reset next buffer to 0. 
-				if internal_buffer_reset_to_zero = '1' or internal_buffer_reset_to_zero_wait = '1' then
-					internal_next_buffer <= "00";
-					internal_current_buffer <= "00";
-					save_event_state <= buffer_sel_st;
-				elsif internal_buffer_full(to_integer(unsigned(internal_next_buffer))) = '0' then
+--				if internal_buffer_reset_to_zero = '1' or internal_buffer_reset_to_zero_wait = '1' then
+--					internal_next_buffer <= "00";
+--					internal_current_buffer <= "00";
+--					save_event_state <= buffer_sel_st;
+				if internal_buffer_full(to_integer(unsigned(internal_next_buffer))) = '0' then
 					internal_current_buffer <= internal_next_buffer;
 					buf := to_integer(unsigned(internal_next_buffer));
 					save_event_state 			<= trig_st;
@@ -310,10 +310,10 @@ begin
 				if event_trigger_reg(1) = '1' or event_trigger_reg(2) = '1' then
 					internal_wfm_ram_write_en(buf)<= '1'; --//enable the ram_wr_en 
 					save_event_state <= adr_inc_st; --//go to address increment state
-				elsif internal_buffer_reset_to_zero = '1'  then
-					internal_next_buffer <= "00";
-					internal_current_buffer <= "00";
-					save_event_state <= buffer_sel_st;
+--				elsif internal_buffer_reset_to_zero = '1'  then
+--					internal_next_buffer <= "00";
+--					internal_current_buffer <= "00";
+--					save_event_state <= buffer_sel_st;
 				else
 					save_event_state <= trig_st;
 				end if;
@@ -331,11 +331,11 @@ begin
 				end loop;
 				
 				--//if request to reset buffer to 0, need to wait until trigger has been processed:
-				if internal_buffer_reset_to_zero = '1'  then
-					internal_buffer_reset_to_zero_wait <= '1';
-				else
-					internal_buffer_reset_to_zero_wait <= internal_buffer_reset_to_zero_wait;
-				end if;
+--				if internal_buffer_reset_to_zero = '1'  then
+--					internal_buffer_reset_to_zero_wait <= '1';
+--				else
+--					internal_buffer_reset_to_zero_wait <= internal_buffer_reset_to_zero_wait;
+--				end if;
 				
 				if internal_ram_write_adrs(buf) = internal_address_max then 
 					internal_get_event_metadata <= '0';
@@ -369,11 +369,11 @@ begin
 					end if;
 				end loop;
 				
-				if internal_buffer_reset_to_zero = '1'  then
-					internal_buffer_reset_to_zero_wait <= '1';
-				else
-					internal_buffer_reset_to_zero_wait <= internal_buffer_reset_to_zero_wait;
-				end if;
+--				if internal_buffer_reset_to_zero = '1'  then
+--					internal_buffer_reset_to_zero_wait <= '1';
+--				else
+--					internal_buffer_reset_to_zero_wait <= internal_buffer_reset_to_zero_wait;
+--				end if;
 				
 			when others=>
 				save_event_state <= buffer_sel_st;
