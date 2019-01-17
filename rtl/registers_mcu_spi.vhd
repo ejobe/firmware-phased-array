@@ -160,7 +160,7 @@ begin
 		registers_io(base_adrs_rdout_cntrl+9)  <= x"000000"; --//data chunk
 		registers_io(base_adrs_rdout_cntrl+10) <= x"00010F"; --//length of data readout (16-bit ADCwords) (74)
 		registers_io(base_adrs_rdout_cntrl+11) <= x"000004"; --//length of register readout (NOT USED, only signal word readouts) (75)
-		registers_io(base_adrs_rdout_cntrl+12) <= x"000004"; --//readout pre-trig window [76]
+		registers_io(base_adrs_rdout_cntrl+12) <= x"000404"; --//readout pre-trig window [76]
 		registers_io(base_adrs_rdout_cntrl+13) <= x"000000"; --//clear data buffer + Reset Buffer Number to 0 [77]
 		registers_io(base_adrs_rdout_cntrl+14) <= x"000000"; --//select readout waveform buffer [78]
 
@@ -328,7 +328,7 @@ begin
 			--////////////////////////////////////////////////
 			--//update status/system read-only registers
 			registers_io(3) <= scaler_to_read_i;
-			registers_io(7) <= status_data_manager_i; 
+			registers_io(7) <= status_data_manager_i(23 downto 5) & status_data_manager_surface_i(0) & status_data_manager_i(3 downto 0); 
 			registers_io(8) <= status_adc_i; 
 			registers_io(9) <= status_data_manager_latched_i; 
 			--//assign event meta data

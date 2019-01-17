@@ -143,7 +143,7 @@ PreTrigSync : for i in 0 to 2 generate
 	port map(
 		clkA 			=> clk_iface_i,
 		clkB			=> clk_i,
-		SignalIn_clkA		=> reg_i(76)(i),
+		SignalIn_clkA		=> reg_i(76)(i+8),
 		SignalOut_clkB		=> internal_pre_trig_window_select(i));
 end generate;
 ------------------------------------------------------------------
