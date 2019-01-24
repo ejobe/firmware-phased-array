@@ -64,28 +64,30 @@ begin
 end function vector_or;
 --//
 --//get_vpp function. argument vector 's' is unsigned
-function get_vpp(s : std_logic_vector) return integer is
-	variable temp_min : integer := 63;
-	variable temp_max : integer := 64;
-	variable vpp : integer := 1;
-begin
-	for j in 0 to 4*define_serdes_factor-1 loop
-		if s((j+1)*define_word_size-1 downto j*define_word_size) > temp_max then
-			temp_max := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
-		end if;
-		if s((j+1)*define_word_size-1 downto j*define_word_size) < temp_min then
-			temp_min := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
-		end if;	
-		
-	end loop;
-  
-	if temp_max <= temp_min then
-		return 1;
-	else
-		vpp := temp_max - temp_min; 
-		return vpp;
-	end if;
-end function get_vpp;
+--function get_vpp(s : std_logic_vector) return integer is
+--	variable temp_min : integer := 60;
+--	variable temp_max : integer := 66;
+--	variable vpp : integer := 1;
+--	constant return_failure : integer := 1;
+--begin
+--	for j in 0 to 4*define_serdes_factor-1 loop
+--		if to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size))) > temp_max then
+--			temp_max := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
+--		
+--		end if;
+--		if to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size))) < temp_min then
+--			temp_min := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
+--		end if;	
+--		
+--	end loop;
+--  
+--	if temp_max <= temp_min then
+--		return return_failure;
+--	else
+--		vpp := (temp_max - temp_min);
+--		return vpp;
+--	end if;
+--end function get_vpp;
 ---//
 component signal_sync is
 port(
@@ -115,6 +117,7 @@ signal internal_trigger_count : std_logic_vector(2 downto 0);
 signal internal_trigger_counter : std_logic_vector(7 downto 0); --//256 clk_i counts max window
 signal internal_trig_enable : std_logic;
 signal trig : std_logic;
+signal trig_clear : std_logic;
 --
 type surface_trig_state_type is (idle_st, open_window_st, clear_st, trig_st);
 signal surface_trig_state : surface_trig_state_type;
@@ -124,6 +127,12 @@ signal buf_data_1 		: 	surface_data_type;
 
 type internal_buf_data_type is array (surface_channels-1 downto 0) of std_logic_vector(2*pdat_size-1 downto 0); 
 signal dat : internal_buf_data_type;
+
+signal flag_hi : std_logic_vector(surface_channels-1 downto 0);
+signal flag_lo : std_logic_vector(surface_channels-1 downto 0);
+type sample_flag_type is array(surface_channels-1 downto 0) of std_logic_vector(4*define_serdes_factor-1 downto 0);
+signal sample_flag_hi : sample_flag_type;
+signal sample_flag_lo : sample_flag_type;
 
 begin
 --//
@@ -200,22 +209,31 @@ begin
 	end loop;
 end process;
 --------------//
-proc_trigger_bits: process(rst_i, clk_i, dat, internal_vpp_threshold, internal_trig_mask, 
-									surface_trig_state)
+proc_trigger_bits: process(rst_i, clk_i, dat, internal_vpp_threshold, internal_trig_mask, trig_clear)
 begin
 	for i in 0 to surface_channels-1 loop
 		if rst_i = '1' or ENABLE_SURFACE_TRIGGER = '0' then
-			internal_vpp(i) <= 0;
+			--internal_vpp(i) <= 0;
 			internal_trigger_bits(i) <= '0';
 			internal_trig_fsm_block(i) <= '0';
-
+			flag_hi(i) <= '0';
+			flag_lo(i) <= '0';
+			
+			for j in 0 to 4*define_serdes_factor-1 loop
+				sample_flag_hi(i)(j) <= '0';
+				sample_flag_lo(i)(j) <= '0';
+			end loop;
+			
 		elsif rising_edge(clk_i) then
-			internal_vpp(i) <= get_vpp(dat(i));
+			--internal_vpp(i) <= get_vpp(dat(i));
 			--internal_vpp(i) <= 10; 
 			
-			if (internal_vpp(i) >= to_integer(unsigned(internal_vpp_threshold)))
-												and internal_trig_mask(i) = '1' --//mask from sw
-												and internal_trig_fsm_block(i) = '0' then --//'block', see below
+			--if (internal_vpp(i) >= to_integer(unsigned(internal_vpp_threshold)))
+			
+--			if (internal_vpp(i) > (to_integer(unsigned(internal_vpp_threshold))+1))	and internal_trig_mask(i) = '1' --//mask from sw
+--																											and internal_trig_fsm_block(i) = '0' then --//'block', see below
+			if flag_hi(i) = '1' and flag_lo(i) = '1'	and internal_trig_mask(i) = '1' --//mask from sw
+																	and internal_trig_fsm_block(i) = '0' then --//'block', see below
 				internal_trigger_bits(i) <= '1';
 			else
 				internal_trigger_bits(i) <= '0';
@@ -224,16 +242,35 @@ begin
 			-- this blocks the same channel from re-triggering the state machine that follows. 
 			-- It gets reset when the fsm either trigs or resets
 			--
-			-- latch the block signal:
+			-- latch the block signal:		
 			if internal_trigger_bits(i) = '1' then
 				internal_trig_fsm_block(i) <= '1';
 			-- clear the block signal based on fsm state condition
-			elsif surface_trig_state = clear_st or surface_trig_state = trig_st then
+			elsif trig_clear = '1' then
 				internal_trig_fsm_block(i) <= '0';
 			else
 				internal_trig_fsm_block(i) <= internal_trig_fsm_block(i);
 			end if;
 			--//--
+			
+			flag_hi(i) <= vector_or(sample_flag_hi(i));
+			flag_lo(i) <= vector_or(sample_flag_lo(i));
+				
+			for j in 0 to 4*define_serdes_factor-1 loop
+				-- 0x3F is the baseline
+				if dat(i)((j+1)*define_word_size-1 downto j*define_word_size) > ((internal_vpp_threshold) + x"3F") then
+					sample_flag_hi(i)(j) <= '1';
+				else
+					sample_flag_hi(i)(j) <= '0';
+				end if;
+				if dat(i)((j+1)*define_word_size-1 downto j*define_word_size) < ((internal_vpp_threshold) + x"3F") then
+					sample_flag_lo(i)(j) <= '1';
+				else
+					sample_flag_lo(i)(j) <= '0';
+				end if;
+			end loop;
+		
+
 		end if;
 		
 	end loop;
@@ -245,6 +282,7 @@ begin
 		internal_trigger_count <= (others=>'0');
 		internal_trigger_counter <= (others=>'0');
 		trig <= '0';
+		trig_clear <= '0';
 		surface_trig_state <= idle_st;
 		
 	elsif rising_edge(clk_i) then
@@ -255,7 +293,8 @@ begin
 				internal_trigger_count <= (others=>'0');
 				internal_trigger_counter <= (others=>'0');
 				trig <= '0';
-
+				trig_clear <= '0';
+				
 				if internal_trigger_bits > 0 then
 					surface_trig_state <= open_window_st;
 				else
@@ -265,6 +304,7 @@ begin
 			when open_window_st =>
 				internal_trigger_counter <= internal_trigger_counter + 1;
 				trig <= '0';
+				trig_clear <= '0';
 				
 				if internal_trigger_bits > 0 then
 					internal_trigger_count <= internal_trigger_count + 1;
@@ -286,12 +326,14 @@ begin
 				internal_trigger_count <= (others=>'0');
 				internal_trigger_counter <= (others=>'0');
 				trig <= '0';
+				trig_clear <= '1';
 				surface_trig_state <= idle_st;
 			-------------
 			when trig_st=>
 				internal_trigger_count <= (others=>'0');
 				internal_trigger_counter <= (others=>'0');
 				trig <= '1';
+				trig_clear <= '1';
 				surface_trig_state <= idle_st;
 		
 			when others=> surface_trig_state <= idle_st;
