@@ -63,32 +63,6 @@ begin
 	end if;
 end function vector_or;
 --//
---//get_vpp function. argument vector 's' is unsigned
---function get_vpp(s : std_logic_vector) return integer is
---	variable temp_min : integer := 60;
---	variable temp_max : integer := 66;
---	variable vpp : integer := 1;
---	constant return_failure : integer := 1;
---begin
---	for j in 0 to 4*define_serdes_factor-1 loop
---		if to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size))) > temp_max then
---			temp_max := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
---		
---		end if;
---		if to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size))) < temp_min then
---			temp_min := to_integer(unsigned(s((j+1)*define_word_size-1 downto j*define_word_size)));
---		end if;	
---		
---	end loop;
---  
---	if temp_max <= temp_min then
---		return return_failure;
---	else
---		vpp := (temp_max - temp_min);
---		return vpp;
---	end if;
---end function get_vpp;
----//
 component signal_sync is
 port(
 	clkA			: in	std_logic;
@@ -119,7 +93,7 @@ signal internal_trig_enable : std_logic;
 signal trig : std_logic;
 signal trig_clear : std_logic;
 --
-type surface_trig_state_type is (idle_st, open_window_st, clear_st, trig_st);
+type surface_trig_state_type is (idle_st, open_window_st, clear_st, trig_st, holdoff_st);
 signal surface_trig_state : surface_trig_state_type;
 --
 signal buf_data_0 		: 	surface_data_type;
@@ -133,6 +107,9 @@ signal flag_lo : std_logic_vector(surface_channels-1 downto 0);
 type sample_flag_type is array(surface_channels-1 downto 0) of std_logic_vector(4*define_serdes_factor-1 downto 0);
 signal sample_flag_hi : sample_flag_type;
 signal sample_flag_lo : sample_flag_type;
+--
+type surface_wfm_pow_type is array(surface_channels-1 downto 0) of std_logic_vector(define_num_power_sums*(define_pow_sum_range+1)-1 downto 0); 
+signal surface_wfm_pow : surface_wfm_pow_type
 
 begin
 --//
@@ -275,6 +252,9 @@ begin
 		
 	end loop;
 end process;
+--------------//
+proc_wfm_power : process(rst_i, clk_i)
+
 -----------//
 prog_gen_trig: process(rst_i, clk_i, internal_trigger_bits, internal_trig_window_length)
 begin
@@ -309,9 +289,7 @@ begin
 				if internal_trigger_bits > 0 then
 					internal_trigger_count <= internal_trigger_count + 1;
 				end if;
-				
-				--internal_trigger_count <= "011";
-				
+								
 				--//check if minimum number of channels above threshold
 				if (internal_trigger_count + 1) >= internal_trig_min_abv_thresh then
 					surface_trig_state <= trig_st;
@@ -333,8 +311,19 @@ begin
 				internal_trigger_count <= (others=>'0');
 				internal_trigger_counter <= (others=>'0');
 				trig <= '1';
-				trig_clear <= '1';
-				surface_trig_state <= idle_st;
+				trig_clear <= '0';
+				surface_trig_state <= holdoff_st;
+			-------------
+			when holdoff_st=>
+				internal_trigger_count <= (others=>'0');
+				internal_trigger_counter <=internal_trigger_counter + 1;
+				trig <= '0';
+				trig_clear <= '0';
+				if internal_trigger_counter > 48 then
+					surface_trig_state <= clear_st;
+				else 
+					surface_trig_state <= holdoff_st;
+				end if;
 		
 			when others=> surface_trig_state <= idle_st;
 			
@@ -343,5 +332,15 @@ begin
 end process;	
 				
 trig_o <= trig;
+--//
+SurfacePower	:	 for i in 0 to surface_channels-1 generate
+	xPOWER_SUM : entity work.power_detector
+		port map(
+			rst_i  	=> rst_i,
+			clk_i	 	=> clk_i,
+			reg_i		=> reg_i,
+			data_i	=> dat_i(i)(2*define_serdes_factor-1 downto 0),
+			sum_pow_o=> surface_wfm_pow(i));
+end generate;
 				
 end rtl;

@@ -32,7 +32,8 @@ entity Clock_Manager is
 		CLK_10Hz_o		:  out	std_logic;
 		CLK_1kHz_o		:	out	std_logic;
 		CLK_100kHz_o	:	out	std_logic;
-		
+
+		refresh_100Hz_o		:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o		
 		refresh_1Hz_o		:	out	std_logic;  --//refresh pulse derived from CLK_15MHz_o
 		refresh_100mHz_o 	:	out	std_logic;	--//refresh pulse derived from CLK_15MHz_o every 10 s
 
@@ -46,9 +47,11 @@ architecture rtl of Clock_Manager is
 	signal clk_1MHz_sig	: 	std_logic;
 	
 	--//need to create a single pulse every Hz with width of 15 MHz clock period
+	signal refresh_clk_counter_100Hz 	:	std_logic_vector(27 downto 0) := (others=>'0');
 	signal refresh_clk_counter_1Hz 	:	std_logic_vector(27 downto 0) := (others=>'0');
 	signal refresh_clk_counter_100mHz:	std_logic_vector(27 downto 0) := (others=>'0');
 
+	signal refresh_clk_100Hz				:	std_logic := '0';
 	signal refresh_clk_1Hz				:	std_logic := '0';
 	signal refresh_clk_100mHz			:	std_logic := '0';
 	
@@ -62,8 +65,9 @@ architecture rtl of Clock_Manager is
 	--constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"17D7840";  --//25e6
 	--constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"EE6B280";  --//25e7
 	--//for 23.475 MHz
-	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) := x"165A0BC";  --//23.4375e6
-	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) := x"DF84758";  --//23.4375e6	
+	constant REFRESH_CLK_MATCH_100Hz 		: 	std_logic_vector(27 downto 0) := x"0039387";  --//23.4375e6
+	constant REFRESH_CLK_MATCH_1HZ 		: 	std_logic_vector(27 downto 0) 	:= x"165A0BC";  --//23.4375e6
+	constant REFRESH_CLK_MATCH_100mHz 	: 	std_logic_vector(27 downto 0) 	:= x"DF84758";  --//23.4375e6	
 	
 	
 	component pll_block
@@ -87,6 +91,7 @@ architecture rtl of Clock_Manager is
 	
 begin
 	CLK_1MHz_o			<=	clk_1MHz_sig;
+	refresh_100Hz_o	<= refresh_clk_100Hz;
 	refresh_1Hz_o		<= refresh_clk_1Hz;
 	refresh_100mHz_o	<=	refresh_clk_100mHz;
 	
@@ -146,6 +151,21 @@ begin
 					refresh_clk_100mHz <= '1';
 				when others =>
 					refresh_clk_100mHz <= '0';
+			end case;
+			
+			--//////////////////////////////////////
+			
+			if refresh_clk_100Hz = '1' then
+				refresh_clk_counter_100Hz <= (others=>'0');
+			else
+				refresh_clk_counter_100Hz <= refresh_clk_counter_100Hz + 1;
+			end if;
+			--//pulse refresh when refresh_clk_counter = REFRESH_CLK_MATCH
+			case refresh_clk_counter_100Hz is
+				when REFRESH_CLK_MATCH_100Hz =>
+					refresh_clk_100Hz <= '1';
+				when others =>
+					refresh_clk_100Hz <= '0';
 			end case;
 			
 		end if;

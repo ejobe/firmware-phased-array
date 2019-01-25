@@ -26,6 +26,7 @@ entity scalers_top is
 		clk_i				:		in 	std_logic;
 		pulse_refrsh_i	:		in		std_logic;
 		pulse_refrshHz_i	:	in		std_logic;
+		pulse_refrsh100Hz :	in		std_logic;
 		
 		gate_i			:		in		std_logic;
 		
@@ -143,7 +144,7 @@ xSURFACETRIGSCALER3 : scaler
 	port map(
 		rst_i => rst_i,
 		clk_i => clk_i,
-		refresh_i => pulse_refrshHz_i,
+		refresh_i => pulse_refrsh100Hz,
 		count_i => surface_trigger_i,
 		scaler_o => internal_scaler_array(51));
 --// end SURFACE SCALERS

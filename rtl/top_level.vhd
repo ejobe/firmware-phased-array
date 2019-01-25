@@ -136,6 +136,7 @@ architecture rtl of top_level is
 	signal clock_10Hz				:	std_logic;		
 	signal clock_1kHz				:	std_logic;
 	signal clock_100kHz			:	std_logic;
+	signal clock_rfrsh_pulse_100Hz	:  std_logic;
 	signal clock_rfrsh_pulse_1Hz		:	std_logic;
 	signal clock_rfrsh_pulse_100mHz	:	std_logic;
 	signal clock_FPGA_PLLlock	:	std_logic;
@@ -295,6 +296,7 @@ begin
 		CLK_10Hz_o		=> clock_10Hz,
 		CLK_1kHz_o		=> clock_1kHz,	
 		CLK_100kHz_o	=> clock_100kHz,
+		refresh_100Hz_o 	=> clock_rfrsh_pulse_100Hz,
 		refresh_1Hz_o		=> clock_rfrsh_pulse_1Hz,
 		refresh_100mHz_o  => clock_rfrsh_pulse_100mHz, --//scaler refresh clock
 		fpga_pllLock_o => clock_FPGA_PLLlock);
@@ -556,6 +558,7 @@ begin
 		clk_i					=> clock_25MHz,
 		pulse_refrsh_i		=> clock_rfrsh_pulse_100mHz,
 		pulse_refrshHz_i	=> clock_rfrsh_pulse_1Hz,
+		pulse_refrsh100Hz_i => clock_rfrsh_pulse_100Hz,
 		gate_i				=> scalers_gate,
 		reg_i					=> registers,
 		trigger_i			=> scalers_trig,
