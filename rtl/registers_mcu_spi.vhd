@@ -227,6 +227,8 @@ begin
 		registers_io(base_adrs_trig_thresh+14) <= x"0FFFFF";   --//[100]
 		registers_io(base_adrs_trig_thresh+15) <= x"0FFFFF";   --//[101]
 		
+		registers_io(base_adrs_trig_thresh+16) <= x"0FFFFF";   --//[102] --hpol surface trig threshold
+
 		--//remote upgrade registers
 		registers_io(110) <= x"000000"; --//LSB = 1 to enable remote upgrade block
 		registers_io(111) <= x"000000";

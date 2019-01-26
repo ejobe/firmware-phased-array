@@ -37,7 +37,7 @@ signal internal_instant_power 		: inst_power_array_type;
 signal internal_instant_power_pipe 	: std_logic_vector(4*define_serdes_factor*define_pow_sum_range-1 downto 0);
 signal instantaneous_power			 	: std_logic_vector(4*define_serdes_factor*define_pow_sum_range-1 downto 0);
 
-signal internal_beams					: std_logic_vector(2*define_serdes_factor*define_word_size-1 downto 0);;
+signal internal_beams					: std_logic_vector(2*define_serdes_factor*define_word_size-1 downto 0);
 
 --signal sum_power	: sum_power_type;
 
@@ -50,7 +50,7 @@ begin
 proc_sum_power : process(rst_i, clk_i)
 begin
 	if rst_i = '1' then
-		sum_pow_o(i) <= (others=>'0');
+		sum_pow_o <= (others=>'0');
 
 	elsif rising_edge(clk_i) then
 	
@@ -95,7 +95,6 @@ begin
 			end loop;		
 			
 		end if;
-	end loop;
 end process;
 
 --//calculate instantaneous power using LUT
@@ -111,12 +110,11 @@ begin
 			elsif rising_edge(clk_i) then
 
 					internal_instant_power(j) <= std_logic_vector(to_unsigned(
-						lut_power(to_integer(signed(internal_beams((j+1)*define_beam_bits-1 downto j*define_beam_bits)))),
+						lut_power(to_integer(unsigned(internal_beams((j+1)*define_beam_bits-1 downto j*define_beam_bits))))-63,
 						define_pow_sum_range));
 								
 			end if;
 		end loop;
-	end loop;
 end process;
 				
 end rtl;

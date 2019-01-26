@@ -25,8 +25,8 @@ entity scalers_top is
 		rst_i				:		in		std_logic;
 		clk_i				:		in 	std_logic;
 		pulse_refrsh_i	:		in		std_logic;
-		pulse_refrshHz_i	:	in		std_logic;
-		pulse_refrsh100Hz :	in		std_logic;
+		pulse_refrshHz_i		:	in		std_logic;
+		pulse_refrsh100Hz_i	:	in		std_logic;
 		
 		gate_i			:		in		std_logic;
 		
@@ -45,7 +45,7 @@ end scalers_top;
 
 architecture rtl of scalers_top is
 
-constant num_scalers : integer := 52;
+constant num_scalers : integer := 54;
 type scaler_array_type is array(num_scalers-1 downto 0) of std_logic_vector(scaler_width-1 downto 0);
 
 signal internal_scaler_array : scaler_array_type;
@@ -144,9 +144,16 @@ xSURFACETRIGSCALER3 : scaler
 	port map(
 		rst_i => rst_i,
 		clk_i => clk_i,
-		refresh_i => pulse_refrsh100Hz,
+		refresh_i => pulse_refrshHz_i,
 		count_i => surface_trigger_i,
 		scaler_o => internal_scaler_array(51));
+xSURFACETRIGSCALER4 : scaler
+	port map(
+		rst_i => rst_i,
+		clk_i => clk_i,
+		refresh_i => pulse_refrsh100Hz_i,
+		count_i => surface_trigger_i,
+		scaler_o => internal_scaler_array(52));
 --// end SURFACE SCALERS
 -------------------------------------		
 proc_save_scalers : process(rst_i, clk_i, reg_i)
@@ -217,7 +224,8 @@ begin
 				scaler_to_read_o <= latched_scaler_array(49) & latched_scaler_array(48);
 			when x"19" =>
 				scaler_to_read_o <= latched_scaler_array(51) & latched_scaler_array(50);	
-				
+			when x"1A" =>
+				scaler_to_read_o <= latched_scaler_array(53) & latched_scaler_array(52);				
 			when others =>
 				scaler_to_read_o <= latched_scaler_array(1) & latched_scaler_array(0);
 		end case;
