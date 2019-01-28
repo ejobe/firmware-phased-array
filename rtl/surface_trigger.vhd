@@ -391,7 +391,7 @@ begin
 				if internal_require_pol_check_trigger = '0' then
 					surface_trig_state <= trig_st;
 				--timeout:
-				elsif internal_trigger_counter > 8 then
+				elsif internal_trigger_counter > 12 then
 					surface_trig_state <= clear_st;
 				--hpol>vpol satisfied:
 				elsif internal_hpol_trig_satisfied = '1' then

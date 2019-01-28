@@ -100,7 +100,6 @@ end process;
 --//calculate instantaneous power using LUT
 proc_power_calc : process(rst_i, clk_i, internal_beams)
 begin
-	--//loop over beams
 		--//loop over samples in parallel data
 		for j in 0 to 2*define_serdes_factor-1 loop
 		
@@ -110,7 +109,7 @@ begin
 			elsif rising_edge(clk_i) then
 
 					internal_instant_power(j) <= std_logic_vector(to_unsigned(
-						lut_power(to_integer(unsigned(internal_beams((j+1)*define_beam_bits-1 downto j*define_beam_bits))))-63,
+						lut_power(to_integer(unsigned(internal_beams((j+1)*define_beam_bits-1 downto j*define_beam_bits)))-63),
 						define_pow_sum_range));
 								
 			end if;
