@@ -184,7 +184,7 @@ HpolPowerThreshold	:	 for i in 0 to 23 generate
 	port map(
 		clkA				=> clk_iface_i,
 		clkB				=> clk_i,
-		SignalIn_clkA	=> reg_i(47)(i), 
+		SignalIn_clkA	=> reg_i(102)(i), 
 		SignalOut_clkB	=> internal_hpol_pow_thresh(i));
 end generate;
 xENABLE : signal_sync
@@ -390,12 +390,12 @@ begin
 				--if pol check is disabled:
 				if internal_require_pol_check_trigger = '0' then
 					surface_trig_state <= trig_st;
-				--timeout:
-				elsif internal_trigger_counter > 12 then
-					surface_trig_state <= clear_st;
 				--hpol>vpol satisfied:
 				elsif internal_hpol_trig_satisfied = '1' then
 					surface_trig_state <= trig_st;
+				--timeout, wait 10 clock cycles (~100ns):
+				elsif internal_trigger_counter > 9 then
+					surface_trig_state <= clear_st;
 				else
 					surface_trig_state <= check_pol_st;
 				end if;
@@ -415,9 +415,9 @@ begin
 				else 
 					surface_trig_state <= holdoff_st;
 				end if;
-		
+			-------------
 			when others=> surface_trig_state <= idle_st;
-			
+			-------------
 		end case;
 	end if;
 end process;	
