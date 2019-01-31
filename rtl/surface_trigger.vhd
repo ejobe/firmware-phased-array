@@ -349,7 +349,7 @@ begin
 		trig <= '0';
 		trig_clear <= '0';
 		surface_trig_state <= idle_st;
-		
+		-----------
 	elsif rising_edge(clk_i) then
 		-----------
 		case surface_trig_state is

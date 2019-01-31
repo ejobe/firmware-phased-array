@@ -29,6 +29,7 @@ sig_tap/**
 **.html
 **.tcl
 **.pin
+**.qws
 **~**
 **#**
 
