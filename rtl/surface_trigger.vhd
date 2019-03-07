@@ -41,6 +41,8 @@ entity surface_trigger is
 		reg_i				: 	in		register_array_type;
 		surface_data_i	:	in	   full_data_type;	
 	
+		temp_data_o		:	out	full_data_type;
+		
 		trig_o			: 	out	std_logic;
 		trig_slow_o		:	out	std_logic);
 
@@ -113,6 +115,7 @@ signal surface_trig_state : surface_trig_state_type;
 --
 signal buf_data_0 		: 	surface_data_type;
 signal buf_data_1 		: 	surface_data_type;
+signal buf_data_2 		: 	surface_data_type;
 
 type internal_buf_data_type is array (surface_channels-1 downto 0) of std_logic_vector(2*pdat_size-1 downto 0); 
 signal dat : internal_buf_data_type;
@@ -211,20 +214,38 @@ begin
 		if rst_i = '1' or ENABLE_SURFACE_TRIGGER = '0' then
 		
 			buf_data_0(i)<= (others=>'0');
-			buf_data_1(i)<= (others=>'0');	
-
+			--buf_data_1(i)<= (others=>'0');	
+			buf_data_2(i)<= (others=>'0');
+			
 			dat(i) <= (others=>'0');
 			
 		elsif rising_edge(clk_i) and internal_trig_enable = '1' then
 			--//buffer data
-			dat(i) <= buf_data_0(i) & buf_data_1(i);
+			dat(i) <= buf_data_1(i) & buf_data_2(i);
 		
-			buf_data_1(i) <= buf_data_0(i);
+			buf_data_2(i) <= buf_data_1(i);
+			--buf_data_1(i) <= buf_data_0(i); -//buf_data_1 now from filter
 			buf_data_0(i) <= surface_data_i(i+2);
 
 		end if;
 	end loop;
 end process;
+
+--//testing purposes only. Puts filtered data to the RAM to check filtering procedure
+proc_assign_temp_data : process(clk_i)
+begin
+	if rising_edge(clk_i) then
+		temp_data_o(0) <= surface_data_i(0);
+		temp_data_o(1) <= surface_data_i(1);
+		temp_data_o(2) <= buf_data_2(0);
+		temp_data_o(3) <= buf_data_2(1);
+		temp_data_o(4) <= buf_data_2(2);
+		temp_data_o(5) <= buf_data_2(3);
+		temp_data_o(6) <= buf_data_2(4);
+		temp_data_o(7) <= buf_data_2(5);
+	end if;
+end process;
+
 --------------//
 proc_trigger_bits: process(rst_i, clk_i, dat, internal_vpp_threshold, internal_trig_mask, trig_clear)
 begin
@@ -289,6 +310,7 @@ begin
 	end loop;
 end process;
 --------------//
+--//calculate power in Hpol and Vpol channels separately, w/ option to be used as a trigger condition
 proc_wfm_power : process(rst_i, clk_i)
 begin
 	if rst_i = '1' then
@@ -433,5 +455,15 @@ SurfacePower	:	 for i in 0 to surface_channels-1 generate
 			data_i	=> dat(i)(pdat_size-1 downto 0),
 			sum_pow_o=> surface_wfm_pow(i));
 end generate;
+
+xFILTER : entity work.filter
+port map(
+		rst_i			    =>	rst_i,
+		clk_i			    =>  	clk_i,
+		clk_iface_i     =>	clk_iface_i,	
+		reg_i			    =>	reg_i,  
+		data_i			 =>   buf_data_0,
+		filtered_data_o =>   buf_data_1);
+
 				
 end rtl;

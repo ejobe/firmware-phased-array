@@ -200,6 +200,7 @@ architecture rtl of top_level is
 	signal unused_pins			:  std_logic_vector(45 downto 0);
 	--//data
 	signal wfm_data				: full_data_type; --//registered on core clk
+	signal wfm_data_temp			: full_data_type; --//registered on core clk
 	signal beam_data_8			: array_of_beams_type; --//registered on core clk
 	signal beam_data_4a			: array_of_beams_type; --//registered on core clk
 	signal beam_data_4b			: array_of_beams_type; --//registered on core clk
@@ -519,7 +520,7 @@ begin
 		pps_latched_timestamp_o => open,
 		status_reg_o			=> status_reg_data_manager_surface,
 		status_reg_latched_o => open,
-		wfm_data_i				=> wfm_data,
+		wfm_data_i				=> wfm_data_temp, --wfm_data,
 		running_scalers_i		=> running_scalers,
 		data_ram_at_current_adr_o => ram_data_surface);
 	
@@ -531,6 +532,7 @@ begin
 		clk_iface_i		=>	clock_25MHz,		
 		reg_i				=>	registers,
 		surface_data_i	=>	wfm_data, --//surface antennas plugged into channels 3-8 on slave board (ch's 1&2 are deep Hpols)
+		temp_data_o		=> wfm_data_temp, --//testing purposes only
 		trig_o			=>	surface_trigger,
 		trig_slow_o		=>	surface_trigger_scaler);
 	--// END surface stuff

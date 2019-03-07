@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="fpga_temp" kind="fpga_temp" version="1.0" fabric="QSYS">
- <!-- Format version 15.1 185 (Future versions may contain additional information.) -->
- <!-- 2019.01.29.13:06:52 -->
+ <!-- Format version 18.1 625 (Future versions may contain additional information.) -->
+ <!-- 2019.03.06.18:03:38 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1548788812</value>
+  <value>1551917018</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -98,7 +98,7 @@
  <module
    name="temp_sense_0"
    kind="altera_temp_sense"
-   version="15.1"
+   version="18.1"
    path="temp_sense_0">
   <!-- Describes a single module. Module parameters are
 the requested settings for a module instance. -->
@@ -215,7 +215,7 @@ the requested settings for a module instance. -->
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
-  <interface name="clk" kind="clock_sink" version="15.1">
+  <interface name="clk" kind="clock_sink" version="18.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -260,7 +260,7 @@ parameters are a RESULT of the module parameters. -->
     <role>clk</role>
    </port>
   </interface>
-  <interface name="tsdcalo" kind="conduit_end" version="15.1">
+  <interface name="tsdcalo" kind="conduit_end" version="18.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -309,7 +309,7 @@ parameters are a RESULT of the module parameters. -->
     <role>tsdcalo</role>
    </port>
   </interface>
-  <interface name="tsdcaldone" kind="conduit_end" version="15.1">
+  <interface name="tsdcaldone" kind="conduit_end" version="18.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -358,7 +358,7 @@ parameters are a RESULT of the module parameters. -->
     <role>tsdcaldone</role>
    </port>
   </interface>
-  <interface name="ce" kind="conduit_end" version="15.1">
+  <interface name="ce" kind="conduit_end" version="18.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -403,7 +403,7 @@ parameters are a RESULT of the module parameters. -->
     <role>ce</role>
    </port>
   </interface>
-  <interface name="clr" kind="reset_sink" version="15.1">
+  <interface name="clr" kind="reset_sink" version="18.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -454,8 +454,8 @@ parameters are a RESULT of the module parameters. -->
   <name>altera_temp_sense</name>
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IModule</subtype>
-  <displayName>Altera Temperature Sensor</displayName>
-  <version>15.1</version>
+  <displayName>Temperature Sensor Intel FPGA IP</displayName>
+  <version>18.1</version>
  </plugin>
  <plugin>
   <instanceCount>1</instanceCount>
@@ -463,7 +463,7 @@ parameters are a RESULT of the module parameters. -->
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IMutableConnectionPoint</subtype>
   <displayName>Clock Input</displayName>
-  <version>15.1</version>
+  <version>18.1</version>
  </plugin>
  <plugin>
   <instanceCount>3</instanceCount>
@@ -471,7 +471,7 @@ parameters are a RESULT of the module parameters. -->
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IMutableConnectionPoint</subtype>
   <displayName>Conduit</displayName>
-  <version>15.1</version>
+  <version>18.1</version>
  </plugin>
  <plugin>
   <instanceCount>1</instanceCount>
@@ -479,8 +479,8 @@ parameters are a RESULT of the module parameters. -->
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IMutableConnectionPoint</subtype>
   <displayName>Reset Input</displayName>
-  <version>15.1</version>
+  <version>18.1</version>
  </plugin>
- <reportVersion>15.1 185</reportVersion>
+ <reportVersion>18.1 625</reportVersion>
  <uniqueIdentifier></uniqueIdentifier>
 </EnsembleReport>
