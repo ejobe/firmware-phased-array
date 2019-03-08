@@ -520,7 +520,7 @@ begin
 		pps_latched_timestamp_o => open,
 		status_reg_o			=> status_reg_data_manager_surface,
 		status_reg_latched_o => open,
-		wfm_data_i				=> wfm_data_temp, --wfm_data,
+		wfm_data_i				=> wfm_data, --wfm_data_temp, 
 		running_scalers_i		=> running_scalers,
 		data_ram_at_current_adr_o => ram_data_surface);
 	

@@ -67,8 +67,8 @@ type register_array_type is array (127 downto 0)
 --////////////////////////////////////////////////
 --///////////////////////////////////////////////////////////////////////////////////////////////////
 --//FIRMWARE INFORMATION
-constant slave_firmware_version 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000021";
-constant slave_firmware_date 			: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e3" & x"3" & x"07";
+constant slave_firmware_version 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"000022";
+constant slave_firmware_date 			: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e3" & x"3" & x"08";
 constant master_firmware_version 	: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"00001F";
 constant master_firmware_date 		: std_logic_vector(define_register_size-define_address_size-1 downto 0) := x"7e2" & x"C" & x"02";
 --///////////////////////////////////////////////////////////////////////////////////////////////////

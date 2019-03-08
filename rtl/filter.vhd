@@ -33,12 +33,14 @@ end filter;
 
 architecture rtl of filter is
 
-type internal_buf_data_type is array (surface_channels-1 downto 0) of std_logic_vector(4*pdat_size-1 downto 0);
+type internal_buf_data_type is array (surface_channels-1 downto 0) of std_logic_vector(6*pdat_size-1 downto 0);
 signal dat : internal_buf_data_type;
 signal buf_data_0 		: 	surface_data_type;
 signal buf_data_1 		:  surface_data_type;
 signal buf_data_2 		: 	surface_data_type;
 signal buf_data_3 		: 	surface_data_type;
+signal buf_data_4 		: 	surface_data_type;
+signal buf_data_5 		: 	surface_data_type;
 
 constant filter_taps : integer :=  21;
 constant filter_coeff_size : integer :=  8; 
@@ -46,8 +48,8 @@ constant filter_result_length : integer := 20;
 
 -----------------------------------------------
 ----filter via conversion to integer:
------------------------------------------------
-type filter_kernel_type is array (0 to 10) of integer range -127 to 128; --//symmetric filter, so taps = (taps-1)/2+1
+---------------------------------------------
+type filter_kernel_type is array (0 to filter_taps-1) of integer range -127 to 128; --
 --constant kernel : filter_kernel_type := (-3,-4,-2,2,6,7,2,-8,-21,-31,96); --//F_c = 200MHz
 --constant kernel : filter_kernel_type := (-1,-4,-4,-1,5,8,5,-5,-19,-32,90); --//F_c = 220MHz
 constant kernel : filter_kernel_type := (-1,-4,-4,-1,5,8,5,-5,-19,-32,90,-32,-19,-5,5,8,5,-1,-4,-4,-1); --//F_c = 220MHz
@@ -59,6 +61,8 @@ type filter_result_int_type is array (surface_channels-1 downto 0, 2*define_serd
 signal filter_result : filter_result_int_type;
 signal pre_filter_result_1 : filter_result_int_type;
 signal pre_filter_result_2 : filter_result_int_type;
+signal pre_filter_result_3 : filter_result_int_type;
+
 signal buf_filter_result : surface_data_type;
 
 --//
@@ -96,10 +100,6 @@ begin
 			buf_data_3(j) <= (others=>'0');
 			
 			for i in 0 to 2*define_serdes_factor-1 loop
-				-----------------------------------------------
-				----filter via std_logic:
-				-----------------------------------------------			
-				--filter_result(j,i) <= (others=>'0');
 				
 				-----------------------------------------------
 				----filter via conversion to integer:
@@ -110,11 +110,13 @@ begin
 
 			end loop;
 			
-			--integral_bit_shift <= 5;
 	
 		elsif rising_edge(clk_i) then
 
-			dat(j) <= buf_data_0(j) & buf_data_1(j) & buf_data_2(j) & buf_data_3(j);
+			dat(j) <= buf_data_0(j) & buf_data_1(j) & buf_data_2(j) & buf_data_3(j) & buf_data_4(j) & buf_data_5(j);
+
+			buf_data_5(j) <= buf_data_4(j);
+			buf_data_4(j) <= buf_data_3(j);	
 			buf_data_3(j) <= buf_data_2(j);	
 			buf_data_2(j) <= buf_data_1(j);	
 			buf_data_1(j) <= buf_data_0(j);
@@ -132,56 +134,82 @@ begin
 		---------------------------------------------
 		
 				buf_filter_result(j)((i+1)*define_word_size-1 downto i*define_word_size) <= '0' & 
-													std_logic_vector(to_unsigned(filter_result(j,i), filter_result_length))(13 downto 7); --//get value	
+													std_logic_vector(to_unsigned(filter_result(j,i), filter_result_length))(12 downto 6); --//get value	
 
 				--//--
-				filter_result(j,i) <= pre_filter_result_1(j,i) + pre_filter_result_2(j,i) + 4096;
+				filter_result(j,i) <= pre_filter_result_1(j,i) + pre_filter_result_2(j,i) + pre_filter_result_3(j,i) + 4096;
 				--//--									
 				pre_filter_result_1(j,i) <=						
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*0 + define_word_size*i downto pdat_size-define_word_size*1 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-0) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-1) + define_word_size*i )))-128) *
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*0 + define_word_size*i downto 3*pdat_size-define_word_size*1 + define_word_size*i ))) - 64) *
 					kernel(0) + 
 				
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*1 + define_word_size*i downto pdat_size-define_word_size*2 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-1) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-2) + define_word_size*i )))-128) *
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*1 + define_word_size*i downto 3*pdat_size-define_word_size*2 + define_word_size*i ))) - 64) *
 					kernel(1) + 			
 
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*2 + define_word_size*i downto pdat_size-define_word_size*3 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-2) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-3) + define_word_size*i )))-128) *
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*2 + define_word_size*i downto 3*pdat_size-define_word_size*3 + define_word_size*i ))) - 64) *
 					kernel(2) + 	
 			
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*3 + define_word_size*i downto pdat_size-define_word_size*4 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-3) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-4) + define_word_size*i )))-128) *
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*3 + define_word_size*i downto 3*pdat_size-define_word_size*4 + define_word_size*i ))) - 64) *
 					kernel(3) + 		
 
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*4 + define_word_size*i downto pdat_size-define_word_size*5 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-4) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-5) + define_word_size*i )))-128) *
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*4 + define_word_size*i downto 3*pdat_size-define_word_size*5 + define_word_size*i ))) - 64) *
 					kernel(4) +
 									
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*5 + define_word_size*i downto pdat_size-define_word_size*6 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-5) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-6) + define_word_size*i )))-128) *
-					kernel(5);
-				--//--
-				pre_filter_result_2(j,i) <=						
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*6 + define_word_size*i downto pdat_size-define_word_size*7 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-6) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-7) + define_word_size*i )))-128) *
-					kernel(6) + 
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*5 + define_word_size*i downto 3*pdat_size-define_word_size*6 + define_word_size*i ))) - 64) *
+					kernel(5) + 
 					
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*7 + define_word_size*i downto pdat_size-define_word_size*8 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-7) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-8) + define_word_size*i )))-128) *
-					kernel(7) + 
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*6 + define_word_size*i downto 3*pdat_size-define_word_size*7 + define_word_size*i ))) - 64) *
+					kernel(6);
 					
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*8 + define_word_size*i downto pdat_size-define_word_size*9 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-8) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-9) + define_word_size*i )))-128) *
-					kernel(8) + 
 					
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*9 + define_word_size*i downto pdat_size-define_word_size*10 + define_word_size*i ))) +
-					to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*(filter_taps-9) + define_word_size*i downto pdat_size-define_word_size*(filter_taps-10) + define_word_size*i )))-128) *
-					kernel(9) + 
+				pre_filter_result_2(j,i) <=	
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*7 + define_word_size*i downto 3*pdat_size-define_word_size*8 + define_word_size*i ))) - 64) *
+					kernel(7) + 			
+
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*8 + define_word_size*i downto 3*pdat_size-define_word_size*9 + define_word_size*i ))) - 64) *
+					kernel(8) + 	
+			
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*9 + define_word_size*i downto 3*pdat_size-define_word_size*10 + define_word_size*i ))) - 64) *
+					kernel(9) + 		
+
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*10 + define_word_size*i downto 3*pdat_size-define_word_size*11 + define_word_size*i ))) - 64) *
+					kernel(10) +
+									
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*11 + define_word_size*i downto 3*pdat_size-define_word_size*12 + define_word_size*i ))) - 64) *
+					kernel(11) +
 					
-					(to_integer(unsigned(dat(j)(pdat_size-2-define_word_size*10 + define_word_size*i downto pdat_size-define_word_size*11 + define_word_size*i )))-64)*
-					kernel(10);
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*12 + define_word_size*i downto 3*pdat_size-define_word_size*13 + define_word_size*i ))) - 64) *
+					kernel(12)+
 					
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*13 + define_word_size*i downto 3*pdat_size-define_word_size*14 + define_word_size*i ))) - 64) *
+					kernel(13); 			
+
+					
+				pre_filter_result_3(j,i) <=	
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*14 + define_word_size*i downto 3*pdat_size-define_word_size*15 + define_word_size*i ))) - 64) *
+					kernel(14) + 	
+			
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*15 + define_word_size*i downto 3*pdat_size-define_word_size*16 + define_word_size*i ))) - 64) *
+					kernel(15) + 		
+
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*16 + define_word_size*i downto 3*pdat_size-define_word_size*17 + define_word_size*i ))) - 64) *
+					kernel(16) +
+									
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*17 + define_word_size*i downto 3*pdat_size-define_word_size*18 + define_word_size*i ))) - 64) *
+					kernel(17) + 
+					
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*18 + define_word_size*i downto 3*pdat_size-define_word_size*19 + define_word_size*i ))) - 64) *
+					kernel(18) + 
+				
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*19 + define_word_size*i downto 3*pdat_size-define_word_size*20 + define_word_size*i ))) - 64) *
+					kernel(19) + 			
+
+					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*20 + define_word_size*i downto 3*pdat_size-define_word_size*21 + define_word_size*i ))) - 64) *
+					kernel(20);
+			
+	
+
+				
 			end loop;
 		end if;
 	end loop;

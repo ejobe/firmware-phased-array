@@ -193,9 +193,9 @@ begin
 		registers_io(42) <= x"000000"; --//enable cal pulse([LSB]=1) and set RF switch direction([LSB+1]=1 for cal pulse)   [42]
 		--registers_io(43) <= x"000001"; --//cal pulse pattern, maybe make this configurable? -> probably a timing nightmare since on 250 MHz clock? 
 		
-		--//surface trigger
+		--//surface trigger stuff
 		registers_io(46) <= x"380914"; --//lower byte = vpp threshold ; 
-		registers_io(47) <= x"010002"; --//
+		registers_io(47) <= x"01000A"; --//
 		
 		--//masking + trigger configurations
 		registers_io(48) <= x"0000FF";   --// channel masking [48]
