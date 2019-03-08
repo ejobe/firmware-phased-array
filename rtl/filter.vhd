@@ -50,7 +50,7 @@ constant filter_result_length : integer := 20;
 type filter_kernel_type is array (0 to 10) of integer range -127 to 128; --//symmetric filter, so taps = (taps-1)/2+1
 --constant kernel : filter_kernel_type := (-3,-4,-2,2,6,7,2,-8,-21,-31,96); --//F_c = 200MHz
 --constant kernel : filter_kernel_type := (-1,-4,-4,-1,5,8,5,-5,-19,-32,90); --//F_c = 220MHz
-constant kernel : filter_kernel_type := (90,-32,-19,-5,5,8,5,-1,-4,-4,-1); --//F_c = 220MHz
+constant kernel : filter_kernel_type := (-1,-4,-4,-1,5,8,5,-5,-19,-32,90,-32,-19,-5,5,8,5,-1,-4,-4,-1); --//F_c = 220MHz
 
 -----------------------------------------------
 ----filter via conversion to integer:
