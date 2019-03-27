@@ -43,6 +43,7 @@ entity data_manager_surface is
 
 		--//waveform data	
 		wfm_data_i				:	in	 	full_data_type;
+		wfm_data_aux_i			:	in	 	full_data_type;
 		running_scalers_i		:  in 	std_logic_vector(23 downto 0);
 		data_ram_at_current_adr_o :  out	ram_adr_chunked_data_type);
 		
@@ -60,6 +61,8 @@ signal internal_ram_write_adrs : internal_ram_write_adr_type;
 constant internal_address_max : std_logic_vector(define_data_ram_depth-1 downto 0) := (others=>'1');		
 
 --//RAM input data (on write clk)
+signal internal_wfm_data_select : std_logic;
+signal internal_wfm_data_pre_delay : full_data_type; --//input to pre-trig block, selected by internal_wfm_data_select
 signal internal_wfm_data : full_data_type;  --//delayed data for pre-trig window
 signal internal_wfm_data_pipe_0a : full_data_type;
 signal internal_wfm_data_pipe_0b : full_data_type;
@@ -146,7 +149,25 @@ PreTrigSync : for i in 0 to 2 generate
 		SignalIn_clkA		=> reg_i(76)(i+8),
 		SignalOut_clkB		=> internal_pre_trig_window_select(i));
 end generate;
+--/////////////////////////////////////////////////////////
+--//sync wfm select option
+xWFMSELSYNC : signal_sync
+	port map(
+		clkA 			=> clk_iface_i,
+		clkB			=> clk_i,
+		SignalIn_clkA		=> reg_i(73)(0),
+		SignalOut_clkB		=> internal_wfm_data_select);
 ------------------------------------------------------------------
+--//////////////////////////////////////
+--//assign waveform data, per internal_wfm_data_select option:
+process(clk_i) begin
+	if rising_edge(clk_i) then
+		case internal_wfm_data_select is
+			when '0' => internal_wfm_data_pre_delay <= wfm_data_i;
+			when '1' => internal_wfm_data_pre_delay <= wfm_data_aux_i;
+		end case;
+	end if;
+end process;
 --//////////////////////////////////////
 --//apply programmable pre-trigger window and pipeline the output data into 4 buffers using 2 extra clk cycles
 PreTrigBlock : for i in 0 to 7 generate
@@ -155,7 +176,7 @@ PreTrigBlock : for i in 0 to 7 generate
 		rst_i		=> rst_i,
 		clk_i		=>	clk_i,
 		pretrig_sel_i =>	internal_pre_trig_window_select,
-		data_i	=>	wfm_data_i(i),
+		data_i	=>	internal_wfm_data_pre_delay(i),
 		data_o	=>	internal_wfm_data(i));
 end generate;
 proc_pipe_multibuffer_data : process(clk_i, internal_wfm_data, 

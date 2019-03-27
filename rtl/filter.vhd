@@ -41,6 +41,7 @@ signal buf_data_2 		: 	surface_data_type;
 signal buf_data_3 		: 	surface_data_type;
 signal buf_data_4 		: 	surface_data_type;
 signal buf_data_5 		: 	surface_data_type;
+signal wfm_data_pipe 	:  surface_data_type;
 
 constant filter_taps : integer :=  21;
 constant filter_coeff_size : integer :=  8; 
@@ -62,6 +63,8 @@ signal filter_result : filter_result_int_type;
 signal pre_filter_result_1 : filter_result_int_type;
 signal pre_filter_result_2 : filter_result_int_type;
 signal pre_filter_result_3 : filter_result_int_type;
+signal pre_filter_result_4 : filter_result_int_type;
+signal pre_filter_result_5 : filter_result_int_type;
 
 signal buf_filter_result : surface_data_type;
 
@@ -120,8 +123,9 @@ begin
 			buf_data_3(j) <= buf_data_2(j);	
 			buf_data_2(j) <= buf_data_1(j);	
 			buf_data_1(j) <= buf_data_0(j);
-			buf_data_0(j) <= data_i(j);
-
+			buf_data_0(j) <= wfm_data_pipe(j);
+			wfm_data_pipe(j) <= data_i(j);
+							  
 			case internal_filter_enable is
 				when '0' => filtered_data_o(j) <= buf_data_3(j);
 				when '1' => filtered_data_o(j) <= buf_filter_result(j);
@@ -134,10 +138,10 @@ begin
 		---------------------------------------------
 		
 				buf_filter_result(j)((i+1)*define_word_size-1 downto i*define_word_size) <= '0' & 
-													std_logic_vector(to_unsigned(filter_result(j,i), filter_result_length))(12 downto 6); --//get value	
+													std_logic_vector(to_unsigned((filter_result(j,i) + 4096), filter_result_length))(12 downto 6); --//get value	
 
 				--//--
-				filter_result(j,i) <= pre_filter_result_1(j,i) + pre_filter_result_2(j,i) + pre_filter_result_3(j,i) + 4096;
+				filter_result(j,i) <= pre_filter_result_1(j,i) + pre_filter_result_2(j,i) + pre_filter_result_3(j,i) + pre_filter_result_4(j,i);
 				--//--									
 				pre_filter_result_1(j,i) <=						
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*0 + define_word_size*i downto 3*pdat_size-define_word_size*1 + define_word_size*i ))) - 64) *
@@ -153,16 +157,15 @@ begin
 					kernel(3) + 		
 
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*4 + define_word_size*i downto 3*pdat_size-define_word_size*5 + define_word_size*i ))) - 64) *
-					kernel(4) +
-									
+					kernel(4);
+				
+				pre_filter_result_2(j,i) <=						
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*5 + define_word_size*i downto 3*pdat_size-define_word_size*6 + define_word_size*i ))) - 64) *
 					kernel(5) + 
 					
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*6 + define_word_size*i downto 3*pdat_size-define_word_size*7 + define_word_size*i ))) - 64) *
-					kernel(6);
+					kernel(6) +
 					
-					
-				pre_filter_result_2(j,i) <=	
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*7 + define_word_size*i downto 3*pdat_size-define_word_size*8 + define_word_size*i ))) - 64) *
 					kernel(7) + 			
 
@@ -170,8 +173,9 @@ begin
 					kernel(8) + 	
 			
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*9 + define_word_size*i downto 3*pdat_size-define_word_size*10 + define_word_size*i ))) - 64) *
-					kernel(9) + 		
-
+					kernel(9);
+					
+				pre_filter_result_3(j,i) <=
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*10 + define_word_size*i downto 3*pdat_size-define_word_size*11 + define_word_size*i ))) - 64) *
 					kernel(10) +
 									
@@ -182,13 +186,12 @@ begin
 					kernel(12)+
 					
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*13 + define_word_size*i downto 3*pdat_size-define_word_size*14 + define_word_size*i ))) - 64) *
-					kernel(13); 			
+					kernel(13) +			
 
-					
-				pre_filter_result_3(j,i) <=	
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*14 + define_word_size*i downto 3*pdat_size-define_word_size*15 + define_word_size*i ))) - 64) *
-					kernel(14) + 	
+					kernel(14);
 			
+				pre_filter_result_4(j,i) <=	
 					(to_integer(unsigned(dat(j)(3*pdat_size-2-define_word_size*15 + define_word_size*i downto 3*pdat_size-define_word_size*16 + define_word_size*i ))) - 64) *
 					kernel(15) + 		
 

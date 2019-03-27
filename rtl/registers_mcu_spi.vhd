@@ -196,6 +196,7 @@ begin
 		--//surface trigger stuff
 		registers_io(46) <= x"380914"; --//lower byte = vpp threshold ; 
 		registers_io(47) <= x"01000A"; --//
+		registers_io(73) <= x"000000"; --//
 		registers_io(74) <= x"000000"; --//surface readout select: toggle LSB to readout surface, when LSB=0 (default)->deep readout
 
 		--//masking + trigger configurations
@@ -283,28 +284,28 @@ begin
 		
 		--//read data chunk 0
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"23" then
-			case registers_io(74)(0) is 
+			case registers_io(74)(0) is --// surface/deep select
 				when '0' => read_reg_o <= current_ram_adr_data_i(0);
 				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(0);
 			end case;
 			address_o <= x"47";  --//initiate a read
 		--//read data chunk 1
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"24" then
-			case registers_io(74)(0) is 
+			case registers_io(74)(0) is  --// surface/deep select
 				when '0' => read_reg_o <= current_ram_adr_data_i(1);
 				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(1);
 			end case;
 			address_o <= x"47";  --//initiate a read			
 		--//read data chunk 2
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"25" then
-			case registers_io(74)(0) is 
+			case registers_io(74)(0) is --// surface/deep select
 				when '0' => read_reg_o <= current_ram_adr_data_i(2);
 				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(2);
 			end case;
 			address_o <= x"47";  --//initiate a read				
 		--//read data chunk 3	
 		elsif write_rdy_i = '1' and write_reg_i(31 downto 24) = x"26" then
-			case registers_io(74)(0) is 
+			case registers_io(74)(0) is --// surface/deep select
 				when '0' => read_reg_o <= current_ram_adr_data_i(3);
 				when '1' =>	read_reg_o <= current_ram_adr_data_surface_i(3);
 			end case;
@@ -336,7 +337,7 @@ begin
 			registers_io(9) <= status_data_manager_latched_i; 
 			--//assign event meta data
 			for j in 0 to 24 loop
-				case registers_io(74)(0) is 
+				case registers_io(74)(0) is --// surface/deep select
 					when '0' => registers_io(j+10) <= event_metadata_i(j);
 					when '1' => registers_io(j+10) <= event_metadata_surface_i(j);
 				end case;
